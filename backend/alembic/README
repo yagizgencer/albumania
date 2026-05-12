@@ -1,0 +1,10 @@
+Alembic migrations for Albumania.
+
+Create a new revision:
+    uv run alembic revision -m "describe change" --autogenerate
+
+Apply migrations:
+    uv run alembic upgrade head
+
+Downgrade:
+    uv run alembic downgrade -1

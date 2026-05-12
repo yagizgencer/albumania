@@ -1,0 +1,40 @@
+import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import { apiClient } from "../api/client";
+import { useAuth } from "../context/AuthContext";
+
+interface UserProfile {
+  id: number;
+  email: string;
+  display_name: string;
+  profile_visibility: "public" | "private";
+  created_at: string;
+}
+
+export function ProfilePage() {
+  const { userId } = useParams<{ userId: string }>();
+  const { logout } = useAuth();
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!userId) return;
+    apiClient
+      .get<UserProfile>(`/users/${userId}`)
+      .then(({ data }) => setProfile(data))
+      .catch(() => setError("Could not load profile"));
+  }, [userId]);
+
+  if (error) return <main><p className="error">{error}</p></main>;
+  if (!profile) return <main><p>Loading…</p></main>;
+
+  return (
+    <main>
+      <h1>{profile.display_name}</h1>
+      <p>{profile.email}</p>
+      <p>Visibility: {profile.profile_visibility}</p>
+      <p>Member since: {new Date(profile.created_at).toLocaleDateString()}</p>
+      <button onClick={logout}>Log out</button>
+    </main>
+  );
+}
