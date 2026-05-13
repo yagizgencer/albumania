@@ -6,6 +6,7 @@ import { useAuth } from "../context/AuthContext";
 export function RegisterPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");
@@ -19,10 +20,10 @@ export function RegisterPage() {
     try {
       const { data } = await apiClient.post<{ access_token: string }>(
         "/auth/register",
-        { email, display_name: displayName, password }
+        { username, email, display_name: displayName, password }
       );
       login(data.access_token);
-      navigate(`/profile/${parseUserId(data.access_token)}`);
+      navigate(`/profile/${username}`);
     } catch (err: unknown) {
       const msg = extractMessage(err) ?? "Registration failed";
       setError(msg);
@@ -35,6 +36,10 @@ export function RegisterPage() {
     <main className="auth-page">
       <h1>Create account</h1>
       <form onSubmit={handleSubmit}>
+        <label>
+          Username
+          <input value={username} onChange={(e) => setUsername(e.target.value)} required />
+        </label>
         <label>
           Display name
           <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} required />
@@ -55,10 +60,6 @@ export function RegisterPage() {
       <p>Already have an account? <Link to="/login">Log in</Link></p>
     </main>
   );
-}
-
-function parseUserId(token: string): number {
-  return Number(JSON.parse(atob(token.split(".")[1])).sub);
 }
 
 function extractMessage(err: unknown): string | null {

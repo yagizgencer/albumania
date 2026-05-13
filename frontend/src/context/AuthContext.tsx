@@ -8,7 +8,7 @@ import {
 import { apiClient, setAccessToken } from "../api/client";
 
 interface AuthState {
-  userId: number | null;
+  username: string | null;
   isLoading: boolean;
 }
 
@@ -17,19 +17,19 @@ interface AuthContextValue extends AuthState {
   logout: () => Promise<void>;
 }
 
-function parseUserId(token: string): number {
+function parseUsername(token: string): string {
   const payload = JSON.parse(atob(token.split(".")[1]));
-  return Number(payload.sub);
+  return payload.sub as string;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<AuthState>({ userId: null, isLoading: true });
+  const [state, setState] = useState<AuthState>({ username: null, isLoading: true });
 
   const login = useCallback((token: string) => {
     setAccessToken(token);
-    setState({ userId: parseUserId(token), isLoading: false });
+    setState({ username: parseUsername(token), isLoading: false });
   }, []);
 
   const logout = useCallback(async () => {
@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // ignore — cookie is cleared server-side on best-effort basis
     }
     setAccessToken(null);
-    setState({ userId: null, isLoading: false });
+    setState({ username: null, isLoading: false });
   }, []);
 
   // On mount, try a silent refresh so users don't have to log in again
@@ -48,7 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     apiClient
       .post<{ access_token: string }>("/auth/refresh")
       .then(({ data }) => login(data.access_token))
-      .catch(() => setState({ userId: null, isLoading: false }));
+      .catch(() => setState({ username: null, isLoading: false }));
   }, [login]);
 
   return (

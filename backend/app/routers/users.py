@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
@@ -11,13 +12,13 @@ from app.schemas.user import UserResponse
 router = APIRouter(prefix="/users", tags=["users"])
 
 
-@router.get("/{user_id}", response_model=UserResponse)
+@router.get("/{username}", response_model=UserResponse)
 def get_user(
-    user_id: int,
+    username: str,
     _current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> UserResponse:
-    user = db.get(User, user_id)
+    user = db.scalar(select(User).where(User.username == username))
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return UserResponse.model_validate(user)

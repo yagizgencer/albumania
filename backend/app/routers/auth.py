@@ -31,8 +31,11 @@ def register(
 ) -> TokenResponse:
     if db.scalar(select(User).where(User.email == body.email)):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
+    if db.scalar(select(User).where(User.username == body.username)):
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username already taken")
 
     user = User(
+        username=body.username,
         email=body.email,
         password_hash=hash_password(body.password),
         display_name=body.display_name,
@@ -41,8 +44,8 @@ def register(
     db.commit()
     db.refresh(user)
 
-    response.set_cookie(_REFRESH_COOKIE, create_refresh_token(user.id), **_COOKIE_OPTS)
-    return TokenResponse(access_token=create_access_token(user.id))
+    response.set_cookie(_REFRESH_COOKIE, create_refresh_token(user.username), **_COOKIE_OPTS)
+    return TokenResponse(access_token=create_access_token(user.username))
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -55,8 +58,8 @@ def login(
     if not user or not verify_password(body.password, user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
-    response.set_cookie(_REFRESH_COOKIE, create_refresh_token(user.id), **_COOKIE_OPTS)
-    return TokenResponse(access_token=create_access_token(user.id))
+    response.set_cookie(_REFRESH_COOKIE, create_refresh_token(user.username), **_COOKIE_OPTS)
+    return TokenResponse(access_token=create_access_token(user.username))
 
 
 @router.post("/refresh", response_model=TokenResponse)
@@ -75,9 +78,9 @@ def refresh(
     if payload.get("type") != "refresh":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type")
 
-    user_id = int(payload["sub"])
-    response.set_cookie(_REFRESH_COOKIE, create_refresh_token(user_id), **_COOKIE_OPTS)
-    return TokenResponse(access_token=create_access_token(user_id))
+    username = payload["sub"]
+    response.set_cookie(_REFRESH_COOKIE, create_refresh_token(username), **_COOKIE_OPTS)
+    return TokenResponse(access_token=create_access_token(username))
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)

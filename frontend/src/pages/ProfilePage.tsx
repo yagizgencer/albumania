@@ -4,7 +4,7 @@ import { apiClient } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 
 interface UserProfile {
-  id: number;
+  username: string;
   email: string;
   display_name: string;
   profile_visibility: "public" | "private";
@@ -12,18 +12,18 @@ interface UserProfile {
 }
 
 export function ProfilePage() {
-  const { userId } = useParams<{ userId: string }>();
+  const { username } = useParams<{ username: string }>();
   const { logout } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!username) return;
     apiClient
-      .get<UserProfile>(`/users/${userId}`)
+      .get<UserProfile>(`/users/${username}`)
       .then(({ data }) => setProfile(data))
       .catch(() => setError("Could not load profile"));
-  }, [userId]);
+  }, [username]);
 
   if (error) return <main><p className="error">{error}</p></main>;
   if (!profile) return <main><p>Loading…</p></main>;
@@ -31,6 +31,7 @@ export function ProfilePage() {
   return (
     <main>
       <h1>{profile.display_name}</h1>
+      <p>@{profile.username}</p>
       <p>{profile.email}</p>
       <p>Visibility: {profile.profile_visibility}</p>
       <p>Member since: {new Date(profile.created_at).toLocaleDateString()}</p>

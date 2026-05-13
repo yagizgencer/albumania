@@ -14,21 +14,21 @@ def verify_password(plain: str, hashed: str) -> bool:
     return bcrypt.checkpw(plain.encode(), hashed.encode())
 
 
-def create_access_token(user_id: int) -> str:
+def create_access_token(username: str) -> str:
     settings = get_settings()
     expire = datetime.now(timezone.utc) + timedelta(minutes=settings.jwt_access_ttl_minutes)
     return jwt.encode(
-        {"sub": str(user_id), "exp": expire, "type": "access"},
+        {"sub": username, "exp": expire, "type": "access"},
         settings.jwt_secret,
         algorithm="HS256",
     )
 
 
-def create_refresh_token(user_id: int) -> str:
+def create_refresh_token(username: str) -> str:
     settings = get_settings()
     expire = datetime.now(timezone.utc) + timedelta(days=settings.jwt_refresh_ttl_days)
     return jwt.encode(
-        {"sub": str(user_id), "exp": expire, "type": "refresh"},
+        {"sub": username, "exp": expire, "type": "refresh"},
         settings.jwt_secret,
         algorithm="HS256",
     )

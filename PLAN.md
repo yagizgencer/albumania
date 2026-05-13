@@ -71,9 +71,9 @@ Each phase is sized to be 1–2 sittings. Test count is a floor, not a ceiling.
 
 ### Phase 1 — User accounts & JWT auth
 **Goal**: register, log in, see "me".
-- Backend: `User` model (`id`, `email` unique, `password_hash`, `display_name`, `profile_visibility` enum [`public`, `private`], `created_at`). `public` = visible to anyone; `private` = visible to friends and owner only. Alembic migration. Endpoints: `POST /auth/register`, `POST /auth/login` (returns `{access_token}`), `POST /auth/refresh`, `POST /auth/logout` (clears the refresh token cookie), `GET /users/{id}`. Password hashing via `passlib`. JWT helpers in `app/core/security.py` (signs `sub = str(user.id)`). CORS configured for `VITE_API_BASE_URL`.
-- Frontend: `AuthContext` (token in memory, `userId` decoded from JWT `sub` on login/refresh, refresh on 401), `RegisterPage`, `LoginPage`, `ProfilePage` fetching `GET /users/{id}`. Protected route wrapper.
-- Tests: register → login → `GET /users/{id}` happy path; wrong password 401; duplicate email 409; `GET /users/{id}` returns 401 without token.
+- Backend: `User` model (`id`, `username` unique, `email` unique, `password_hash`, `display_name`, `profile_visibility` enum [`public`, `private`], `created_at`). `public` = visible to anyone; `private` = visible to friends and owner only. Alembic migration. Endpoints: `POST /auth/register` (body includes `username`), `POST /auth/login` (returns `{access_token}`), `POST /auth/refresh`, `POST /auth/logout` (clears the refresh token cookie), `GET /users/{username}`. Password hashing via `passlib`. JWT helpers in `app/core/security.py` (signs `sub = username`). CORS configured for `VITE_API_BASE_URL`.
+- Frontend: `AuthContext` (token in memory, `username` decoded from JWT `sub` on login/refresh, refresh on 401), `RegisterPage` (includes username field), `LoginPage`, `ProfilePage` fetching `GET /users/{username}`. Protected route wrapper.
+- Tests: register → login → `GET /users/{username}` happy path; wrong password 401; duplicate email 409; duplicate username 409; `GET /users/{username}` returns 401 without token.
 
 ### Phase 2 — Album catalog + Spotify search
 **Goal**: search Spotify, persist album + tracks locally on first use.
@@ -92,7 +92,7 @@ Each phase is sized to be 1–2 sittings. Test count is a floor, not a ceiling.
 
 ### Phase 4 — Personal profile dashboard (you vs Spotify)
 **Goal**: replicate the demo's dashboard for a single user, scoped to **all** of their published ratings (solo or otherwise — invite origin is irrelevant here).
-- Backend: `GET /users/{id}/dashboard?compare_to=spotify` returning per-rated-album `{album, score, similarity_user_vs_spotify, completion_date, ...}`. Respects visibility: `public` always visible, `private` requires viewer to be a friend or the owner (Phase 5 wires the friend check fully — for now just owner-can-see).
+- Backend: `GET /users/{username}/dashboard?compare_to=spotify` returning per-rated-album `{album, score, similarity_user_vs_spotify, completion_date, ...}`. Respects visibility: `public` always visible, `private` requires viewer to be a friend or the owner (Phase 5 wires the friend check fully — for now just owner-can-see).
 - Reuse Spotify top-5-popular logic from [reference/create_album_jsons.py](reference/create_album_jsons.py) (cache per album in DB column `spotify_top5_indices`).
 - Frontend: `ProfileDashboardPage` — port [reference/index.html](reference/index.html) controls (sort, filter, date-range slider, cumulative toggle, similarity/rating mode), backed by Chart.js. Album list table; clicking a row → album detail.
 - `AlbumDetailPage` — port [reference/album.html](reference/album.html), but only the viewing user's column + Spotify column.
@@ -100,7 +100,7 @@ Each phase is sized to be 1–2 sittings. Test count is a floor, not a ceiling.
 
 ### Phase 5 — Friends
 **Goal**: send/accept friend requests, search users, enforce friends-only visibility.
-- Backend: `Friendship` model (`id`, `user_a_id`, `user_b_id` with constraint `a < b`, `status` enum [`pending`, `accepted`], `requested_by_id`, `created_at`, `accepted_at`). Endpoints: `POST /friendships` (send), `POST /friendships/{id}/accept`, `POST /friendships/{id}/decline`, `DELETE /friendships/{id}` (unfriend), `GET /friendships/me` (incoming/outgoing/accepted), `GET /users/search?q=…`. Helper `are_friends(a, b)` plug it into the Phase 4 visibility check.
+- Backend: `Friendship` model (`id`, `user_a_id`, `user_b_id` with constraint `a < b`, `status` enum [`pending`, `accepted`], `requested_by_id`, `created_at`, `accepted_at`). Endpoints: `POST /friendships` (send, body `{username}`), `POST /friendships/{id}/accept`, `POST /friendships/{id}/decline`, `DELETE /friendships/{id}` (unfriend), `GET /friendships/me` (incoming/outgoing/accepted), `GET /users/search?q=…`. Helper `are_friends(a, b)` plug it into the Phase 4 visibility check.
 - Frontend: `FriendsPage` (tabs: friends / incoming / outgoing), search modal, friend card linking to profile.
 - Tests: cannot friend self, cannot duplicate friendship, accept moves to accepted state, private profiles return 403 to strangers and 200 to friends.
 
