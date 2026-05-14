@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { apiClient } from "../api/client";
-import { useAuth } from "../context/AuthContext";
 
 interface UserProfile {
   username: string;
@@ -13,7 +12,6 @@ interface UserProfile {
 
 export function ProfilePage() {
   const { username } = useParams<{ username: string }>();
-  const { logout } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,7 +33,6 @@ export function ProfilePage() {
       <p>{profile.email}</p>
       <p>Visibility: {profile.profile_visibility}</p>
       <p>Member since: {new Date(profile.created_at).toLocaleDateString()}</p>
-      <button onClick={logout}>Log out</button>
     </main>
   );
 }

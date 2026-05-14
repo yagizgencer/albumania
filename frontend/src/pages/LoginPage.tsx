@@ -21,7 +21,7 @@ export function LoginPage() {
         { email, password }
       );
       login(data.access_token);
-      navigate(`/profile/${parseUserId(data.access_token)}`);
+      navigate("/");
     } catch {
       setError("Invalid email or password");
     } finally {
@@ -51,6 +51,3 @@ export function LoginPage() {
   );
 }
 
-function parseUserId(token: string): number {
-  return Number(JSON.parse(atob(token.split(".")[1])).sub);
-}

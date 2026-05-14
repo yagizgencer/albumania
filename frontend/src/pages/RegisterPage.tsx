@@ -23,7 +23,7 @@ export function RegisterPage() {
         { username, email, display_name: displayName, password }
       );
       login(data.access_token);
-      navigate(`/profile/${username}`);
+      navigate("/");
     } catch (err: unknown) {
       const msg = extractMessage(err) ?? "Registration failed";
       setError(msg);

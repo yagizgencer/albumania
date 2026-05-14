@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
-from app.routers import auth, users
+from app.routers import auth, users, albums, ratings
 
 settings = get_settings()
 
@@ -18,6 +18,8 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(users.router)
+app.include_router(albums.router)
+app.include_router(ratings.router)
 
 
 @app.get("/health")

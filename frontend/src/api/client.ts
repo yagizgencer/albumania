@@ -26,11 +26,13 @@ apiClient.interceptors.request.use((config) => {
 });
 
 // On 401, attempt one silent refresh using the httpOnly cookie, then retry.
+// Skip auth/login and auth/refresh themselves — retrying those would loop forever.
 apiClient.interceptors.response.use(
   (res) => res,
   async (error) => {
     const original = error.config;
-    if (error.response?.status === 401 && !original._retry) {
+    const isAuthEndpoint = original.url?.startsWith("/auth/");
+    if (error.response?.status === 401 && !original._retry && !isAuthEndpoint) {
       original._retry = true;
       try {
         const { data } = await apiClient.post<{ access_token: string }>(

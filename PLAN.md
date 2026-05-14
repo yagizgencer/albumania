@@ -84,11 +84,11 @@ Each phase is sized to be 1–2 sittings. Test count is a floor, not a ceiling.
 
 ### Phase 3 — Personal ratings (draft → publish)
 **Goal**: rate an album end-to-end as a solo user.
-- Backend: `Rating` model (`id`, `user_id`, `album_id`, `score` nullable float 0–10, `status` enum [`draft`, `published`], `started_at`, `completed_at`, `last_edited_at`, unique on `(user_id, album_id)`). `RatingTopTrack` model (`rating_id`, `position` 1–5, `track_index`) — unique on `(rating_id, position)` and `(rating_id, track_index)`. `SongNote` model (`rating_id`, `track_index`, `note_text`).
-- Endpoints: `POST /ratings` (create draft for an album), `GET /ratings/me`, `GET /ratings/me/{album_id}`, `PATCH /ratings/{id}` (partial save — score, top 5 reorder, notes; allowed on drafts and on published only if result still valid), `POST /ratings/{id}/publish` (validates: score present, exactly 5 distinct top tracks, every track has a note). `DELETE /ratings/{id}`.
+- Backend: `Rating` model (`id`, `user_id`, `album_id`, `score` nullable float 0–10, `top_track_indices` JSON column (list of up to 5 distinct track indices, stored directly on the rating — no separate join table), `status` enum [`draft`, `published`], `started_at`, `completed_at`, `last_edited_at`, unique on `(user_id, album_id)`). `SongNote` model (`rating_id`, `track_index`, `note_text`) — optional per track, for user convenience during drafting only.
+- Endpoints: `POST /ratings` (create draft for an album), `GET /ratings/me`, `GET /ratings/me/{album_id}`, `PATCH /ratings/{id}` (partial save — score, top 5 reorder, notes; allowed on drafts and on published only if result still valid), `POST /ratings/{id}/publish` (validates: score present, exactly 5 distinct top track indices). `DELETE /ratings/{id}` (permanently removes draft or published rating).
 - Port `compute_ranking_loss` and `compute_similarity_score` from [reference/helpers.py:11](reference/helpers.py#L11) into `app/services/similarity.py` (pure functions, no pandas — just lists). Unit-test them against known examples from [reference/albums.json](reference/albums.json).
-- Frontend: `RatingEditorPage` with score input, draggable track list (`@dnd-kit`) splitting into "Top 5" and "Rest" zones, note textarea per track, "Save draft" / "Publish" / "Unpublish" buttons.
-- Tests: publish validation (score required, exactly 5 top tracks, all notes present), draft saves partial, edit-after-publish cannot persist invalid state, similarity math matches reference values for one canonical album.
+- Frontend: `RatingEditorPage` with score input, draggable track list (`@dnd-kit`) splitting into "Top 5" and "Rest" zones, optional note textarea per track, "Save draft" / "Publish" / "Delete" buttons.
+- Tests: publish validation (score required, exactly 5 top tracks; notes not required), draft saves partial, edit-after-publish cannot persist invalid state, delete removes published rating, similarity math matches reference values for one canonical album.
 
 ### Phase 4 — Personal profile dashboard (you vs Spotify)
 **Goal**: replicate the demo's dashboard for a single user, scoped to **all** of their published ratings (solo or otherwise — invite origin is irrelevant here).
@@ -109,7 +109,7 @@ Each phase is sized to be 1–2 sittings. Test count is a floor, not a ceiling.
 - Backend: on friendship accept (and on every new published rating thereafter), recompute the pair's mutual album list — albums both users have published. Store derived rows in `FriendDashboardEntry` (`friendship_id`, `album_id`, `mutual_date` = max of two `completed_at`, `similarity_users`, `mean_score`, `user_a_score`, `user_b_score`). Endpoint `GET /friendships/{id}/dashboard`.
 - This is a derived table; rebuild logic in `app/services/friend_dashboard.py` with a single `rebuild_for_pair(friendship_id)` entry point called from rating publish and friendship accept.
 - Frontend: `FriendDashboardPage` — full demo-style dashboard with toggle between "similarity" and "ratings" modes; album table; row click opens shared `AlbumDetailPage` showing both users' top 5 + Spotify side-by-side.
-- Tests: accepting a friendship with 2 mutually-rated albums seeds 2 entries with correct dates; publishing a third triggers a new entry; unpublishing removes one; unfriending removes all.
+- Tests: accepting a friendship with 2 mutually-rated albums seeds 2 entries with correct dates; publishing a third triggers a new entry; deleting a published rating removes its entry; unfriending removes all.
 
 ### Phase 7 — Listen invites & Listen Later
 **Goal**: invite a friend to listen to an album; track shared progress.
