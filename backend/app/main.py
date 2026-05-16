@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
-from app.routers import auth, users, albums, ratings
+from app.routers import auth, users, albums, ratings, friendships, invites
 
 settings = get_settings()
 
@@ -20,6 +20,9 @@ app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(albums.router)
 app.include_router(ratings.router)
+app.include_router(friendships.router)
+app.include_router(invites.router)
+app.include_router(invites.listen_later_router)
 
 
 @app.get("/health")

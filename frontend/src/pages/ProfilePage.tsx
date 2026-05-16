@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { apiClient } from "../api/client";
 
 interface UserProfile {
@@ -33,6 +33,9 @@ export function ProfilePage() {
       <p>{profile.email}</p>
       <p>Visibility: {profile.profile_visibility}</p>
       <p>Member since: {new Date(profile.created_at).toLocaleDateString()}</p>
+      <p>
+        <Link to={`/users/${profile.username}/dashboard`}>View dashboard →</Link>
+      </p>
     </main>
   );
 }

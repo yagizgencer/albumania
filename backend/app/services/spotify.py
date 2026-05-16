@@ -73,6 +73,24 @@ class SpotifyClient:
             )
         return tracks
 
+    def get_top5_popular_indices(self, spotify_id: str) -> list[int]:
+        """Return the 5 most-popular track numbers (1-based) for the album, sorted by popularity desc."""
+        album = self._sp.album(spotify_id)
+        track_ids = [t["id"] for t in album["tracks"]["items"]]
+        track_numbers = {t["id"]: t["track_number"] for t in album["tracks"]["items"]}
+
+        popularity_map: dict[str, int] = {}
+        # Spotify's tracks endpoint accepts up to 50 IDs at once
+        for i in range(0, len(track_ids), 50):
+            batch = track_ids[i : i + 50]
+            results = self._sp.tracks(batch)["tracks"]
+            for t in results:
+                if t:
+                    popularity_map[t["id"]] = t["popularity"]
+
+        sorted_tracks = sorted(track_ids, key=lambda tid: popularity_map.get(tid, 0), reverse=True)
+        return [track_numbers[tid] for tid in sorted_tracks[:5]]
+
 
 def get_spotify_client() -> SpotifyClient:
     return SpotifyClient()

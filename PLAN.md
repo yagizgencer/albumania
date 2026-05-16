@@ -111,13 +111,34 @@ Each phase is sized to be 1–2 sittings. Test count is a floor, not a ceiling.
 - Frontend: `FriendDashboardPage` — full demo-style dashboard with toggle between "similarity" and "ratings" modes; album table; row click opens shared `AlbumDetailPage` showing both users' top 5 + Spotify side-by-side.
 - Tests: accepting a friendship with 2 mutually-rated albums seeds 2 entries with correct dates; publishing a third triggers a new entry; deleting a published rating removes its entry; unfriending removes all.
 
-### Phase 7 — Listen invites & Listen Later
-**Goal**: invite a friend to listen to an album; track shared progress.
-- Backend: `ListenInvite` model (`id`, `sender_id`, `receiver_id`, `album_id`, `status` enum [`pending`, `accepted`, `declined`, `completed`], `created_at`, `responded_at`). Endpoints: `POST /invites`, `POST /invites/{id}/accept`, `POST /invites/{id}/decline`, `GET /invites/me` (incoming/outgoing).
-- "Listen Later" is a **view**, not a new table: it's the union of (a) the user's own `draft` ratings (solo tab) and (b) accepted `ListenInvite`s for albums the user hasn't yet published (with-friends tab). Backend: `GET /listen-later/solo`, `GET /listen-later/with-friends`.
-- When both invitees publish ratings for the invited album, mark invite `completed` and ensure `FriendDashboardEntry` exists (it will via Phase 6 hooks — wire it in here).
-- Frontend: `ListenLaterPage` with two tabs; row → rating editor (Phase 3); invite modal on album detail.
-- Tests: invite happy path; "with friends" tab hides albums you've already published; completing both ratings flips status and the album appears in friend dashboard.
+### Phase 7 — Listen invites, Album info page & Listen Later
+**Goal**: a dedicated album info page that becomes the hub for "listen later" / "continue rating" / "invite a friend", plus a Listen Later view that splits drafts between solo and with-friends.
+
+- Backend
+  - `ListenInvite` model (`id`, `sender_username`, `receiver_username`, `album_id`, `status` enum [`pending`, `accepted`, `completed`], `created_at`, `responded_at`). Decline deletes the row (matches the friendship decline pattern). Unique `(sender, receiver, album)` while the row exists.
+  - Endpoints: `POST /invites` (body `{username, album_id}`), `POST /invites/{id}/accept`, `POST /invites/{id}/decline`, `GET /invites/me` (incoming / outgoing / completed).
+  - `POST /invites` rejects with 409 when:
+    - the receiver has already **published** a rating for the album (you can't ask a friend to listen to an album they're already done with), or
+    - an existing (pending / accepted / completed) invite between the same pair for the album already exists.
+  - "Listen Later" is a **view**, not a new table. Single endpoint `GET /listen-later` returns one entry per album where I either (a) have a draft rating, or (b) am a participant in a non-completed invite (as sender at any status, or as receiver after I've accepted). Each entry carries the album, my draft (or `null`), and a `participants` list — one entry per friend I'm sharing the album with, each tagged with direction (outgoing / incoming), invite status, and whether the friend has already published. An entry with an empty `participants` list is a pure solo draft. The UI renders one list and shows the "Listening with: …" chips inline.
+  - Deleting a rating (draft or published) also deletes every invite involving me for that album — I'm withdrawing from the shared listen, so the row disappears from my (and any participant's) Listen Later.
+  - When both sides of an invite publish ratings for the invited album, the invite flips to `completed` and `rebuild_for_pair` is called for the corresponding friendship. The Phase 6 publish hook already covers the friend-dashboard side; this phase adds the invite-completion side.
+
+- Frontend
+  - New **album info page** at `/albums/:spotifyId`. Shows album art (linking out to `https://open.spotify.com/album/{spotify_id}`), title / artist / release date / total songs, and the full track list with track index, name, and a hyperlink to the track's Spotify URL. The action column shows a single primary CTA chosen by current state:
+    - no rating yet → **"Listen Later"** (creates a draft and stays on the page) plus **"Start Rating"** (creates a draft and routes to the editor).
+    - existing draft → **"Continue Rating"** (routes to the editor).
+    - existing published rating → **"Rated"** (disabled / greyed out).
+    - Also an **"Invite a friend"** button that opens a modal with a scrollable, search-filterable list of the user's accepted friends; sending an invite hits `POST /invites` and surfaces the 409 error inline (friend already published / already invited).
+  - `ListenLaterPage` — a single list, no tabs. Each row links to the album info page and renders a "Listening with: …" chip list of every participant (empty for solo drafts).
+  - Album-art links update site-wide: dashboard (`ProfileDashboardPage`) and album-search rows now route to `/albums/:spotifyId` (the new info page); the album-art on the info page itself is the only one that points to `open.spotify.com`. The existing per-user `/users/:username/albums/:spotifyId` page (Phase 4 detail view with top-5 comparisons) remains for dashboard row clicks elsewhere.
+
+- Tests
+  - Invite happy path (create → accept → both publish → status `completed` + friend dashboard entry exists).
+  - `POST /invites` 409 when receiver already published or duplicate invite exists.
+  - `GET /listen-later/solo` excludes a draft once an invite for that album is created; the same draft appears in `with-friends` afterwards.
+  - `GET /listen-later/with-friends` hides albums you've already published.
+  - Auth tests: `POST /invites` 401 without token; accepting an invite you're not the receiver of returns 403.
 
 ### Phase 8 — Polish, hardening, deployment
 **Goal**: ship it.

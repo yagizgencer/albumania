@@ -1,4 +1,4 @@
-from sqlalchemy import Float, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import Float, ForeignKey, Integer, JSON, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.session import Base
@@ -14,6 +14,9 @@ class Album(Base):
     release_date: Mapped[str] = mapped_column(String(20), nullable=False)
     total_songs: Mapped[int] = mapped_column(Integer, nullable=False)
     album_art_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    # Cached Spotify top-5 track indices (1-based, sorted by popularity desc).
+    # Populated lazily on first dashboard request.
+    spotify_top5_indices: Mapped[list | None] = mapped_column(JSON, nullable=True)
 
     tracks: Mapped[list["AlbumTrack"]] = relationship(
         "AlbumTrack", back_populates="album", order_by="AlbumTrack.index"

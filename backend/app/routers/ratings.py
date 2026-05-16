@@ -11,6 +11,11 @@ from app.models.album import Album
 from app.models.rating import Rating, RatingStatus, SongNote
 from app.models.user import User
 from app.schemas.rating import RatingCreate, RatingOut, RatingPatch
+from app.services.friend_dashboard import rebuild_for_user
+from app.services.invite import (
+    delete_invites_for_user_album,
+    maybe_complete_invites_for_rating,
+)
 
 router = APIRouter(prefix="/ratings", tags=["ratings"])
 
@@ -146,6 +151,8 @@ def publish_rating(rating_id: int, user: CurrentUser, db: DB) -> Rating:
     rating.last_edited_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(rating, ["notes"])
+    rebuild_for_user(db, user.username)
+    maybe_complete_invites_for_rating(db, user.username, rating.album_id)
     return rating
 
 
@@ -153,5 +160,10 @@ def publish_rating(rating_id: int, user: CurrentUser, db: DB) -> Rating:
 def delete_rating(rating_id: int, user: CurrentUser, db: DB) -> None:
     rating = _get_rating_or_404(rating_id, db)
     _require_owner(rating, user)
+    was_published = rating.status == RatingStatus.published
+    album_id = rating.album_id
     db.delete(rating)
     db.commit()
+    delete_invites_for_user_album(db, user.username, album_id)
+    if was_published:
+        rebuild_for_user(db, user.username)

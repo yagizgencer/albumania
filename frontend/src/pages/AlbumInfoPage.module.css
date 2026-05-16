@@ -1,0 +1,199 @@
+.page {
+  padding: 1.5rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.header {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 1.5rem;
+  align-items: center;
+  margin-bottom: 2rem;
+  background: #fff;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid #e0e0e0;
+}
+
+.art {
+  width: 100%;
+  border-radius: 8px;
+  display: block;
+  transition: transform 0.15s ease;
+}
+
+.art:hover {
+  transform: scale(1.02);
+}
+
+.meta h1 {
+  margin: 0;
+}
+
+.meta h2 {
+  margin: 0.25rem 0 0.5rem;
+  font-weight: 400;
+  color: #555;
+}
+
+.meta p {
+  color: #666;
+  margin: 0 0 1rem;
+}
+
+.actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 0.55rem 1.1rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.btnPrimary {
+  background: #3e95cd;
+  color: white;
+}
+.btnPrimary:hover {
+  background: #357ab8;
+}
+
+.btnSecondary {
+  background: #f3f4f6;
+  color: #111827;
+  border: 1px solid #d1d5db;
+}
+.btnSecondary:hover {
+  background: #e5e7eb;
+}
+
+.btnDisabled {
+  background: #e5e7eb;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+.tracks {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+}
+
+.tracks h3 {
+  margin: 0 0 0.75rem;
+}
+
+.tracks ol {
+  margin: 0;
+  padding-left: 1.75rem;
+}
+
+.tracks li {
+  padding: 0.3rem 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.tracks li:last-child {
+  border-bottom: none;
+}
+
+.tracks a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px dotted #aaa;
+}
+
+.tracks a:hover {
+  border-bottom-color: #333;
+}
+
+.error {
+  color: #c1121f;
+  font-size: 0.9rem;
+  margin: 0.5rem 0;
+}
+
+.info {
+  color: #047857;
+  font-size: 0.9rem;
+  margin: 0.5rem 0;
+}
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 12px;
+  width: min(420px, 92vw);
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  padding: 1.25rem;
+}
+
+.modal h3 {
+  margin: 0 0 0.75rem;
+}
+
+.modal input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+}
+
+.friendList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  flex: 1;
+  border-top: 1px solid #f1f5f9;
+}
+
+.friendItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.55rem 0.25rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.friendItem button {
+  background: #3e95cd;
+  color: white;
+  border: none;
+  padding: 0.3rem 0.7rem;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.friendItem button:disabled {
+  background: #cbd5e1;
+  cursor: not-allowed;
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.75rem;
+}

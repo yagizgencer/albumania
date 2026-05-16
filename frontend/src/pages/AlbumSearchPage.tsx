@@ -39,7 +39,7 @@ export function AlbumSearchPage() {
   }, [query]);
 
   function handleSelect(album: AlbumSearchResult) {
-    navigate(`/albums/${album.spotify_id}/rate`);
+    navigate(`/albums/${album.spotify_id}`);
   }
 
   return (
