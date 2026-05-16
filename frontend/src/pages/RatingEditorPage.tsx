@@ -145,15 +145,15 @@ function TopSlot({
 function RestTrack({
   track,
   note,
-  canAdd,
+  topSlots,
   onNoteChange,
-  onAdd,
+  onSetSlot,
 }: {
   track: AlbumTrack;
   note: string;
-  canAdd: boolean;
+  topSlots: (number | null)[];
   onNoteChange: (idx: number, text: string) => void;
-  onAdd: (idx: number) => void;
+  onSetSlot: (slotIndex: number, trackIndex: number) => void;
 }) {
   return (
     <DraggableTrack
@@ -162,17 +162,58 @@ function RestTrack({
       note={note}
       onNoteChange={onNoteChange}
       actions={
-        canAdd ? (
-          <button
-            className={styles.trackBtn}
-            onClick={() => onAdd(track.index)}
-            type="button"
-          >
-            + Top 5
-          </button>
-        ) : undefined
+        <div className={styles.slotButtonRow} role="group" aria-label="Add to slot">
+          {topSlots.map((slotTrack, slotIndex) => (
+            <button
+              key={slotIndex}
+              type="button"
+              className={styles.slotButton}
+              onClick={() => onSetSlot(slotIndex, track.index)}
+              title={
+                slotTrack === null
+                  ? `Place in slot ${slotIndex + 1}`
+                  : `Replace slot ${slotIndex + 1}`
+              }
+            >
+              {slotIndex + 1}
+            </button>
+          ))}
+        </div>
       }
     />
+  );
+}
+
+// ---------------------------------------------------------------------------
+// RestPlaceholder — empty slot rendered when a track currently lives in Top 5,
+// so the rest list never collapses or reorders.
+// ---------------------------------------------------------------------------
+
+function RestPlaceholder({ track, slotIndex }: { track: AlbumTrack; slotIndex: number }) {
+  return (
+    <div className={`${styles.trackItem} ${styles.restPlaceholder}`}>
+      <div className={styles.trackRow}>
+        <span className={styles.dragHandle} aria-hidden="true">⠿</span>
+        <span className={styles.trackName}>{track.name}</span>
+        <span className={styles.restPlaceholderBadge}>In Top 5 · #{slotIndex + 1}</span>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// RestZone — droppable container that accepts top-5 tracks to remove them
+// ---------------------------------------------------------------------------
+
+function RestZone({ children }: { children: React.ReactNode }) {
+  const { setNodeRef, isOver } = useDroppable({ id: "rest-zone" });
+  return (
+    <div
+      ref={setNodeRef}
+      className={`${styles.restZone} ${isOver ? styles.restZoneOver : ""}`}
+    >
+      {children}
+    </div>
   );
 }
 
@@ -300,12 +341,13 @@ export function RatingEditorPage() {
     setNotes((prev) => ({ ...prev, [trackIndex]: text }));
   }
 
-  function handleAddToTop5(trackIndex: number) {
+  function handleSetSlot(slotIndex: number, trackIndex: number) {
     setTopSlots((prev) => {
-      const emptyIdx = prev.indexOf(null);
-      if (emptyIdx === -1) return prev;
       const next = [...prev];
-      next[emptyIdx] = trackIndex;
+      // If the track is already in another slot, clear that slot (track moves).
+      const existing = prev.indexOf(trackIndex);
+      if (existing !== -1) next[existing] = null;
+      next[slotIndex] = trackIndex;
       return next;
     });
   }
@@ -324,10 +366,17 @@ export function RatingEditorPage() {
     if (!over) return;
 
     const overId = String(over.id);
-    if (!overId.startsWith("slot-")) return;
-
-    const targetSlot = parseInt(overId.split("-")[1], 10);
     const activeStr = String(active.id);
+
+    // Drop a top-5 track onto the rest zone → remove from top 5.
+    if (overId === "rest-zone" && activeStr.startsWith("top-")) {
+      const trackIndex = parseInt(activeStr.split("-")[1], 10);
+      handleRemoveFromTop5(trackIndex);
+      return;
+    }
+
+    if (!overId.startsWith("slot-")) return;
+    const targetSlot = parseInt(overId.split("-")[1], 10);
 
     setTopSlots((prev) => {
       const next = [...prev];
@@ -354,8 +403,10 @@ export function RatingEditorPage() {
   if (!album) return null;
 
   const trackMap = new Map(album.tracks.map((t) => [t.index, t]));
-  const topTrackIndices = new Set(topSlots.filter((s): s is number => s !== null));
-  const restTracks = album.tracks.filter((t) => !topTrackIndices.has(t.index));
+  const slotByTrackIndex = new Map<number, number>();
+  topSlots.forEach((trackIndex, slotIndex) => {
+    if (trackIndex !== null) slotByTrackIndex.set(trackIndex, slotIndex);
+  });
   const isPublished = rating?.status === "published";
 
   // Track name for overlay
@@ -417,43 +468,50 @@ export function RatingEditorPage() {
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
-            {/* Top 5 */}
-            <div className={styles.section}>
-              <h2>Top 5 ({filledCount}/{TOP_5_SIZE})</h2>
-              <div className={styles.slotList}>
-                {topSlots.map((trackIndex, slotIndex) => (
-                  <TopSlot
-                    key={slotIndex}
-                    slotIndex={slotIndex}
-                    track={trackIndex !== null ? (trackMap.get(trackIndex) ?? null) : null}
-                    note={trackIndex !== null ? (notes[trackIndex] ?? "") : ""}
-                    onNoteChange={handleNoteChange}
-                    onRemove={handleRemoveFromTop5}
-                  />
-                ))}
-              </div>
-            </div>
+            <div className={styles.dndGrid}>
+              {/* Rest (left, scrollable) */}
+              <section className={styles.restColumn}>
+                <h2 className={styles.columnHeading}>All Tracks</h2>
+                <RestZone>
+                  <ul className={styles.trackList}>
+                    {album.tracks.map((track) => {
+                      const slotIndex = slotByTrackIndex.get(track.index);
+                      return (
+                        <li key={track.index}>
+                          {slotIndex !== undefined ? (
+                            <RestPlaceholder track={track} slotIndex={slotIndex} />
+                          ) : (
+                            <RestTrack
+                              track={track}
+                              note={notes[track.index] ?? ""}
+                              topSlots={topSlots}
+                              onNoteChange={handleNoteChange}
+                              onSetSlot={handleSetSlot}
+                            />
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </RestZone>
+              </section>
 
-            {/* Rest */}
-            <div className={styles.section}>
-              <h2>Remaining Tracks</h2>
-              {restTracks.length === 0 ? (
-                <p style={{ color: "#6b7280", fontSize: "0.9rem" }}>All tracks are in your Top 5.</p>
-              ) : (
-                <ul className={styles.trackList}>
-                  {restTracks.map((track) => (
-                    <li key={track.index}>
-                      <RestTrack
-                        track={track}
-                        note={notes[track.index] ?? ""}
-                        canAdd={filledCount < TOP_5_SIZE}
-                        onNoteChange={handleNoteChange}
-                        onAdd={handleAddToTop5}
-                      />
-                    </li>
+              {/* Top 5 (right, sticky) */}
+              <aside className={styles.topColumn}>
+                <h2 className={styles.columnHeading}>Top 5 ({filledCount}/{TOP_5_SIZE})</h2>
+                <div className={styles.slotList}>
+                  {topSlots.map((trackIndex, slotIndex) => (
+                    <TopSlot
+                      key={slotIndex}
+                      slotIndex={slotIndex}
+                      track={trackIndex !== null ? (trackMap.get(trackIndex) ?? null) : null}
+                      note={trackIndex !== null ? (notes[trackIndex] ?? "") : ""}
+                      onNoteChange={handleNoteChange}
+                      onRemove={handleRemoveFromTop5}
+                    />
                   ))}
-                </ul>
-              )}
+                </div>
+              </aside>
             </div>
 
             <DragOverlay>

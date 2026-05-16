@@ -11,7 +11,7 @@ from app.models.rating import Rating, RatingStatus
 from app.models.user import ProfileVisibility, User
 from app.schemas.dashboard import DashboardAlbum, DashboardEntry, DashboardResponse
 from app.schemas.friendship import UserSearchResult
-from app.schemas.user import UserResponse
+from app.schemas.user import UserResponse, UserUpdate
 from app.services.friendship import are_friends
 from app.services.similarity import compute_ranking_loss, compute_similarity_score
 from app.services.spotify import SpotifyClient, get_spotify_client
@@ -37,6 +37,28 @@ def search_users(
         .limit(limit)
     ).all()
     return [UserSearchResult.model_validate(u) for u in rows]
+
+
+@router.patch("/me", response_model=UserResponse)
+def update_me(
+    body: UserUpdate,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> UserResponse:
+    user = db.scalar(select(User).where(User.username == current_user.username))
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    data = body.model_dump(exclude_unset=True)
+    if "display_name" in data:
+        user.display_name = data["display_name"]
+    if "description" in data:
+        user.description = data["description"]
+    if "profile_visibility" in data:
+        user.profile_visibility = data["profile_visibility"]
+    db.commit()
+    db.refresh(user)
+    return UserResponse.model_validate(user)
 
 
 @router.get("/{username}", response_model=UserResponse)

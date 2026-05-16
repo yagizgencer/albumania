@@ -13,6 +13,7 @@ export interface AlbumTrack {
   index: number;
   name: string;
   spotify_url: string | null;
+  duration_ms: number | null;
 }
 
 export interface Album {

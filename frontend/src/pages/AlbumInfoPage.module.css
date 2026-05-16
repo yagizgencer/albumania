@@ -10,10 +10,11 @@
   gap: 1.5rem;
   align-items: center;
   margin-bottom: 2rem;
-  background: #fff;
+  background: var(--surface);
+  color: var(--text);
   padding: 1.5rem;
   border-radius: 12px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--border);
 }
 
 .art {
@@ -34,11 +35,11 @@
 .meta h2 {
   margin: 0.25rem 0 0.5rem;
   font-weight: 400;
-  color: #555;
+  color: var(--text-muted);
 }
 
 .meta p {
-  color: #666;
+  color: var(--text-muted);
   margin: 0 0 1rem;
 }
 
@@ -81,8 +82,9 @@
 }
 
 .tracks {
-  background: #fff;
-  border: 1px solid #e0e0e0;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 1rem 1.25rem;
 }
@@ -91,28 +93,50 @@
   margin: 0 0 0.75rem;
 }
 
-.tracks ol {
+.trackList {
+  list-style: none;
   margin: 0;
-  padding-left: 1.75rem;
+  padding: 0;
 }
 
-.tracks li {
-  padding: 0.3rem 0;
-  border-bottom: 1px solid #f1f5f9;
+.trackRow {
+  display: grid;
+  grid-template-columns: 2.25rem 1fr auto;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--surface-muted);
 }
 
-.tracks li:last-child {
+.trackRow:last-child {
   border-bottom: none;
+}
+
+.trackNum {
+  color: var(--text-subtle);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.trackName {
+  color: var(--text);
+  min-width: 0;
+}
+
+.trackDuration {
+  color: var(--text-subtle);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.9rem;
 }
 
 .tracks a {
   color: inherit;
   text-decoration: none;
-  border-bottom: 1px dotted #aaa;
+  border-bottom: 1px dotted var(--link-underline);
 }
 
 .tracks a:hover {
-  border-bottom-color: #333;
+  border-bottom-color: var(--link-underline-hover);
 }
 
 .error {
@@ -138,13 +162,15 @@
 }
 
 .modal {
-  background: #fff;
+  background: var(--surface);
+  color: var(--text);
   border-radius: 12px;
   width: min(420px, 92vw);
   max-height: 80vh;
   display: flex;
   flex-direction: column;
   padding: 1.25rem;
+  border: 1px solid var(--border);
 }
 
 .modal h3 {

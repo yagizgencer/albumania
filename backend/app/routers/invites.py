@@ -38,7 +38,12 @@ def _album_out(album: Album) -> AlbumOut:
         total_songs=album.total_songs,
         album_art_url=album.album_art_url,
         tracks=[
-            TrackOut(index=t.index, name=t.name, spotify_url=t.spotify_url)
+            TrackOut(
+                index=t.index,
+                name=t.name,
+                spotify_url=t.spotify_url,
+                duration_ms=t.duration_ms,
+            )
             for t in album.tracks
         ],
     )
@@ -148,12 +153,28 @@ def decline_invite(invite_id: int, user: CurrentUser, db: DB) -> None:
     db.commit()
 
 
+@router.delete("/{invite_id}", status_code=status.HTTP_204_NO_CONTENT)
+def cancel_invite(invite_id: int, user: CurrentUser, db: DB) -> None:
+    invite = _get_invite_or_404(db, invite_id)
+    if invite.sender_username != user.username:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Not your invite to cancel"
+        )
+    if invite.status != ListenInviteStatus.pending:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invite is not pending"
+        )
+    db.delete(invite)
+    db.commit()
+
+
 @router.get("/me", response_model=ListenInviteListResponse)
 def list_my_invites(user: CurrentUser, db: DB) -> ListenInviteListResponse:
     me = user.username
     rows = db.scalars(
         select(ListenInvite).where(
-            or_(ListenInvite.sender_username == me, ListenInvite.receiver_username == me)
+            ListenInvite.status == ListenInviteStatus.pending,
+            or_(ListenInvite.sender_username == me, ListenInvite.receiver_username == me),
         )
     ).all()
 
@@ -178,17 +199,14 @@ def list_my_invites(user: CurrentUser, db: DB) -> ListenInviteListResponse:
 
     incoming: list[ListenInviteWithAlbum] = []
     outgoing: list[ListenInviteWithAlbum] = []
-    completed: list[ListenInviteWithAlbum] = []
     for r in rows:
         out = to_out(r)
-        if r.status == ListenInviteStatus.completed:
-            completed.append(out)
-        elif r.sender_username == me:
+        if r.sender_username == me:
             outgoing.append(out)
         else:
             incoming.append(out)
 
-    return ListenInviteListResponse(incoming=incoming, outgoing=outgoing, completed=completed)
+    return ListenInviteListResponse(incoming=incoming, outgoing=outgoing)
 
 
 # Listen Later view ----------------------------------------------------------

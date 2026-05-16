@@ -24,17 +24,30 @@ ChartJS.register(
   Legend
 );
 
-type SortKey = "date" | "score" | "similarity";
+type SortColumn = "album" | "date" | "score" | "similarity";
+type SortDirection = "asc" | "desc";
+interface SortState {
+  column: SortColumn;
+  direction: SortDirection;
+}
 type Mode = "similarity" | "rating";
 
 export function ProfileDashboardPage() {
   const { username } = useParams<{ username: string }>();
-  const navigate = useNavigate();
+  if (!username) return null;
+  return (
+    <main className={styles.page}>
+      <ProfileDashboard username={username} />
+    </main>
+  );
+}
 
+export function ProfileDashboard({ username }: { username: string }) {
+  const navigate = useNavigate();
   const [entries, setEntries] = useState<DashboardEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const [sortKey, setSortKey] = useState<SortKey>("date");
+  const [sort, setSort] = useState<SortState | null>(null);
   const [artistFilter, setArtistFilter] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -44,6 +57,7 @@ export function ProfileDashboardPage() {
   useEffect(() => {
     if (!username) return;
     setError(null);
+    setEntries(null);
     getDashboard(username)
       .then((data) => setEntries(data.entries))
       .catch((err) => {
@@ -76,21 +90,35 @@ export function ProfileDashboardPage() {
 
   const sorted = useMemo(() => {
     const arr = [...filtered];
-    if (sortKey === "date") {
-      arr.sort((a, b) => a.completed_at.localeCompare(b.completed_at));
-    } else if (sortKey === "score") {
-      arr.sort((a, b) => b.score - a.score);
-    } else {
-      arr.sort(
-        (a, b) =>
-          (b.similarity_user_vs_spotify ?? -Infinity) -
-          (a.similarity_user_vs_spotify ?? -Infinity)
-      );
-    }
+    if (sort === null) return arr;
+    const dir = sort.direction === "asc" ? 1 : -1;
+    const cmp = (a: DashboardEntry, b: DashboardEntry): number => {
+      switch (sort.column) {
+        case "album":
+          return a.album.title.localeCompare(b.album.title) * dir;
+        case "date":
+          return a.completed_at.localeCompare(b.completed_at) * dir;
+        case "score":
+          return (a.score - b.score) * dir;
+        case "similarity": {
+          const av = a.similarity_user_vs_spotify ?? -Infinity;
+          const bv = b.similarity_user_vs_spotify ?? -Infinity;
+          return (av - bv) * dir;
+        }
+      }
+    };
+    arr.sort(cmp);
     return arr;
-  }, [filtered, sortKey]);
+  }, [filtered, sort]);
 
-  // Chart: always plot vs date (asc) — independent of table sort
+  function cycleSort(column: SortColumn) {
+    setSort((prev) => {
+      if (!prev || prev.column !== column) return { column, direction: "asc" };
+      if (prev.direction === "asc") return { column, direction: "desc" };
+      return null;
+    });
+  }
+
   const chartData = useMemo(() => {
     const byDate = [...filtered].sort((a, b) =>
       a.completed_at.localeCompare(b.completed_at)
@@ -105,7 +133,7 @@ export function ProfileDashboardPage() {
       let sum = 0;
       rawValues.forEach((v, i) => {
         sum += v;
-        values.push(sum / (i + 1)); // running average
+        values.push(sum / (i + 1));
       });
     } else {
       values.push(...rawValues);
@@ -127,33 +155,55 @@ export function ProfileDashboardPage() {
     };
   }, [filtered, mode, cumulative]);
 
-  if (error) return <main className={styles.page}><p className="error">{error}</p></main>;
-  if (!entries) return <main className={styles.page}><p>Loading…</p></main>;
+  if (error) return <p className="error">{error}</p>;
+  if (!entries) return <p>Loading…</p>;
 
   return (
-    <main className={styles.page}>
-      <header className={styles.header}>
-        <h1>{username}'s dashboard</h1>
-        <p>Compared to Spotify's most-popular tracks.</p>
-      </header>
-
+    <>
       <section className={styles.controls}>
-        <label>
-          Sort by
-          <select value={sortKey} onChange={(e) => setSortKey(e.target.value as SortKey)}>
-            <option value="date">Date</option>
-            <option value="score">Score</option>
-            <option value="similarity">Similarity</option>
-          </select>
-        </label>
+        <div className={styles.toggleGroup}>
+          <span className={styles.toggleLabel}>Metric</span>
+          <div className={styles.segmented} role="group" aria-label="Metric">
+            <button
+              type="button"
+              className={`${styles.seg} ${mode === "similarity" ? styles.segActive : ""}`}
+              onClick={() => setMode("similarity")}
+              aria-pressed={mode === "similarity"}
+            >
+              Similarity
+            </button>
+            <button
+              type="button"
+              className={`${styles.seg} ${mode === "rating" ? styles.segActive : ""}`}
+              onClick={() => setMode("rating")}
+              aria-pressed={mode === "rating"}
+            >
+              Rating
+            </button>
+          </div>
+        </div>
 
-        <label>
-          Mode
-          <select value={mode} onChange={(e) => setMode(e.target.value as Mode)}>
-            <option value="similarity">Similarity</option>
-            <option value="rating">Rating</option>
-          </select>
-        </label>
+        <div className={styles.toggleGroup}>
+          <span className={styles.toggleLabel}>Trend</span>
+          <div className={styles.segmented} role="group" aria-label="Trend">
+            <button
+              type="button"
+              className={`${styles.seg} ${!cumulative ? styles.segActive : ""}`}
+              onClick={() => setCumulative(false)}
+              aria-pressed={!cumulative}
+            >
+              Flat
+            </button>
+            <button
+              type="button"
+              className={`${styles.seg} ${cumulative ? styles.segActive : ""}`}
+              onClick={() => setCumulative(true)}
+              aria-pressed={cumulative}
+            >
+              Running avg
+            </button>
+          </div>
+        </div>
 
         <label>
           Artist / album
@@ -173,15 +223,6 @@ export function ProfileDashboardPage() {
         <label>
           To
           <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
-        </label>
-
-        <label style={{ flexDirection: "row", alignItems: "center" }}>
-          <input
-            type="checkbox"
-            checked={cumulative}
-            onChange={(e) => setCumulative(e.target.checked)}
-          />
-          Cumulative (running avg)
         </label>
       </section>
 
@@ -206,11 +247,10 @@ export function ProfileDashboardPage() {
         <table className={styles.table}>
           <thead>
             <tr>
-              <th>Album</th>
-              <th>Date</th>
-              <th>Score</th>
-              <th>Similarity</th>
-              <th>Tracks</th>
+              <SortableHeader label="Album" column="album" sort={sort} onClick={cycleSort} align="left" />
+              <SortableHeader label="Date" column="date" sort={sort} onClick={cycleSort} align="right" />
+              <SortableHeader label="Score" column="score" sort={sort} onClick={cycleSort} align="right" />
+              <SortableHeader label="Similarity" column="similarity" sort={sort} onClick={cycleSort} align="right" />
             </tr>
           </thead>
           <tbody>
@@ -221,34 +261,77 @@ export function ProfileDashboardPage() {
                 onClick={() => navigate(`/users/${username}/albums/${e.album.spotify_id}`)}
               >
                 <td>
-                  {e.album.album_art_url && (
-                    <img
-                      src={e.album.album_art_url}
-                      alt=""
-                      className={styles.albumArt}
-                      onClick={(ev) => {
-                        ev.stopPropagation();
-                        navigate(`/albums/${e.album.spotify_id}`);
-                      }}
-                    />
-                  )}
-                  <strong>{e.album.title}</strong>
-                  <br />
-                  <small>{e.album.artist}</small>
+                  <div className={styles.albumCell}>
+                    {e.album.album_art_url && (
+                      <img
+                        src={e.album.album_art_url}
+                        alt=""
+                        className={styles.albumArt}
+                        onClick={(ev) => {
+                          ev.stopPropagation();
+                          navigate(`/albums/${e.album.spotify_id}`);
+                        }}
+                      />
+                    )}
+                    <span className={styles.albumText}>
+                      <strong className={styles.albumTitle}>{e.album.title}</strong>
+                      <small className={styles.albumArtist}>{e.album.artist}</small>
+                    </span>
+                  </div>
                 </td>
-                <td>{e.completed_at.slice(0, 10)}</td>
-                <td>{e.score.toFixed(1)}</td>
-                <td>
+                <td className={styles.numCell}>{e.completed_at.slice(0, 10)}</td>
+                <td className={styles.numCell}>{e.score.toFixed(1)}</td>
+                <td className={styles.numCell}>
                   {e.similarity_user_vs_spotify === null
                     ? "—"
                     : e.similarity_user_vs_spotify.toFixed(2)}
                 </td>
-                <td>{e.album.total_songs}</td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
-    </main>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// SortableHeader — click to cycle asc → desc → none for this column
+// ---------------------------------------------------------------------------
+
+function SortableHeader({
+  label,
+  column,
+  sort,
+  onClick,
+  align,
+}: {
+  label: string;
+  column: SortColumn;
+  sort: SortState | null;
+  onClick: (column: SortColumn) => void;
+  align: "left" | "right";
+}) {
+  const active = sort?.column === column;
+  const indicator = !active ? "↕" : sort.direction === "asc" ? "▲" : "▼";
+  const ariaSort = !active
+    ? "none"
+    : sort.direction === "asc"
+    ? "ascending"
+    : "descending";
+  return (
+    <th
+      className={`${styles.th} ${align === "right" ? styles.thRight : ""}`}
+      aria-sort={ariaSort}
+    >
+      <button
+        type="button"
+        className={`${styles.sortBtn} ${active ? styles.sortBtnActive : ""}`}
+        onClick={() => onClick(column)}
+      >
+        <span>{label}</span>
+        <span className={styles.sortIcon} aria-hidden>{indicator}</span>
+      </button>
+    </th>
   );
 }

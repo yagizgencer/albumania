@@ -1,0 +1,363 @@
+.page {
+  padding: 1.5rem;
+  max-width: 1100px;
+  margin: 0 auto;
+  color: var(--text);
+}
+
+.card {
+  display: grid;
+  grid-template-columns: 88px 1fr auto;
+  gap: 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  align-items: start;
+}
+
+.avatar {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: #fff;
+  font-size: 2.25rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+.headerInfo {
+  min-width: 0;
+}
+
+.displayName {
+  margin: 0;
+  font-size: 1.6rem;
+  line-height: 1.2;
+}
+
+.username {
+  margin: 0.15rem 0 0.6rem;
+  color: var(--text-subtle);
+  font-size: 0.95rem;
+}
+
+.description {
+  margin: 0.4rem 0 0.6rem;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.descriptionPlaceholder {
+  margin: 0.4rem 0 0.6rem;
+  color: var(--text-subtle);
+  font-style: italic;
+  font-size: 0.9rem;
+}
+
+.memberSince {
+  margin: 0;
+  color: var(--text-subtle);
+  font-size: 0.85rem;
+}
+
+.headerActions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+
+.editBtn {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 0.45rem 0.9rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.editBtn:hover {
+  background: var(--surface-muted);
+}
+
+.friendBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: #4f46e5;
+  color: #fff;
+  border: 1px solid #4f46e5;
+  padding: 0.45rem 0.9rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.friendBtn:hover:not(:disabled) {
+  background: #4338ca;
+  border-color: #4338ca;
+}
+
+.friendBtn:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.friendBtnPending {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.friendBtnPending:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border-color: #ef4444;
+}
+
+.friendBtnAccept {
+  background: #059669;
+  border-color: #059669;
+}
+
+.friendBtnAccept:hover:not(:disabled) {
+  background: #047857;
+  border-color: #047857;
+}
+
+.friendBtnFriends {
+  background: transparent;
+  color: #059669;
+  border-color: #059669;
+}
+
+.friendBtnFriends:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border-color: #ef4444;
+}
+
+.friendIcon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.sectionTitle {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.dashboardSection {
+  margin-top: 1rem;
+}
+
+.dashboardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.dashboardHeader .sectionTitle {
+  margin: 0;
+}
+
+.compareControl {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.compareLabel {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.compareSelect {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.35rem 1.6rem 0.35rem 0.55rem;
+  font: inherit;
+  min-width: 12rem;
+}
+
+.combobox {
+  position: relative;
+  display: inline-block;
+}
+
+.comboClear {
+  position: absolute;
+  right: 0.4rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: var(--text-subtle);
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0 0.2rem;
+}
+
+.comboClear:hover {
+  color: var(--text);
+}
+
+.comboList {
+  position: absolute;
+  z-index: 20;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  list-style: none;
+  margin: 0;
+  padding: 0.25rem 0;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+  max-height: 16rem;
+  overflow-y: auto;
+}
+
+.comboItem {
+  padding: 0.4rem 0.7rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.comboItem:hover,
+.comboItemActive {
+  background: var(--surface-muted);
+}
+
+.comboItemActive {
+  font-weight: 600;
+}
+
+.comboEmpty {
+  padding: 0.5rem 0.7rem;
+  color: var(--text-subtle);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+.compareToggleBtn {
+  background: #4f46e5;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.45rem 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.compareToggleBtn:hover {
+  background: #4338ca;
+}
+
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.editor label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.editor input,
+.editor textarea,
+.editor select {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.45rem 0.6rem;
+  font: inherit;
+}
+
+.editor textarea {
+  resize: vertical;
+  font-family: inherit;
+}
+
+.editorActions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.saveBtn {
+  background: #4f46e5;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.saveBtn:hover:not(:disabled) {
+  background: #4338ca;
+}
+
+.cancelBtn {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cancelBtn:hover:not(:disabled) {
+  background: var(--surface-muted);
+}
+
+@media (max-width: 600px) {
+  .card {
+    grid-template-columns: 64px 1fr;
+  }
+
+  .avatar {
+    width: 64px;
+    height: 64px;
+    font-size: 1.6rem;
+  }
+
+  .headerActions {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: flex-start;
+  }
+}

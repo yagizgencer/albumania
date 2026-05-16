@@ -1,7 +1,8 @@
 .page {
-  max-width: 700px;
+  max-width: 1100px;
   margin: 2rem auto;
   padding: 0 1rem;
+  color: var(--text);
 }
 
 .albumHeader {
@@ -23,7 +24,7 @@
 
 .albumMeta p {
   margin: 0;
-  color: #666;
+  color: var(--text-muted);
   font-size: 0.9rem;
 }
 
@@ -58,7 +59,7 @@
   margin: 0 0 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #444;
+  color: var(--text-muted);
 }
 
 .scoreRow {
@@ -78,6 +79,7 @@
   font-weight: 700;
   min-width: 3rem;
   text-align: right;
+  color: var(--text);
 }
 
 .trackList {
@@ -90,10 +92,11 @@
 }
 
 .trackItem {
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
   border-radius: 6px;
   overflow: hidden;
+  color: var(--text);
 }
 
 .trackRow {
@@ -105,7 +108,7 @@
 
 .dragHandle {
   cursor: grab;
-  color: #9ca3af;
+  color: var(--text-subtle);
   font-size: 1rem;
   flex-shrink: 0;
   touch-action: none;
@@ -119,54 +122,84 @@
   font-weight: 700;
   font-size: 0.85rem;
   min-width: 1.5rem;
-  color: #4f46e5;
+  color: #6366f1;
 }
 
 .trackName {
   flex: 1;
   font-size: 0.95rem;
+  color: var(--text);
 }
 
 .trackBtn {
-  background: none;
-  border: 1px solid #d1d5db;
+  background: transparent;
+  border: 1px solid var(--border);
   border-radius: 4px;
   padding: 0.2rem 0.5rem;
   font-size: 0.75rem;
   cursor: pointer;
-  color: #374151;
+  color: var(--text);
   flex-shrink: 0;
 }
 
 .trackBtn:hover {
-  background: #f3f4f6;
+  background: var(--surface-muted);
 }
 
 .trackBtnRemove {
-  border-color: #fca5a5;
-  color: #b91c1c;
+  border-color: #ef4444;
+  color: #ef4444;
 }
 
 .trackBtnRemove:hover {
-  background: #fef2f2;
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.slotButtonRow {
+  display: inline-flex;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.slotButton {
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.slotButton:hover {
+  background: #4f46e5;
+  border-color: #4f46e5;
+  color: #fff;
 }
 
 .noteInput {
   width: 100%;
   box-sizing: border-box;
   border: none;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--border);
   padding: 0.4rem 0.75rem;
   font-size: 0.85rem;
   background: transparent;
   resize: none;
   font-family: inherit;
-  color: #374151;
+  color: var(--text);
   outline: none;
 }
 
 .noteInput::placeholder {
-  color: #9ca3af;
+  color: var(--text-subtle);
 }
 
 .slotList {
@@ -182,8 +215,8 @@
 }
 
 .slotOver {
-  border-color: #4f46e5;
-  background: #eef2ff;
+  border-color: #6366f1;
+  background: rgba(99, 102, 241, 0.12);
 }
 
 .slotEmpty {
@@ -191,15 +224,15 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.6rem 0.75rem;
-  border: 2px dashed #d1d5db;
+  border: 2px dashed var(--border);
   border-radius: 6px;
-  color: #9ca3af;
+  color: var(--text-subtle);
   font-size: 0.9rem;
 }
 
 .slotNumber {
   font-weight: 700;
-  color: #4f46e5;
+  color: #6366f1;
   min-width: 1.5rem;
 }
 
@@ -207,26 +240,82 @@
   font-style: italic;
 }
 
+.dndGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 1.5rem;
+  align-items: start;
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 800px) {
+  .dndGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.columnHeading {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.restColumn {
+  min-width: 0;
+}
+
+.topColumn {
+  position: sticky;
+  top: 1rem;
+}
+
+.restZone {
+  border-radius: 8px;
+  border: 2px dashed transparent;
+  padding: 0.25rem;
+  transition: border-color 0.15s, background 0.15s;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.restZoneOver {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.restPlaceholder {
+  opacity: 0.55;
+  background: transparent;
+  border-style: dashed;
+}
+
+.restPlaceholderBadge {
+  margin-left: auto;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6366f1;
+  background: rgba(99, 102, 241, 0.12);
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+}
+
 .overlayCard {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 0.75rem;
-  background: #fff;
+  background: var(--surface);
+  color: var(--text);
   border: 1px solid #6366f1;
   border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   font-size: 0.95rem;
   cursor: grabbing;
-}
-
-.emptyZone {
-  border: 2px dashed #d1d5db;
-  border-radius: 6px;
-  padding: 1.5rem;
-  text-align: center;
-  color: #9ca3af;
-  font-size: 0.9rem;
 }
 
 .actions {
@@ -264,13 +353,13 @@
 }
 
 .btnDanger {
-  background: #fff;
-  color: #b91c1c;
-  border: 1px solid #fca5a5;
+  background: transparent;
+  color: #ef4444;
+  border: 1px solid #ef4444;
 }
 
 .btnDanger:hover {
-  background: #fef2f2;
+  background: rgba(239, 68, 68, 0.12);
 }
 
 .btn:disabled {
@@ -279,7 +368,7 @@
 }
 
 .error {
-  color: #b91c1c;
+  color: #ef4444;
   font-size: 0.9rem;
   margin-top: 0.5rem;
 }
@@ -287,4 +376,5 @@
 .startBox {
   text-align: center;
   padding: 3rem 0;
+  color: var(--text);
 }

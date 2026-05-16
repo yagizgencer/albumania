@@ -21,6 +21,7 @@ class SpotifyTrack:
     index: int
     name: str
     spotify_url: str | None
+    duration_ms: int | None
 
 
 class SpotifyClient:
@@ -69,6 +70,7 @@ class SpotifyClient:
                     index=track["track_number"],
                     name=track["name"],
                     spotify_url=track["external_urls"].get("spotify"),
+                    duration_ms=track.get("duration_ms"),
                 )
             )
         return tracks

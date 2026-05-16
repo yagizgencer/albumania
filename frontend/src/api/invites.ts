@@ -21,7 +21,6 @@ export interface ListenInviteWithAlbum extends ListenInvite {
 export interface ListenInviteListResponse {
   incoming: ListenInviteWithAlbum[];
   outgoing: ListenInviteWithAlbum[];
-  completed: ListenInviteWithAlbum[];
 }
 
 export interface ListenLaterParticipant {
@@ -55,6 +54,10 @@ export async function acceptInvite(id: number): Promise<ListenInvite> {
 
 export async function declineInvite(id: number): Promise<void> {
   await apiClient.post(`/invites/${id}/decline`);
+}
+
+export async function cancelInvite(id: number): Promise<void> {
+  await apiClient.delete(`/invites/${id}`);
 }
 
 export async function listMyInvites(): Promise<ListenInviteListResponse> {

@@ -6,6 +6,7 @@ import {
   type FriendDashboardEntry,
   type FriendDashboardResponse,
 } from "../api/friendDashboard";
+import { formatDuration } from "../utils/duration";
 import styles from "./AlbumDetailPage.module.css";
 
 export function FriendAlbumDetailPage() {
@@ -79,6 +80,13 @@ export function FriendAlbumDetailPage() {
             <strong>Rated:</strong> {entry.mutual_date.slice(0, 10)}
             <br />
             <strong>Total songs:</strong> {album.total_songs}
+            {album.tracks.some((t) => t.duration_ms != null) && (
+              <>
+                <br />
+                <strong>Total duration:</strong>{" "}
+                {formatDuration(album.tracks.reduce((s, t) => s + (t.duration_ms ?? 0), 0))}
+              </>
+            )}
           </p>
 
           <div className={styles.metricRow}>
@@ -136,11 +144,19 @@ function TopList({ title, tracks }: TopListProps) {
       <ol>
         {tracks.map((t) => (
           <li key={t.index}>
-            {t.spotify_url ? (
-              <a href={t.spotify_url} target="_blank" rel="noreferrer">{t.name}</a>
-            ) : (
-              t.name
-            )}
+            <span className={styles.trackRowInner}>
+              <span className={styles.trackRowName}>
+                {t.spotify_url ? (
+                  <a href={t.spotify_url} target="_blank" rel="noreferrer">{t.name}</a>
+                ) : (
+                  t.name
+                )}
+              </span>
+              <span className={styles.trackRowMeta}>
+                #{t.index}
+                {t.duration_ms != null && <> · {formatDuration(t.duration_ms)}</>}
+              </span>
+            </span>
           </li>
         ))}
       </ol>

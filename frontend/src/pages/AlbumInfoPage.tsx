@@ -12,6 +12,7 @@ import {
 } from "../api/ratings";
 import { useAuth } from "../context/AuthContext";
 import { listFriendships, type Friendship } from "../api/friendships";
+import { formatDuration } from "../utils/duration";
 import styles from "./AlbumInfoPage.module.css";
 
 interface FriendForInvite {
@@ -89,6 +90,9 @@ export function AlbumInfoPage() {
   if (loading) return <main className={styles.page}><p>Loading…</p></main>;
   if (error || !album) return <main className={styles.page}><p className={styles.error}>{error ?? "Not found."}</p></main>;
 
+  const totalMs = album.tracks.reduce((sum, t) => sum + (t.duration_ms ?? 0), 0);
+  const hasAnyDuration = album.tracks.some((t) => t.duration_ms != null);
+
   return (
     <main className={styles.page}>
       <header className={styles.header}>
@@ -107,6 +111,7 @@ export function AlbumInfoPage() {
           <h2>{album.artist}</h2>
           <p>
             Released {album.release_date} · {album.total_songs} tracks
+            {hasAnyDuration && <> · {formatDuration(totalMs)}</>}
           </p>
 
           <div className={styles.actions}>
@@ -159,19 +164,23 @@ export function AlbumInfoPage() {
 
       <section className={styles.tracks}>
         <h3>Tracks</h3>
-        <ol>
+        <ul className={styles.trackList}>
           {album.tracks.map((t) => (
-            <li key={t.index}>
-              {t.spotify_url ? (
-                <a href={t.spotify_url} target="_blank" rel="noreferrer">
-                  {t.name}
-                </a>
-              ) : (
-                t.name
-              )}
+            <li key={t.index} className={styles.trackRow}>
+              <span className={styles.trackNum}>{t.index}.</span>
+              <span className={styles.trackName}>
+                {t.spotify_url ? (
+                  <a href={t.spotify_url} target="_blank" rel="noreferrer">
+                    {t.name}
+                  </a>
+                ) : (
+                  t.name
+                )}
+              </span>
+              <span className={styles.trackDuration}>{formatDuration(t.duration_ms)}</span>
             </li>
           ))}
-        </ol>
+        </ul>
       </section>
 
       {inviteModalOpen && me && (

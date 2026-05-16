@@ -10,10 +10,11 @@
   gap: 1.5rem;
   align-items: center;
   margin-bottom: 2rem;
-  background: #fff;
+  background: var(--surface);
+  color: var(--text);
   padding: 1.5rem;
   border-radius: 12px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--border);
 }
 
 .art {
@@ -28,7 +29,7 @@
 .meta h2 {
   margin: 0.25rem 0 1rem;
   font-weight: 400;
-  color: #555;
+  color: var(--text-muted);
 }
 
 .metricRow {
@@ -44,7 +45,7 @@
 .metric strong {
   display: block;
   font-size: 1.05rem;
-  color: #333;
+  color: var(--text);
   font-weight: 600;
   line-height: 1.5;
 }
@@ -80,8 +81,9 @@
 }
 
 .column {
-  background: #fff;
-  border: 1px solid #e0e0e0;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 1rem 1.25rem;
 }
@@ -99,12 +101,30 @@
   padding: 0.25rem 0;
 }
 
+.trackRowInner {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  width: calc(100% - 0.25rem);
+}
+
+.trackRowName {
+  flex: 1;
+  min-width: 0;
+}
+
+.trackRowMeta {
+  color: var(--text-subtle);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
 .column a {
   color: inherit;
   text-decoration: none;
-  border-bottom: 1px dotted #aaa;
+  border-bottom: 1px dotted var(--link-underline);
 }
 
 .column a:hover {
-  border-bottom-color: #333;
+  border-bottom-color: var(--link-underline-hover);
 }

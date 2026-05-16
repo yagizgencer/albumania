@@ -31,7 +31,6 @@ class ListenInviteWithAlbum(ListenInviteOut):
 class ListenInviteListResponse(BaseModel):
     incoming: list[ListenInviteWithAlbum]
     outgoing: list[ListenInviteWithAlbum]
-    completed: list[ListenInviteWithAlbum]
 
 
 class ListenLaterParticipant(BaseModel):

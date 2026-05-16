@@ -2,15 +2,16 @@
   padding: 1.5rem;
   max-width: 1000px;
   margin: 0 auto;
+  color: var(--text);
 }
 
 .empty {
-  background: #fff;
-  border: 1px dashed #d1d5db;
+  background: var(--surface);
+  border: 1px dashed var(--border);
   border-radius: 12px;
   padding: 2rem;
   text-align: center;
-  color: #6b7280;
+  color: var(--text-subtle);
 }
 
 .list {
@@ -23,8 +24,9 @@
   display: grid;
   grid-template-columns: 80px 1fr auto;
   gap: 1rem;
-  background: #fff;
-  border: 1px solid #e0e0e0;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 0.75rem;
   align-items: center;
@@ -45,7 +47,7 @@
 
 .info p {
   margin: 0.1rem 0;
-  color: #555;
+  color: var(--text-muted);
   font-size: 0.9rem;
 }
 
@@ -76,7 +78,7 @@
 
 .action {
   background: #3e95cd;
-  color: white;
+  color: #fff;
   border: none;
   padding: 0.5rem 1rem;
   border-radius: 6px;
@@ -91,7 +93,7 @@
 }
 
 .solo {
-  color: #9ca3af;
+  color: var(--text-subtle);
   font-style: italic;
   font-size: 0.85rem;
 }
@@ -103,7 +105,7 @@
 .incomingSection h2 {
   font-size: 1.1rem;
   margin: 0 0 0.5rem;
-  color: #374151;
+  color: var(--text-muted);
 }
 
 .inviteActions {
@@ -113,9 +115,9 @@
 }
 
 .actionGhost {
-  background: #f3f4f6;
-  color: #111827;
-  border: 1px solid #d1d5db;
+  background: var(--surface-muted);
+  color: var(--text);
+  border: 1px solid var(--border);
   padding: 0.5rem 1rem;
   border-radius: 6px;
   cursor: pointer;
@@ -124,5 +126,5 @@
 }
 
 .actionGhost:hover {
-  background: #e5e7eb;
+  background: var(--border);
 }

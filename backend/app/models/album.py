@@ -31,6 +31,7 @@ class AlbumTrack(Base):
     index: Mapped[int] = mapped_column(Integer, nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     spotify_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    duration_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     album: Mapped["Album"] = relationship("Album", back_populates="tracks")
 

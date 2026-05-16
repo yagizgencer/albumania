@@ -60,7 +60,15 @@ def get_or_import_album(
     db.flush()
 
     for t in track_data:
-        db.add(AlbumTrack(album_id=album.id, index=t.index, name=t.name, spotify_url=t.spotify_url))
+        db.add(
+            AlbumTrack(
+                album_id=album.id,
+                index=t.index,
+                name=t.name,
+                spotify_url=t.spotify_url,
+                duration_ms=t.duration_ms,
+            )
+        )
 
     db.commit()
     db.refresh(album)
@@ -76,5 +84,13 @@ def _to_album_out(album: Album) -> AlbumOut:
         release_date=album.release_date,
         total_songs=album.total_songs,
         album_art_url=album.album_art_url,
-        tracks=[TrackOut(index=t.index, name=t.name, spotify_url=t.spotify_url) for t in album.tracks],
+        tracks=[
+            TrackOut(
+                index=t.index,
+                name=t.name,
+                spotify_url=t.spotify_url,
+                duration_ms=t.duration_ms,
+            )
+            for t in album.tracks
+        ],
     )

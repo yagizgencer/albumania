@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   acceptInvite,
+  cancelInvite,
   declineInvite,
   listMyInvites,
   type ListenInviteWithAlbum,
@@ -17,7 +18,7 @@ export function InvitesPage() {
     try {
       const invites = await listMyInvites();
       setIncoming(invites.incoming);
-      setOutgoing(invites.outgoing.filter((i) => i.status === "pending"));
+      setOutgoing(invites.outgoing);
     } catch {
       setError("Could not load invites.");
     }
@@ -37,6 +38,11 @@ export function InvitesPage() {
     await reload();
   }
 
+  async function handleCancel(id: number) {
+    await cancelInvite(id);
+    await reload();
+  }
+
   if (error) return <main className={styles.page}><p>{error}</p></main>;
   if (incoming === null) return <main className={styles.page}><p>Loading…</p></main>;
 
@@ -48,7 +54,7 @@ export function InvitesPage() {
 
       {empty && (
         <div className={styles.empty}>
-          No pending invites. Open an album and tap "Invite a friend" to start one.
+          No invites. Open an album and tap "Invite a friend" to start one.
         </div>
       )}
 
@@ -73,7 +79,7 @@ export function InvitesPage() {
           <h2>Outgoing</h2>
           <div className={styles.list}>
             {outgoing.map((inv) => (
-              <OutgoingInviteRow key={inv.id} invite={inv} />
+              <OutgoingInviteRow key={inv.id} invite={inv} onCancel={handleCancel} />
             ))}
           </div>
         </section>
@@ -82,7 +88,18 @@ export function InvitesPage() {
   );
 }
 
-function OutgoingInviteRow({ invite }: { invite: ListenInviteWithAlbum }) {
+function OutgoingInviteRow({
+  invite,
+  onCancel,
+}: {
+  invite: ListenInviteWithAlbum;
+  onCancel: (id: number) => Promise<void>;
+}) {
+  const [busy, setBusy] = useState(false);
+  async function handleCancel() {
+    setBusy(true);
+    try { await onCancel(invite.id); } finally { setBusy(false); }
+  }
   return (
     <article className={styles.row}>
       <Link to={`/albums/${invite.album.spotify_id}`}>
@@ -101,13 +118,17 @@ function OutgoingInviteRow({ invite }: { invite: ListenInviteWithAlbum }) {
           </Link>
         </h3>
         <p>{invite.album.artist} · {invite.album.release_date.slice(0, 4)}</p>
-        <p style={{ color: "#6b7280", fontSize: "0.85rem" }}>
+        <p className={styles.solo}>
           Waiting on {invite.receiver_username} to accept.
         </p>
       </div>
-      <span className={`${styles.chip} ${styles.chipPending}`} style={{ alignSelf: "center" }}>
-        Pending
-      </span>
+      <button
+        className={styles.actionGhost}
+        onClick={handleCancel}
+        disabled={busy}
+      >
+        Cancel
+      </button>
     </article>
   );
 }
@@ -144,7 +165,7 @@ function IncomingInviteRow({
           </Link>
         </h3>
         <p>{invite.album.artist} · {invite.album.release_date.slice(0, 4)}</p>
-        <p style={{ color: "#6b7280", fontSize: "0.85rem" }}>
+        <p className={styles.solo}>
           {invite.sender_username} invited you to listen.
         </p>
       </div>

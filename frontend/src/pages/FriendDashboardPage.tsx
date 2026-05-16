@@ -47,6 +47,17 @@ const MEAN_COLOR = "#555";
 
 export function FriendDashboardPage() {
   const { friendshipId } = useParams<{ friendshipId: string }>();
+  if (!friendshipId) return null;
+  const id = Number(friendshipId);
+  if (!Number.isFinite(id)) return null;
+  return (
+    <main className={styles.page}>
+      <FriendDashboard friendshipId={id} />
+    </main>
+  );
+}
+
+export function FriendDashboard({ friendshipId }: { friendshipId: number }) {
   const navigate = useNavigate();
 
   const [data, setData] = useState<FriendDashboardResponse | null>(null);
@@ -60,11 +71,9 @@ export function FriendDashboardPage() {
   const [mode, setMode] = useState<Mode>("similarity");
 
   useEffect(() => {
-    if (!friendshipId) return;
-    const id = Number(friendshipId);
-    if (!Number.isFinite(id)) return;
     setError(null);
-    getFriendDashboard(id)
+    setData(null);
+    getFriendDashboard(friendshipId)
       .then(setData)
       .catch((err) => {
         if (err?.response?.status === 403) {
@@ -197,15 +206,15 @@ export function FriendDashboardPage() {
     return { labels, datasets };
   }, [filtered, mode, cumulative, data]);
 
-  if (error) return <main className={styles.page}><p className="error">{error}</p></main>;
-  if (!data) return <main className={styles.page}><p>Loading…</p></main>;
+  if (error) return <p className="error">{error}</p>;
+  if (!data) return <p>Loading…</p>;
 
   return (
-    <main className={styles.page}>
+    <>
       <header className={styles.header}>
-        <h1>
+        <h2 style={{ margin: 0 }}>
           {data.user_a_username} ↔ {data.user_b_username}
-        </h1>
+        </h2>
         <p>Albums you've both published a rating for.</p>
       </header>
 
@@ -324,7 +333,7 @@ export function FriendDashboardPage() {
           </tbody>
         </table>
       )}
-    </main>
+    </>
   );
 }
 

@@ -24,7 +24,12 @@ _FAKE_ALBUM = SpotifyAlbumResult(
 )
 
 _FAKE_TRACKS = [
-    SpotifyTrack(index=i, name=f"Track {i}", spotify_url=f"https://open.spotify.com/track/{i}")
+    SpotifyTrack(
+        index=i,
+        name=f"Track {i}",
+        spotify_url=f"https://open.spotify.com/track/{i}",
+        duration_ms=180_000 + i * 1000,
+    )
     for i in range(1, 11)
 ]
 

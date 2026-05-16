@@ -20,6 +20,7 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(254), unique=True, nullable=False, index=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     display_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    description: Mapped[str | None] = mapped_column(String(500), nullable=True)
     profile_visibility: Mapped[ProfileVisibility] = mapped_column(
         Enum(ProfileVisibility), nullable=False, default=ProfileVisibility.public
     )

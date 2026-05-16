@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getAlbum, type Album } from "../api/albums";
 import { getDashboard, type DashboardEntry } from "../api/dashboard";
+import { formatDuration } from "../utils/duration";
 import styles from "./AlbumDetailPage.module.css";
 
 export function AlbumDetailPage() {
@@ -59,6 +60,12 @@ export function AlbumDetailPage() {
           <h2>{album.artist}</h2>
           <p>
             Released {album.release_date} · {album.total_songs} tracks
+            {album.tracks.some((t) => t.duration_ms != null) && (
+              <>
+                {" "}
+                · {formatDuration(album.tracks.reduce((s, t) => s + (t.duration_ms ?? 0), 0))}
+              </>
+            )}
           </p>
           <div className={styles.metricRow}>
             <div className={styles.metric}>
@@ -87,13 +94,21 @@ export function AlbumDetailPage() {
           <ol>
             {userTracks.map((t) => (
               <li key={t.index}>
-                {t.spotify_url ? (
-                  <a href={t.spotify_url} target="_blank" rel="noreferrer">
-                    {t.name}
-                  </a>
-                ) : (
-                  t.name
-                )}
+                <span className={styles.trackRowInner}>
+                  <span className={styles.trackRowName}>
+                    {t.spotify_url ? (
+                      <a href={t.spotify_url} target="_blank" rel="noreferrer">
+                        {t.name}
+                      </a>
+                    ) : (
+                      t.name
+                    )}
+                  </span>
+                  <span className={styles.trackRowMeta}>
+                    #{t.index}
+                    {t.duration_ms != null && <> · {formatDuration(t.duration_ms)}</>}
+                  </span>
+                </span>
               </li>
             ))}
           </ol>
@@ -104,13 +119,21 @@ export function AlbumDetailPage() {
           <ol>
             {spotifyTracks.map((t) => (
               <li key={t.index}>
-                {t.spotify_url ? (
-                  <a href={t.spotify_url} target="_blank" rel="noreferrer">
-                    {t.name}
-                  </a>
-                ) : (
-                  t.name
-                )}
+                <span className={styles.trackRowInner}>
+                  <span className={styles.trackRowName}>
+                    {t.spotify_url ? (
+                      <a href={t.spotify_url} target="_blank" rel="noreferrer">
+                        {t.name}
+                      </a>
+                    ) : (
+                      t.name
+                    )}
+                  </span>
+                  <span className={styles.trackRowMeta}>
+                    #{t.index}
+                    {t.duration_ms != null && <> · {formatDuration(t.duration_ms)}</>}
+                  </span>
+                </span>
               </li>
             ))}
           </ol>

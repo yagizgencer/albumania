@@ -169,6 +169,55 @@ def test_accept_invite_only_by_receiver(client: TestClient) -> None:
     _clear_auth()
 
 
+def test_cancel_deletes_invite(client: TestClient) -> None:
+    alice = _seed_user("alice")
+    bob = _seed_user("bob")
+    a1 = _seed_album()
+    _send_and_accept_friendship(client, alice, bob)
+
+    _auth_as(alice)
+    iid = client.post("/invites", json={"username": "bob", "album_id": a1}).json()["id"]
+    assert client.delete(f"/invites/{iid}").status_code == 204
+    _clear_auth()
+
+    db = _db()
+    assert db.query(ListenInvite).count() == 0
+
+
+def test_cancel_only_by_sender(client: TestClient) -> None:
+    alice = _seed_user("alice")
+    bob = _seed_user("bob")
+    a1 = _seed_album()
+    _send_and_accept_friendship(client, alice, bob)
+
+    _auth_as(alice)
+    iid = client.post("/invites", json={"username": "bob", "album_id": a1}).json()["id"]
+    _clear_auth()
+    _auth_as(bob)
+    # Receiver cannot cancel; they must decline.
+    assert client.delete(f"/invites/{iid}").status_code == 403
+    _clear_auth()
+
+
+def test_accepted_and_completed_invites_hidden_from_invites_page(client: TestClient) -> None:
+    alice = _seed_user("alice")
+    bob = _seed_user("bob")
+    a1 = _seed_album()
+    _send_and_accept_friendship(client, alice, bob)
+
+    _auth_as(alice)
+    iid = client.post("/invites", json={"username": "bob", "album_id": a1}).json()["id"]
+    _clear_auth()
+    _auth_as(bob)
+    client.post(f"/invites/{iid}/accept")
+    # Once accepted, neither side sees it under /invites/me.
+    assert client.get("/invites/me").json() == {"incoming": [], "outgoing": []}
+    _clear_auth()
+    _auth_as(alice)
+    assert client.get("/invites/me").json() == {"incoming": [], "outgoing": []}
+    _clear_auth()
+
+
 def test_decline_deletes_invite(client: TestClient) -> None:
     alice = _seed_user("alice")
     bob = _seed_user("bob")

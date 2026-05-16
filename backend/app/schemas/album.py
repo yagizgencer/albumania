@@ -15,6 +15,7 @@ class TrackOut(BaseModel):
     index: int
     name: str
     spotify_url: str | None
+    duration_ms: int | None = None
 
     model_config = {"from_attributes": True}
 
