@@ -10,7 +10,7 @@ import {
 } from "chart.js";
 import { useEffect, useMemo, useState } from "react";
 import { Line } from "react-chartjs-2";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   getFriendDashboard,
   type FriendDashboardEntry,
@@ -28,15 +28,23 @@ ChartJS.register(
   Legend
 );
 
-type SortKey =
-  | "date"
-  | "release-date"
-  | "mean"
+type SortColumn =
+  | "album"
+  | "release"
+  | "rated"
   | "a-score"
   | "b-score"
+  | "mean"
   | "pair-similarity"
   | "a-similarity"
   | "b-similarity";
+
+type SortDirection = "asc" | "desc";
+
+interface SortState {
+  column: SortColumn;
+  direction: SortDirection;
+}
 
 type Mode = "similarity" | "ratings";
 
@@ -45,25 +53,13 @@ const B_COLOR = "#e91e63";
 const PAIR_COLOR = "#3e95cd";
 const MEAN_COLOR = "#555";
 
-export function FriendDashboardPage() {
-  const { friendshipId } = useParams<{ friendshipId: string }>();
-  if (!friendshipId) return null;
-  const id = Number(friendshipId);
-  if (!Number.isFinite(id)) return null;
-  return (
-    <main className={styles.page}>
-      <FriendDashboard friendshipId={id} />
-    </main>
-  );
-}
-
 export function FriendDashboard({ friendshipId }: { friendshipId: number }) {
   const navigate = useNavigate();
 
   const [data, setData] = useState<FriendDashboardResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const [sortKey, setSortKey] = useState<SortKey>("date");
+  const [sort, setSort] = useState<SortState | null>(null);
   const [artistFilter, setArtistFilter] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -107,36 +103,42 @@ export function FriendDashboard({ friendshipId }: { friendshipId: number }) {
 
   const sorted = useMemo(() => {
     const arr = [...filtered];
-    const sims = (e: FriendDashboardEntry, key: "similarity_users" | "similarity_a_vs_spotify" | "similarity_b_vs_spotify") =>
-      e[key] ?? -Infinity;
-    switch (sortKey) {
-      case "date":
-        arr.sort((a, b) => a.mutual_date.localeCompare(b.mutual_date));
-        break;
-      case "release-date":
-        arr.sort((a, b) => a.album.release_date.localeCompare(b.album.release_date));
-        break;
-      case "mean":
-        arr.sort((a, b) => b.mean_score - a.mean_score);
-        break;
-      case "a-score":
-        arr.sort((a, b) => b.user_a_score - a.user_a_score);
-        break;
-      case "b-score":
-        arr.sort((a, b) => b.user_b_score - a.user_b_score);
-        break;
-      case "pair-similarity":
-        arr.sort((a, b) => sims(b, "similarity_users") - sims(a, "similarity_users"));
-        break;
-      case "a-similarity":
-        arr.sort((a, b) => sims(b, "similarity_a_vs_spotify") - sims(a, "similarity_a_vs_spotify"));
-        break;
-      case "b-similarity":
-        arr.sort((a, b) => sims(b, "similarity_b_vs_spotify") - sims(a, "similarity_b_vs_spotify"));
-        break;
-    }
+    if (sort === null) return arr;
+    const dir = sort.direction === "asc" ? 1 : -1;
+    const sim = (v: number | null) => v ?? -Infinity;
+    const cmp = (a: FriendDashboardEntry, b: FriendDashboardEntry): number => {
+      switch (sort.column) {
+        case "album":
+          return a.album.title.localeCompare(b.album.title) * dir;
+        case "release":
+          return a.album.release_date.localeCompare(b.album.release_date) * dir;
+        case "rated":
+          return a.mutual_date.localeCompare(b.mutual_date) * dir;
+        case "a-score":
+          return (a.user_a_score - b.user_a_score) * dir;
+        case "b-score":
+          return (a.user_b_score - b.user_b_score) * dir;
+        case "mean":
+          return (a.mean_score - b.mean_score) * dir;
+        case "pair-similarity":
+          return (sim(a.similarity_users) - sim(b.similarity_users)) * dir;
+        case "a-similarity":
+          return (sim(a.similarity_a_vs_spotify) - sim(b.similarity_a_vs_spotify)) * dir;
+        case "b-similarity":
+          return (sim(a.similarity_b_vs_spotify) - sim(b.similarity_b_vs_spotify)) * dir;
+      }
+    };
+    arr.sort(cmp);
     return arr;
-  }, [filtered, sortKey]);
+  }, [filtered, sort]);
+
+  function cycleSort(column: SortColumn) {
+    setSort((prev) => {
+      if (!prev || prev.column !== column) return { column, direction: "asc" };
+      if (prev.direction === "asc") return { column, direction: "desc" };
+      return null;
+    });
+  }
 
   const chartData = useMemo(() => {
     const byDate = [...filtered].sort((a, b) =>
@@ -219,27 +221,49 @@ export function FriendDashboard({ friendshipId }: { friendshipId: number }) {
       </header>
 
       <section className={styles.controls}>
-        <label>
-          Mode
-          <select value={mode} onChange={(e) => setMode(e.target.value as Mode)}>
-            <option value="similarity">Similarity</option>
-            <option value="ratings">Ratings</option>
-          </select>
-        </label>
+        <div className={styles.toggleGroup}>
+          <span className={styles.toggleLabel}>Metric</span>
+          <div className={styles.segmented} role="group" aria-label="Metric">
+            <button
+              type="button"
+              className={`${styles.seg} ${mode === "similarity" ? styles.segActive : ""}`}
+              onClick={() => setMode("similarity")}
+              aria-pressed={mode === "similarity"}
+            >
+              Similarity
+            </button>
+            <button
+              type="button"
+              className={`${styles.seg} ${mode === "ratings" ? styles.segActive : ""}`}
+              onClick={() => setMode("ratings")}
+              aria-pressed={mode === "ratings"}
+            >
+              Ratings
+            </button>
+          </div>
+        </div>
 
-        <label>
-          Sort by
-          <select value={sortKey} onChange={(e) => setSortKey(e.target.value as SortKey)}>
-            <option value="date">Rating date</option>
-            <option value="release-date">Release date</option>
-            <option value="mean">Mean score</option>
-            <option value="a-score">{data.user_a_username} score</option>
-            <option value="b-score">{data.user_b_username} score</option>
-            <option value="pair-similarity">{data.user_a_username} ↔ {data.user_b_username}</option>
-            <option value="a-similarity">{data.user_a_username} ↔ Spotify</option>
-            <option value="b-similarity">{data.user_b_username} ↔ Spotify</option>
-          </select>
-        </label>
+        <div className={styles.toggleGroup}>
+          <span className={styles.toggleLabel}>Trend</span>
+          <div className={styles.segmented} role="group" aria-label="Trend">
+            <button
+              type="button"
+              className={`${styles.seg} ${!cumulative ? styles.segActive : ""}`}
+              onClick={() => setCumulative(false)}
+              aria-pressed={!cumulative}
+            >
+              Flat
+            </button>
+            <button
+              type="button"
+              className={`${styles.seg} ${cumulative ? styles.segActive : ""}`}
+              onClick={() => setCumulative(true)}
+              aria-pressed={cumulative}
+            >
+              Running avg
+            </button>
+          </div>
+        </div>
 
         <label>
           Artist / album
@@ -259,15 +283,6 @@ export function FriendDashboard({ friendshipId }: { friendshipId: number }) {
         <label>
           To
           <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
-        </label>
-
-        <label style={{ flexDirection: "row", alignItems: "center" }}>
-          <input
-            type="checkbox"
-            checked={cumulative}
-            onChange={(e) => setCumulative(e.target.checked)}
-          />
-          Cumulative (running avg)
         </label>
       </section>
 
@@ -292,15 +307,15 @@ export function FriendDashboard({ friendshipId }: { friendshipId: number }) {
         <table className={styles.table}>
           <thead>
             <tr>
-              <th>Album</th>
-              <th>Release</th>
-              <th>Rated</th>
-              <th>{data.user_a_username}</th>
-              <th>{data.user_b_username}</th>
-              <th>Mean</th>
-              <th>{data.user_a_username} ↔ {data.user_b_username}</th>
-              <th>{data.user_a_username} ↔ Spotify</th>
-              <th>{data.user_b_username} ↔ Spotify</th>
+              <SortableHeader label="Album" column="album" sort={sort} onClick={cycleSort} align="left" />
+              <SortableHeader label="Released" column="release" sort={sort} onClick={cycleSort} align="right" />
+              <SortableHeader label="Rated" column="rated" sort={sort} onClick={cycleSort} align="right" />
+              <SortableHeader label={data.user_a_username} column="a-score" sort={sort} onClick={cycleSort} align="right" />
+              <SortableHeader label={data.user_b_username} column="b-score" sort={sort} onClick={cycleSort} align="right" />
+              <SortableHeader label="Mean" column="mean" sort={sort} onClick={cycleSort} align="right" />
+              <SortableHeader label={`${data.user_a_username} ↔ ${data.user_b_username}`} column="pair-similarity" sort={sort} onClick={cycleSort} align="right" />
+              <SortableHeader label={`${data.user_a_username} ↔ Spotify`} column="a-similarity" sort={sort} onClick={cycleSort} align="right" />
+              <SortableHeader label={`${data.user_b_username} ↔ Spotify`} column="b-similarity" sort={sort} onClick={cycleSort} align="right" />
             </tr>
           </thead>
           <tbody>
@@ -320,14 +335,14 @@ export function FriendDashboard({ friendshipId }: { friendshipId: number }) {
                   <br />
                   <small>{e.album.artist}</small>
                 </td>
-                <td>{e.album.release_date}</td>
-                <td>{e.mutual_date.slice(0, 10)}</td>
-                <td>{e.user_a_score.toFixed(1)}</td>
-                <td>{e.user_b_score.toFixed(1)}</td>
-                <td>{e.mean_score.toFixed(2)}</td>
-                <td>{fmt(e.similarity_users)}</td>
-                <td>{fmt(e.similarity_a_vs_spotify)}</td>
-                <td>{fmt(e.similarity_b_vs_spotify)}</td>
+                <td className={styles.numCell}>{e.album.release_date}</td>
+                <td className={styles.numCell}>{e.mutual_date.slice(0, 10)}</td>
+                <td className={styles.numCell}>{e.user_a_score.toFixed(1)}</td>
+                <td className={styles.numCell}>{e.user_b_score.toFixed(1)}</td>
+                <td className={styles.numCell}>{e.mean_score.toFixed(2)}</td>
+                <td className={styles.numCell}>{fmt(e.similarity_users)}</td>
+                <td className={styles.numCell}>{fmt(e.similarity_a_vs_spotify)}</td>
+                <td className={styles.numCell}>{fmt(e.similarity_b_vs_spotify)}</td>
               </tr>
             ))}
           </tbody>
@@ -339,4 +354,41 @@ export function FriendDashboard({ friendshipId }: { friendshipId: number }) {
 
 function fmt(v: number | null): string {
   return v === null ? "—" : v.toFixed(3);
+}
+
+function SortableHeader({
+  label,
+  column,
+  sort,
+  onClick,
+  align,
+}: {
+  label: string;
+  column: SortColumn;
+  sort: SortState | null;
+  onClick: (column: SortColumn) => void;
+  align: "left" | "right";
+}) {
+  const active = sort?.column === column;
+  const indicator = !active ? "↕" : sort.direction === "asc" ? "▲" : "▼";
+  const ariaSort = !active
+    ? "none"
+    : sort.direction === "asc"
+    ? "ascending"
+    : "descending";
+  return (
+    <th
+      className={`${styles.th} ${align === "right" ? styles.thRight : ""}`}
+      aria-sort={ariaSort}
+    >
+      <button
+        type="button"
+        className={`${styles.sortBtn} ${active ? styles.sortBtnActive : ""}`}
+        onClick={() => onClick(column)}
+      >
+        <span>{label}</span>
+        <span className={styles.sortIcon} aria-hidden>{indicator}</span>
+      </button>
+    </th>
+  );
 }

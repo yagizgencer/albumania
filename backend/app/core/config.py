@@ -18,6 +18,20 @@ class Settings(BaseSettings):
     spotify_client_secret: str = ""
     cors_origins: str = "http://localhost:5173"
 
+    # Profile-picture storage. "local" writes to backend/static/avatars (mounted at
+    # /static); "r2" uses Cloudflare R2 via the S3 API.
+    storage_backend: str = "local"
+    api_base_url: str = "http://localhost:8000"
+    # Root directory for FastAPI's StaticFiles mount when STORAGE_BACKEND=local.
+    # Avatar keys are prefixed `avatars/...` and land under this dir.
+    static_dir: str = "static"
+    avatar_max_bytes: int = 2 * 1024 * 1024
+    r2_account_id: str = ""
+    r2_access_key_id: str = ""
+    r2_secret_access_key: str = ""
+    r2_bucket: str = ""
+    r2_public_url_base: str = ""
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

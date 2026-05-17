@@ -2,8 +2,10 @@ from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import or_, select
+from sqlalchemy import or_, select, update
 from sqlalchemy.orm import Session
+
+from app.models.notification import Notification
 
 from app.core.deps import get_current_user
 from app.db.session import get_db
@@ -18,12 +20,33 @@ from app.schemas.friendship import (
     FriendshipListResponse,
     FriendshipResponse,
 )
+from app.models.notification import NotificationType
+from app.services.avatars import picture_url_map
 from app.services.friend_dashboard import rebuild_for_pair
 from app.services.friendship import get_friendship, ordered_pair
+from app.services.notifications import create_notification
 from app.services.similarity import compute_ranking_loss, compute_similarity_score
 from app.services.spotify import SpotifyClient, get_spotify_client
+from app.services.storage import Storage, get_storage
 
 router = APIRouter(prefix="/friendships", tags=["friendships"])
+
+
+def _hydrate_friendship(
+    friendship: Friendship, urls: dict[str, str | None]
+) -> FriendshipResponse:
+    return FriendshipResponse(
+        id=friendship.id,
+        user_a_username=friendship.user_a_username,
+        user_b_username=friendship.user_b_username,
+        user_a_picture_url=urls.get(friendship.user_a_username),
+        user_b_picture_url=urls.get(friendship.user_b_username),
+        status=friendship.status,
+        requested_by=friendship.requested_by,
+        requested_by_picture_url=urls.get(friendship.requested_by),
+        created_at=friendship.created_at,
+        accepted_at=friendship.accepted_at,
+    )
 
 
 @router.post("", response_model=FriendshipResponse, status_code=status.HTTP_201_CREATED)
@@ -31,6 +54,7 @@ def create_friendship(
     body: FriendshipCreate,
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
+    storage: Annotated[Storage, Depends(get_storage)],
 ) -> FriendshipResponse:
     if body.username == current_user.username:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot friend yourself")
@@ -54,7 +78,17 @@ def create_friendship(
     db.add(friendship)
     db.commit()
     db.refresh(friendship)
-    return FriendshipResponse.model_validate(friendship)
+    # Notify the other side that someone wants to friend them.
+    create_notification(
+        db,
+        recipient_username=other.username,
+        type=NotificationType.friend_request,
+        actor_username=current_user.username,
+        friendship_id=friendship.id,
+    )
+    db.commit()
+    urls = picture_url_map(db, storage, [friendship.user_a_username, friendship.user_b_username, friendship.requested_by])
+    return _hydrate_friendship(friendship, urls)
 
 
 @router.post("/{friendship_id}/accept", response_model=FriendshipResponse)
@@ -62,6 +96,7 @@ def accept_friendship(
     friendship_id: int,
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
+    storage: Annotated[Storage, Depends(get_storage)],
 ) -> FriendshipResponse:
     friendship = _get_for_user(db, friendship_id, current_user.username)
     if friendship.status != FriendshipStatus.pending:
@@ -78,7 +113,28 @@ def accept_friendship(
     db.commit()
     db.refresh(friendship)
     rebuild_for_pair(db, friendship.id)
-    return FriendshipResponse.model_validate(friendship)
+    # The accepter's own `friend_request` notification is now stale; flip it
+    # to read so it doesn't keep inflating their Friends badge.
+    db.execute(
+        update(Notification)
+        .where(
+            Notification.recipient_username == current_user.username,
+            Notification.friendship_id == friendship.id,
+            Notification.type == NotificationType.friend_request,
+        )
+        .values(read=True)
+    )
+    # Notify the original requester that their request was accepted.
+    create_notification(
+        db,
+        recipient_username=friendship.requested_by,
+        type=NotificationType.friend_accept,
+        actor_username=current_user.username,
+        friendship_id=friendship.id,
+    )
+    db.commit()
+    urls = picture_url_map(db, storage, [friendship.user_a_username, friendship.user_b_username, friendship.requested_by])
+    return _hydrate_friendship(friendship, urls)
 
 
 @router.post("/{friendship_id}/decline", status_code=status.HTTP_204_NO_CONTENT)
@@ -115,6 +171,7 @@ def delete_friendship(
 def list_my_friendships(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
+    storage: Annotated[Storage, Depends(get_storage)],
 ) -> FriendshipListResponse:
     me = current_user.username
     rows = db.scalars(
@@ -123,11 +180,16 @@ def list_my_friendships(
         )
     ).all()
 
+    usernames: set[str] = set()
+    for f in rows:
+        usernames.update({f.user_a_username, f.user_b_username})
+    urls = picture_url_map(db, storage, usernames)
+
     incoming: list[FriendshipResponse] = []
     outgoing: list[FriendshipResponse] = []
     accepted: list[FriendshipResponse] = []
     for f in rows:
-        resp = FriendshipResponse.model_validate(f)
+        resp = _hydrate_friendship(f, urls)
         if f.status == FriendshipStatus.accepted:
             accepted.append(resp)
         elif f.requested_by == me:

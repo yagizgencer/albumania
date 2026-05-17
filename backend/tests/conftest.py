@@ -6,10 +6,19 @@ from sqlalchemy.pool import StaticPool
 
 from app.db.session import Base, get_db
 from app.main import app
+from app.services.storage import InMemoryStorage, get_storage
 
 
 @pytest.fixture()
-def client():
+def storage():
+    s = InMemoryStorage()
+    app.dependency_overrides[get_storage] = lambda: s
+    yield s
+    app.dependency_overrides.pop(get_storage, None)
+
+
+@pytest.fixture()
+def client(storage):
     # StaticPool forces all connections to reuse the same in-memory DB connection,
     # so create_all and the session see the same tables.
     engine = create_engine(

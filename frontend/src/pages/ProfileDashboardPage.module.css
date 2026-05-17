@@ -86,8 +86,8 @@
 }
 
 .segActive {
-  background: #4f46e5;
-  color: #fff;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
 }
 
 .chartCard {

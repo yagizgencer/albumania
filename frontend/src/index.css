@@ -11,6 +11,29 @@
   --text-subtle: #6b7280;
   --link-underline: #aaaaaa;
   --link-underline-hover: #333333;
+
+  /* Button intents — single palette referenced across every module. The
+     four intents (primary/success/danger/secondary) cover the whole app;
+     anything not buttoned uses --surface/--text. */
+  --btn-primary-bg: #4f46e5;          /* indigo-600 */
+  --btn-primary-bg-hover: #4338ca;    /* indigo-700 */
+  --btn-primary-fg: #ffffff;
+
+  --btn-success-bg: #059669;          /* emerald-600 */
+  --btn-success-bg-hover: #047857;    /* emerald-700 */
+  --btn-success-fg: #ffffff;
+
+  --btn-danger-bg: #dc2626;           /* red-600 */
+  --btn-danger-bg-hover: #b91c1c;     /* red-700 */
+  --btn-danger-fg: #ffffff;
+
+  --btn-secondary-bg: #f3f4f6;        /* gray-100 */
+  --btn-secondary-bg-hover: #e5e7eb;  /* gray-200 */
+  --btn-secondary-fg: #111827;        /* gray-900 */
+  --btn-secondary-border: #d1d5db;    /* gray-300 */
+
+  --btn-disabled-bg: #e5e7eb;
+  --btn-disabled-fg: #9ca3af;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -23,6 +46,16 @@
     --text-subtle: #9aa0a6;
     --link-underline: #666666;
     --link-underline-hover: #f1f1f1;
+
+    /* Secondary buttons get a darker neutral so they read against the
+       dark surface; primary/success/danger keep their saturated fill. */
+    --btn-secondary-bg: #27272a;
+    --btn-secondary-bg-hover: #3f3f46;
+    --btn-secondary-fg: #f5f5f5;
+    --btn-secondary-border: #3f3f46;
+
+    --btn-disabled-bg: #2a2a2a;
+    --btn-disabled-fg: #6b7280;
   }
 }
 
@@ -66,13 +99,19 @@ input {
 }
 
 button {
-  padding: 0.6rem 1.2rem;
-  font-size: 1rem;
+  padding: 0.55rem 1.1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
   cursor: pointer;
   border: none;
-  border-radius: 4px;
-  background: #333;
-  color: #fff;
+  border-radius: 6px;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+  transition: background 0.12s ease;
+}
+
+button:hover {
+  background: var(--btn-primary-bg-hover);
 }
 
 button:disabled {

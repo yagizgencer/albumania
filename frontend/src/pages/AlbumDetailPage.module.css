@@ -60,15 +60,18 @@
   display: inline-block;
   margin-bottom: 1rem;
   padding: 0.4rem 0.9rem;
-  background: #3e95cd;
-  color: white;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
   text-decoration: none;
+  border: none;
   border-radius: 6px;
   font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
 }
 
 .backLink:hover {
-  background: #357ab8;
+  background: var(--btn-primary-bg-hover);
 }
 
 .art {

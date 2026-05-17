@@ -16,6 +16,8 @@ class ListenInviteOut(BaseModel):
     id: int
     sender_username: str
     receiver_username: str
+    sender_picture_url: str | None = None
+    receiver_picture_url: str | None = None
     album_id: int
     status: ListenInviteStatus
     created_at: datetime
@@ -37,6 +39,7 @@ class ListenLaterParticipant(BaseModel):
     """One friend I'm sharing this album with."""
 
     username: str
+    picture_url: str | None = None
     direction: str  # "outgoing" (I sent the invite) | "incoming" (they sent it)
     invite_status: ListenInviteStatus
     they_published: bool

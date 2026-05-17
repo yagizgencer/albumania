@@ -9,11 +9,14 @@ import {
   type Friendship,
 } from "../api/friendships";
 import {
+  deleteAvatar,
   getUser,
   updateMe,
+  uploadAvatar,
   type ProfileVisibility,
   type UserProfile,
 } from "../api/users";
+import { Avatar } from "../components/Avatar";
 import { ProfileDashboard } from "./ProfileDashboardPage";
 import { FriendDashboard } from "./FriendDashboardPage";
 import styles from "./ProfilePage.module.css";
@@ -27,12 +30,13 @@ type FriendState =
 
 export function ProfilePage() {
   const { username } = useParams<{ username: string }>();
-  const { username: me } = useAuth();
+  const { username: me, refreshProfile } = useAuth();
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [friendships, setFriendships] = useState<Friendship[] | null>(null);
   const [editing, setEditing] = useState(false);
+  const [avatarOpen, setAvatarOpen] = useState(false);
   // friendshipId we're comparing against, or null = solo dashboard vs Spotify
   const [compareFriendshipId, setCompareFriendshipId] = useState<number | null>(null);
 
@@ -100,9 +104,20 @@ export function ProfilePage() {
   return (
     <main className={styles.page}>
       <section className={styles.card}>
-        <div className={styles.avatar} aria-hidden="true">
-          {profile.display_name.slice(0, 1).toUpperCase()}
-        </div>
+        <button
+          type="button"
+          className={styles.avatarButton}
+          onClick={() => setAvatarOpen(true)}
+          aria-label="View profile picture"
+        >
+          <Avatar
+            username={profile.username}
+            pictureUrl={profile.profile_picture_url}
+            displayName={profile.display_name}
+            size={88}
+            className={styles.avatar}
+          />
+        </button>
         <div className={styles.headerInfo}>
           {editing && isOwner ? (
             <ProfileEditor
@@ -179,7 +194,132 @@ export function ProfilePage() {
           <ProfileDashboard username={profile.username} />
         )}
       </section>
+
+      {avatarOpen && (
+        <AvatarLightbox
+          profile={profile}
+          canEdit={isOwner}
+          onClose={() => setAvatarOpen(false)}
+          onChanged={(updated) => {
+            setProfile(updated);
+            if (isOwner) void refreshProfile();
+          }}
+        />
+      )}
     </main>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Avatar lightbox — enlarged view; owner gets Replace + Remove
+// ---------------------------------------------------------------------------
+
+function AvatarLightbox({
+  profile,
+  canEdit,
+  onClose,
+  onChanged,
+}: {
+  profile: UserProfile;
+  canEdit: boolean;
+  onClose: () => void;
+  onChanged: (updated: UserProfile) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement | null>(null);
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      onChanged(await uploadAvatar(file));
+    } catch (uploadErr: unknown) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- axios error
+      setErr((uploadErr as any)?.response?.data?.detail ?? "Upload failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleRemove() {
+    setBusy(true);
+    setErr(null);
+    try {
+      await deleteAvatar();
+      onChanged({ ...profile, profile_picture_url: null });
+    } catch {
+      setErr("Could not remove photo.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div
+      className={styles.lightboxBackdrop}
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div className={styles.lightbox} onClick={(e) => e.stopPropagation()}>
+        {profile.profile_picture_url ? (
+          <img
+            src={profile.profile_picture_url}
+            alt={`${profile.display_name}'s profile picture`}
+            className={styles.lightboxImg}
+          />
+        ) : (
+          <div className={styles.lightboxFallback} aria-hidden>
+            {profile.display_name.slice(0, 1).toUpperCase()}
+          </div>
+        )}
+
+        {err && <p className="error">{err}</p>}
+
+        <div className={styles.lightboxActions}>
+          {canEdit && (
+            <>
+              <button
+                type="button"
+                className={styles.lightboxBtnPrimary}
+                onClick={() => fileRef.current?.click()}
+                disabled={busy}
+              >
+                {profile.profile_picture_url ? "Replace photo" : "Upload photo"}
+              </button>
+              {profile.profile_picture_url && (
+                <button
+                  type="button"
+                  className={styles.lightboxBtnDanger}
+                  onClick={handleRemove}
+                  disabled={busy}
+                >
+                  Remove photo
+                </button>
+              )}
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                hidden
+                onChange={handleFile}
+              />
+            </>
+          )}
+          <button
+            type="button"
+            className={styles.lightboxBtnGhost}
+            onClick={onClose}
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

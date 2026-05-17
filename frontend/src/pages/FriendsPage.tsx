@@ -12,6 +12,7 @@ import {
   searchUsers,
   sendFriendRequest,
 } from "../api/friendships";
+import { Avatar } from "../components/Avatar";
 import styles from "./FriendsPage.module.css";
 
 type Tab = "friends" | "incoming" | "outgoing";
@@ -82,6 +83,10 @@ export function FriendsPage() {
     return f.user_a_username === username ? f.user_b_username : f.user_a_username;
   }
 
+  function otherPictureUrl(f: Friendship): string | null {
+    return f.user_a_username === username ? f.user_b_picture_url : f.user_a_picture_url;
+  }
+
   return (
     <main>
       <h1>Friends</h1>
@@ -101,9 +106,15 @@ export function FriendsPage() {
         <div className={styles.searchResults}>
           {results.map((u) => (
             <div key={u.username} className={styles.searchResult}>
-              <span>
-                <Link to={`/profile/${u.username}`}>{u.display_name}</Link>{" "}
-                <small>@{u.username}</small>
+              <span className={styles.userInline}>
+                <Avatar
+                  username={u.username}
+                  pictureUrl={u.profile_picture_url}
+                  displayName={u.display_name}
+                  size={28}
+                />
+                <Link to={`/profile/${u.username}`} className={styles.userLink}>{u.display_name}</Link>{" "}
+                <small className={styles.userHandle}>{u.username}</small>
               </span>
               <button onClick={() => onSend(u.username)}>Add friend</button>
             </div>
@@ -141,14 +152,15 @@ export function FriendsPage() {
           emptyText="No friends yet."
           render={(f) => (
             <div key={f.id} className={styles.card}>
-              <Link to={`/profile/${otherUsername(f)}`}>@{otherUsername(f)}</Link>
+              <span className={styles.userInline}>
+                <Avatar
+                  username={otherUsername(f)}
+                  pictureUrl={otherPictureUrl(f)}
+                  size={28}
+                />
+                <Link to={`/profile/${otherUsername(f)}`} className={styles.userLink}>{otherUsername(f)}</Link>
+              </span>
               <div className={styles.actions}>
-                <Link to={`/users/${otherUsername(f)}/dashboard`}>
-                  <button>Their dashboard</button>
-                </Link>
-                <Link to={`/friendships/${f.id}/dashboard`}>
-                  <button className={styles.primary}>Pair dashboard</button>
-                </Link>
                 <button className={styles.danger} onClick={() => onRemove(f.id)}>
                   Unfriend
                 </button>
@@ -164,7 +176,14 @@ export function FriendsPage() {
           emptyText="No incoming requests."
           render={(f) => (
             <div key={f.id} className={styles.card}>
-              <span>@{f.requested_by}</span>
+              <span className={styles.userInline}>
+                <Avatar
+                  username={f.requested_by}
+                  pictureUrl={f.requested_by_picture_url}
+                  size={28}
+                />
+                <Link to={`/profile/${f.requested_by}`} className={styles.userLink}>{f.requested_by}</Link>
+              </span>
               <div className={styles.actions}>
                 <button className={styles.primary} onClick={() => onAccept(f.id)}>
                   Accept
@@ -182,7 +201,14 @@ export function FriendsPage() {
           emptyText="No outgoing requests."
           render={(f) => (
             <div key={f.id} className={styles.card}>
-              <span>@{otherUsername(f)}</span>
+              <span className={styles.userInline}>
+                <Avatar
+                  username={otherUsername(f)}
+                  pictureUrl={otherPictureUrl(f)}
+                  size={28}
+                />
+                <Link to={`/profile/${otherUsername(f)}`} className={styles.userLink}>{otherUsername(f)}</Link>
+              </span>
               <div className={styles.actions}>
                 <button className={styles.danger} onClick={() => onRemove(f.id)}>
                   Cancel

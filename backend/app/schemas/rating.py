@@ -15,7 +15,9 @@ class RatingOut(BaseModel):
     username: str
     album_id: int
     score: float | None
-    top_track_indices: list[int] | None
+    # 0–5 entries. `None` slots are allowed for in-progress drafts so the
+    # client preserves slot positions across saves; publish rejects them.
+    top_track_indices: list[int | None] | None
     status: str
     started_at: datetime
     completed_at: datetime | None
@@ -31,7 +33,7 @@ class RatingCreate(BaseModel):
 
 class RatingPatch(BaseModel):
     score: float | None = Field(None, ge=0, le=10)
-    top_track_indices: list[int] | None = None
+    top_track_indices: list[int | None] | None = None
     # keys are track_index (as str in JSON, coerced), values are note text.
     # Setting a key to "" removes the note.
     notes: dict[int, str] | None = None
@@ -41,6 +43,7 @@ class RatingPatch(BaseModel):
         if self.top_track_indices is not None:
             if len(self.top_track_indices) > 5:
                 raise ValueError("top_track_indices cannot have more than 5 entries")
-            if len(self.top_track_indices) != len(set(self.top_track_indices)):
+            non_null = [i for i in self.top_track_indices if i is not None]
+            if len(non_null) != len(set(non_null)):
                 raise ValueError("top_track_indices must be distinct")
         return self

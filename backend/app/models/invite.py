@@ -2,7 +2,7 @@ import enum
 from datetime import datetime
 
 from sqlalchemy import DateTime, Enum, ForeignKey, UniqueConstraint, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.session import Base
 
@@ -31,6 +31,12 @@ class ListenInvite(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
     responded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    notifications: Mapped[list["Notification"]] = relationship(  # noqa: F821 — forward ref
+        "Notification",
+        cascade="all, delete-orphan",
+        primaryjoin="ListenInvite.id == Notification.invite_id",
+    )
 
     __table_args__ = (
         UniqueConstraint(

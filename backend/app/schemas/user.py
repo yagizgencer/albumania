@@ -18,6 +18,7 @@ class UserResponse(BaseModel):
     display_name: str
     description: str | None
     profile_visibility: ProfileVisibility
+    profile_picture_url: str | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}

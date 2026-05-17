@@ -10,7 +10,8 @@ export interface Rating {
   username: string;
   album_id: number;
   score: number | null;
-  top_track_indices: number[] | null;
+  // Up to 5 entries; `null` slots preserve UI position for in-progress drafts.
+  top_track_indices: (number | null)[] | null;
   status: "draft" | "published";
   started_at: string;
   completed_at: string | null;
@@ -35,7 +36,7 @@ export async function getMyRatingForAlbum(albumId: number): Promise<Rating> {
 
 export interface RatingPatch {
   score?: number | null;
-  top_track_indices?: number[];
+  top_track_indices?: (number | null)[];
   notes?: Record<number, string>;
 }
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { getAlbum, type Album } from "../api/albums";
 import { getDashboard, type DashboardEntry } from "../api/dashboard";
 import { formatDuration } from "../utils/duration";
@@ -7,6 +7,7 @@ import styles from "./AlbumDetailPage.module.css";
 
 export function AlbumDetailPage() {
   const { username, spotifyId } = useParams<{ username: string; spotifyId: string }>();
+  const navigate = useNavigate();
   const [album, setAlbum] = useState<Album | null>(null);
   const [entry, setEntry] = useState<DashboardEntry | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +46,14 @@ export function AlbumDetailPage() {
 
   return (
     <main className={styles.page}>
+      <button
+        type="button"
+        onClick={() => navigate(-1)}
+        className={styles.backLink}
+      >
+        ← Back to dashboard
+      </button>
+
       <header className={styles.header}>
         {album.album_art_url && (
           <a

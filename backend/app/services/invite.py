@@ -4,15 +4,20 @@ from sqlalchemy import delete, or_, select
 from sqlalchemy.orm import Session
 
 from app.models.invite import ListenInvite, ListenInviteStatus
+from app.models.notification import NotificationType
 from app.models.rating import Rating, RatingStatus
 from app.services.friend_dashboard import rebuild_for_pair
 from app.services.friendship import get_friendship
+from app.services.notifications import create_notification
 
 
 def maybe_complete_invites_for_rating(db: Session, username: str, album_id: int) -> None:
-    """Called after `username` publishes a rating for `album_id`. Flip every
-    non-completed invite involving them to `completed` if the other party has
-    also published, and rebuild that friend-pair's dashboard.
+    """Called after `username` publishes a rating for `album_id`. For every
+    accepted invite that involves them:
+      - if the other party has also published, flip to `completed` and rebuild
+        that friend-pair's dashboard.
+      - otherwise, drop a `friend_published` notification on the other party
+        ("alice rated this — your turn").
     """
     invites = db.scalars(
         select(ListenInvite).where(
@@ -41,6 +46,18 @@ def maybe_complete_invites_for_rating(db: Session, username: str, album_id: int)
             )
         )
         if other_published is None:
+            # Only fires when the *other* party has already accepted — a pending
+            # outgoing invite the other side hasn't responded to yet isn't a
+            # shared listen yet, so skip.
+            if invite.status == ListenInviteStatus.accepted:
+                create_notification(
+                    db,
+                    recipient_username=other,
+                    type=NotificationType.friend_published,
+                    actor_username=username,
+                    invite_id=invite.id,
+                    album_id=album_id,
+                )
             continue
         invite.status = ListenInviteStatus.completed
         invite.responded_at = invite.responded_at or now

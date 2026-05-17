@@ -59,25 +59,25 @@
 }
 
 .btnPrimary {
-  background: #3e95cd;
-  color: white;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
 }
 .btnPrimary:hover {
-  background: #357ab8;
+  background: var(--btn-primary-bg-hover);
 }
 
 .btnSecondary {
-  background: #f3f4f6;
-  color: #111827;
-  border: 1px solid #d1d5db;
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-fg);
+  border: 1px solid var(--btn-secondary-border);
 }
 .btnSecondary:hover {
-  background: #e5e7eb;
+  background: var(--btn-secondary-bg-hover);
 }
 
 .btnDisabled {
-  background: #e5e7eb;
-  color: #6b7280;
+  background: var(--btn-disabled-bg);
+  color: var(--btn-disabled-fg);
   cursor: not-allowed;
 }
 
@@ -204,17 +204,23 @@
 }
 
 .friendItem button {
-  background: #3e95cd;
-  color: white;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
   border: none;
   padding: 0.3rem 0.7rem;
   border-radius: 5px;
   cursor: pointer;
   font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.friendItem button:hover:not(:disabled) {
+  background: var(--btn-primary-bg-hover);
 }
 
 .friendItem button:disabled {
-  background: #cbd5e1;
+  background: var(--btn-disabled-bg);
+  color: var(--btn-disabled-fg);
   cursor: not-allowed;
 }
 

@@ -2,8 +2,10 @@ from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import or_, select
+from sqlalchemy import or_, select, update
 from sqlalchemy.orm import Session, selectinload
+
+from app.models.notification import Notification
 
 from app.core.deps import get_current_user
 from app.db.session import get_db
@@ -20,12 +22,31 @@ from app.schemas.invite import (
     ListenLaterEntry,
     ListenLaterParticipant,
 )
+from app.models.notification import NotificationType
+from app.services.avatars import picture_url_map
 from app.services.friendship import are_friends
+from app.services.notifications import create_notification
+from app.services.storage import Storage, get_storage
 
 router = APIRouter(prefix="/invites", tags=["invites"])
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
 DB = Annotated[Session, Depends(get_db)]
+StorageDep = Annotated[Storage, Depends(get_storage)]
+
+
+def _invite_out(invite: ListenInvite, urls: dict[str, str | None]) -> ListenInviteOut:
+    return ListenInviteOut(
+        id=invite.id,
+        sender_username=invite.sender_username,
+        receiver_username=invite.receiver_username,
+        sender_picture_url=urls.get(invite.sender_username),
+        receiver_picture_url=urls.get(invite.receiver_username),
+        album_id=invite.album_id,
+        status=invite.status,
+        created_at=invite.created_at,
+        responded_at=invite.responded_at,
+    )
 
 
 def _album_out(album: Album) -> AlbumOut:
@@ -50,7 +71,9 @@ def _album_out(album: Album) -> AlbumOut:
 
 
 @router.post("", response_model=ListenInviteOut, status_code=status.HTTP_201_CREATED)
-def create_invite(body: ListenInviteCreate, user: CurrentUser, db: DB) -> ListenInvite:
+def create_invite(
+    body: ListenInviteCreate, user: CurrentUser, db: DB, storage: StorageDep
+) -> ListenInviteOut:
     if body.username == user.username:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot invite yourself"
@@ -110,7 +133,17 @@ def create_invite(body: ListenInviteCreate, user: CurrentUser, db: DB) -> Listen
     db.add(invite)
     db.commit()
     db.refresh(invite)
-    return invite
+    create_notification(
+        db,
+        recipient_username=invite.receiver_username,
+        type=NotificationType.listen_invite,
+        actor_username=invite.sender_username,
+        invite_id=invite.id,
+        album_id=invite.album_id,
+    )
+    db.commit()
+    urls = picture_url_map(db, storage, [invite.sender_username, invite.receiver_username])
+    return _invite_out(invite, urls)
 
 
 def _get_invite_or_404(db: Session, invite_id: int) -> ListenInvite:
@@ -121,7 +154,9 @@ def _get_invite_or_404(db: Session, invite_id: int) -> ListenInvite:
 
 
 @router.post("/{invite_id}/accept", response_model=ListenInviteOut)
-def accept_invite(invite_id: int, user: CurrentUser, db: DB) -> ListenInvite:
+def accept_invite(
+    invite_id: int, user: CurrentUser, db: DB, storage: StorageDep
+) -> ListenInviteOut:
     invite = _get_invite_or_404(db, invite_id)
     if invite.receiver_username != user.username:
         raise HTTPException(
@@ -133,9 +168,20 @@ def accept_invite(invite_id: int, user: CurrentUser, db: DB) -> ListenInvite:
         )
     invite.status = ListenInviteStatus.accepted
     invite.responded_at = datetime.now(timezone.utc)
+    # The accepter's own listen_invite notification is resolved.
+    db.execute(
+        update(Notification)
+        .where(
+            Notification.recipient_username == user.username,
+            Notification.invite_id == invite.id,
+            Notification.type == NotificationType.listen_invite,
+        )
+        .values(read=True)
+    )
     db.commit()
     db.refresh(invite)
-    return invite
+    urls = picture_url_map(db, storage, [invite.sender_username, invite.receiver_username])
+    return _invite_out(invite, urls)
 
 
 @router.post("/{invite_id}/decline", status_code=status.HTTP_204_NO_CONTENT)
@@ -169,7 +215,9 @@ def cancel_invite(invite_id: int, user: CurrentUser, db: DB) -> None:
 
 
 @router.get("/me", response_model=ListenInviteListResponse)
-def list_my_invites(user: CurrentUser, db: DB) -> ListenInviteListResponse:
+def list_my_invites(
+    user: CurrentUser, db: DB, storage: StorageDep
+) -> ListenInviteListResponse:
     me = user.username
     rows = db.scalars(
         select(ListenInvite).where(
@@ -184,12 +232,20 @@ def list_my_invites(user: CurrentUser, db: DB) -> ListenInviteListResponse:
         for album in db.scalars(select(Album).where(Album.id.in_(album_ids))):
             album_map[album.id] = album
 
+    urls = picture_url_map(
+        db,
+        storage,
+        {u for r in rows for u in (r.sender_username, r.receiver_username)},
+    )
+
     def to_out(invite: ListenInvite) -> ListenInviteWithAlbum:
         album = album_map[invite.album_id]
         return ListenInviteWithAlbum(
             id=invite.id,
             sender_username=invite.sender_username,
             receiver_username=invite.receiver_username,
+            sender_picture_url=urls.get(invite.sender_username),
+            receiver_picture_url=urls.get(invite.receiver_username),
             album_id=invite.album_id,
             status=invite.status,
             created_at=invite.created_at,
@@ -215,7 +271,9 @@ listen_later_router = APIRouter(prefix="/listen-later", tags=["listen-later"])
 
 
 @listen_later_router.get("", response_model=list[ListenLaterEntry])
-def get_listen_later(user: CurrentUser, db: DB) -> list[ListenLaterEntry]:
+def get_listen_later(
+    user: CurrentUser, db: DB, storage: StorageDep
+) -> list[ListenLaterEntry]:
     me = user.username
 
     # Drafts owned by me.
@@ -295,6 +353,8 @@ def get_listen_later(user: CurrentUser, db: DB) -> list[ListenLaterEntry]:
         )
     }
 
+    participant_urls = picture_url_map(db, storage, other_users)
+
     entries: list[ListenLaterEntry] = []
     for album_id in entry_album_ids:
         if album_id in my_published:
@@ -312,6 +372,7 @@ def get_listen_later(user: CurrentUser, db: DB) -> list[ListenLaterEntry]:
             participants.append(
                 ListenLaterParticipant(
                     username=other,
+                    picture_url=participant_urls.get(other),
                     direction=direction,
                     invite_status=inv.status,
                     they_published=(other, album_id) in published_pairs,

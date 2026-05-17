@@ -35,7 +35,7 @@ function makeEmptySlots(): (number | null)[] {
   return Array(TOP_5_SIZE).fill(null);
 }
 
-function slotsFromIndices(indices: number[]): (number | null)[] {
+function slotsFromIndices(indices: (number | null)[]): (number | null)[] {
   const slots = makeEmptySlots();
   indices.slice(0, TOP_5_SIZE).forEach((idx, i) => { slots[i] = idx; });
   return slots;
@@ -300,11 +300,12 @@ export function RatingEditorPage() {
     setSaving(true); setError(null);
     const notesPatch: Record<number, string> = {};
     for (const [k, v] of Object.entries(notes)) notesPatch[Number(k)] = v;
-    const top_track_indices = topSlots.filter((n): n is number => n !== null);
+    // Send the full sparse array so empty slots in the middle keep their
+    // position. Publish strips this to require all 5 filled.
     try {
       const updated = await patchRating(rating.id, {
         score: hasScore ? score : undefined,
-        top_track_indices,
+        top_track_indices: topSlots,
         notes: notesPatch,
       });
       applyRating(updated);

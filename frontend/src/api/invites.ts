@@ -8,6 +8,8 @@ export interface ListenInvite {
   id: number;
   sender_username: string;
   receiver_username: string;
+  sender_picture_url: string | null;
+  receiver_picture_url: string | null;
   album_id: number;
   status: ListenInviteStatus;
   created_at: string;
@@ -25,6 +27,7 @@ export interface ListenInviteListResponse {
 
 export interface ListenLaterParticipant {
   username: string;
+  picture_url: string | null;
   direction: "outgoing" | "incoming";
   invite_status: ListenInviteStatus;
   they_published: boolean;

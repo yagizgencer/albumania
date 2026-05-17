@@ -6,8 +6,11 @@ export interface Friendship {
   id: number;
   user_a_username: string;
   user_b_username: string;
+  user_a_picture_url: string | null;
+  user_b_picture_url: string | null;
   status: FriendshipStatus;
   requested_by: string;
+  requested_by_picture_url: string | null;
   created_at: string;
   accepted_at: string | null;
 }
@@ -21,6 +24,7 @@ export interface FriendshipList {
 export interface UserSearchResult {
   username: string;
   display_name: string;
+  profile_picture_url: string | null;
 }
 
 export async function listFriendships(): Promise<FriendshipList> {

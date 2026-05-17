@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { getAlbum, type Album, type AlbumTrack } from "../api/albums";
 import {
   getFriendDashboard,
@@ -14,6 +14,7 @@ export function FriendAlbumDetailPage() {
     friendshipId: string;
     spotifyId: string;
   }>();
+  const navigate = useNavigate();
   const [album, setAlbum] = useState<Album | null>(null);
   const [pair, setPair] = useState<FriendDashboardResponse | null>(null);
   const [entry, setEntry] = useState<FriendDashboardEntry | null>(null);
@@ -61,9 +62,13 @@ export function FriendAlbumDetailPage() {
 
   return (
     <main className={styles.page}>
-      <Link to={`/friendships/${pair.friendship_id}/dashboard`} className={styles.backLink}>
+      <button
+        type="button"
+        onClick={() => navigate(-1)}
+        className={styles.backLink}
+      >
         ← Back to pair dashboard
-      </Link>
+      </button>
 
       <header className={styles.header}>
         {album.album_art_url && (

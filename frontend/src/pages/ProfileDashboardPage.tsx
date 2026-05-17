@@ -10,7 +10,7 @@ import {
 } from "chart.js";
 import { useEffect, useMemo, useState } from "react";
 import { Line } from "react-chartjs-2";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { getDashboard, type DashboardEntry } from "../api/dashboard";
 import styles from "./ProfileDashboardPage.module.css";
 
@@ -24,23 +24,13 @@ ChartJS.register(
   Legend
 );
 
-type SortColumn = "album" | "date" | "score" | "similarity";
+type SortColumn = "album" | "release" | "rated" | "score" | "similarity";
 type SortDirection = "asc" | "desc";
 interface SortState {
   column: SortColumn;
   direction: SortDirection;
 }
 type Mode = "similarity" | "rating";
-
-export function ProfileDashboardPage() {
-  const { username } = useParams<{ username: string }>();
-  if (!username) return null;
-  return (
-    <main className={styles.page}>
-      <ProfileDashboard username={username} />
-    </main>
-  );
-}
 
 export function ProfileDashboard({ username }: { username: string }) {
   const navigate = useNavigate();
@@ -96,7 +86,9 @@ export function ProfileDashboard({ username }: { username: string }) {
       switch (sort.column) {
         case "album":
           return a.album.title.localeCompare(b.album.title) * dir;
-        case "date":
+        case "release":
+          return a.album.release_date.localeCompare(b.album.release_date) * dir;
+        case "rated":
           return a.completed_at.localeCompare(b.completed_at) * dir;
         case "score":
           return (a.score - b.score) * dir;
@@ -248,7 +240,8 @@ export function ProfileDashboard({ username }: { username: string }) {
           <thead>
             <tr>
               <SortableHeader label="Album" column="album" sort={sort} onClick={cycleSort} align="left" />
-              <SortableHeader label="Date" column="date" sort={sort} onClick={cycleSort} align="right" />
+              <SortableHeader label="Released" column="release" sort={sort} onClick={cycleSort} align="right" />
+              <SortableHeader label="Rated" column="rated" sort={sort} onClick={cycleSort} align="right" />
               <SortableHeader label="Score" column="score" sort={sort} onClick={cycleSort} align="right" />
               <SortableHeader label="Similarity" column="similarity" sort={sort} onClick={cycleSort} align="right" />
             </tr>
@@ -279,6 +272,7 @@ export function ProfileDashboard({ username }: { username: string }) {
                     </span>
                   </div>
                 </td>
+                <td className={styles.numCell}>{e.album.release_date.slice(0, 10)}</td>
                 <td className={styles.numCell}>{e.completed_at.slice(0, 10)}</td>
                 <td className={styles.numCell}>{e.score.toFixed(1)}</td>
                 <td className={styles.numCell}>

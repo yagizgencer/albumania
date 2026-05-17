@@ -1,9 +1,20 @@
+import uuid
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    HTTPException,
+    Query,
+    Response,
+    UploadFile,
+    status,
+)
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.core.deps import get_current_user
 from app.db.session import get_db
 from app.models.album import Album, BaselineStat
@@ -12,17 +23,35 @@ from app.models.user import ProfileVisibility, User
 from app.schemas.dashboard import DashboardAlbum, DashboardEntry, DashboardResponse
 from app.schemas.friendship import UserSearchResult
 from app.schemas.user import UserResponse, UserUpdate
+from app.services.avatars import picture_url
 from app.services.friendship import are_friends
 from app.services.similarity import compute_ranking_loss, compute_similarity_score
 from app.services.spotify import SpotifyClient, get_spotify_client
+from app.services.storage import Storage, get_storage
 
 router = APIRouter(prefix="/users", tags=["users"])
+
+ALLOWED_AVATAR_TYPES = {"image/jpeg", "image/png", "image/webp"}
+_EXT_BY_TYPE = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}
+
+
+def _user_response(user: User, storage: Storage) -> UserResponse:
+    return UserResponse(
+        username=user.username,
+        email=user.email,
+        display_name=user.display_name,
+        description=user.description,
+        profile_visibility=user.profile_visibility,
+        profile_picture_url=picture_url(storage, user.profile_picture_key),
+        created_at=user.created_at,
+    )
 
 
 @router.get("/search", response_model=list[UserSearchResult])
 def search_users(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
+    storage: Annotated[Storage, Depends(get_storage)],
     q: Annotated[str, Query(min_length=1, max_length=50)],
     limit: Annotated[int, Query(ge=1, le=20)] = 10,
 ) -> list[UserSearchResult]:
@@ -36,7 +65,14 @@ def search_users(
         .order_by(User.username.asc())
         .limit(limit)
     ).all()
-    return [UserSearchResult.model_validate(u) for u in rows]
+    return [
+        UserSearchResult(
+            username=u.username,
+            display_name=u.display_name,
+            profile_picture_url=picture_url(storage, u.profile_picture_key),
+        )
+        for u in rows
+    ]
 
 
 @router.patch("/me", response_model=UserResponse)
@@ -44,6 +80,7 @@ def update_me(
     body: UserUpdate,
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
+    storage: Annotated[Storage, Depends(get_storage)],
 ) -> UserResponse:
     user = db.scalar(select(User).where(User.username == current_user.username))
     if user is None:
@@ -58,7 +95,70 @@ def update_me(
         user.profile_visibility = data["profile_visibility"]
     db.commit()
     db.refresh(user)
-    return UserResponse.model_validate(user)
+    return _user_response(user, storage)
+
+
+@router.post("/me/avatar", response_model=UserResponse)
+async def upload_avatar(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+    storage: Annotated[Storage, Depends(get_storage)],
+    file: Annotated[UploadFile, File(...)],
+) -> UserResponse:
+    if file.content_type not in ALLOWED_AVATAR_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="Only JPEG, PNG, or WebP images are allowed",
+        )
+
+    max_bytes = get_settings().avatar_max_bytes
+    data = await file.read(max_bytes + 1)
+    if len(data) > max_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"Image too large (max {max_bytes // (1024 * 1024)} MB)",
+        )
+    if not data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Empty file"
+        )
+
+    ext = _EXT_BY_TYPE[file.content_type]
+    new_key = f"avatars/{current_user.username}-{uuid.uuid4().hex[:8]}.{ext}"
+    storage.save(new_key, data, file.content_type)
+
+    user = db.scalar(select(User).where(User.username == current_user.username))
+    if user is None:
+        # Shouldn't happen — get_current_user resolved them from the DB.
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    old_key = user.profile_picture_key
+    user.profile_picture_key = new_key
+    db.commit()
+    db.refresh(user)
+
+    if old_key and old_key != new_key:
+        storage.delete(old_key)
+
+    return _user_response(user, storage)
+
+
+@router.delete("/me/avatar", status_code=status.HTTP_204_NO_CONTENT)
+def delete_avatar(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+    storage: Annotated[Storage, Depends(get_storage)],
+) -> Response:
+    user = db.scalar(select(User).where(User.username == current_user.username))
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    old_key = user.profile_picture_key
+    user.profile_picture_key = None
+    db.commit()
+    if old_key:
+        storage.delete(old_key)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("/{username}", response_model=UserResponse)
@@ -66,11 +166,12 @@ def get_user(
     username: str,
     _current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
+    storage: Annotated[Storage, Depends(get_storage)],
 ) -> UserResponse:
     user = db.scalar(select(User).where(User.username == username))
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    return UserResponse.model_validate(user)
+    return _user_response(user, storage)
 
 
 @router.get("/{username}/dashboard", response_model=DashboardResponse)

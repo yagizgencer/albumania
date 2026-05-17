@@ -1,34 +1,182 @@
 .nav {
   display: flex;
-  align-items: center;
-  gap: 1.25rem;
-  padding: 0.75rem 1.5rem;
-  border-bottom: 1px solid var(--border);
+  align-items: stretch;
+  justify-content: space-between;
   background: var(--surface);
-  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  padding: 0 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 20;
 }
 
-.link {
+.brand {
+  display: flex;
+  align-items: center;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--text);
   text-decoration: none;
-  color: var(--text);
-  font-weight: 500;
+  letter-spacing: 0.02em;
+  padding: 0 0.75rem;
 }
 
-.link:hover {
-  text-decoration: underline;
+.itemsRow {
+  display: flex;
+  align-items: stretch;
+  gap: 0.25rem;
+}
+
+.item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  padding: 0.55rem 0.85rem 0.45rem;
+  min-width: 64px;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-top: 2px solid transparent;
+  border-bottom: 2px solid transparent;
+  text-decoration: none;
+  cursor: pointer;
+  font: inherit;
+}
+
+.item:hover {
+  color: var(--text);
+}
+
+.itemActive {
+  color: var(--text);
+  border-bottom-color: var(--text);
+}
+
+.itemLabel {
+  font-size: 0.72rem;
+  line-height: 1;
+}
+
+.itemIcon {
+  position: relative;
+  line-height: 0;
+}
+
+.badge {
+  position: absolute;
+  top: -6px;
+  right: -12px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: var(--btn-danger-bg);
+  color: var(--btn-danger-fg);
+  font-size: 0.6rem;
+  font-weight: 700;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--surface);
+  pointer-events: none;
+}
+
+.avatarWrap {
+  line-height: 0;
 }
 
 .logout {
-  margin-left: auto;
   background: transparent;
   border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 0.3rem 0.75rem;
-  cursor: pointer;
-  font-size: 0.875rem;
   color: var(--text-muted);
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  align-self: center;
+  cursor: pointer;
+  font-size: 0.85rem;
 }
 
 .logout:hover {
   background: var(--surface-muted);
+  color: var(--text);
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bellWrap {
+  position: relative;
+  align-self: center;
+}
+
+.bellPanel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: min(360px, 90vw);
+  max-height: 70vh;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+  padding: 0.5rem 0;
+  z-index: 30;
+}
+
+.bellHeader {
+  padding: 0.4rem 0.85rem 0.55rem;
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.bellEmpty {
+  padding: 1.25rem 1rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.bellItem {
+  display: flex;
+  gap: 0.6rem;
+  padding: 0.55rem 0.85rem;
+  border-bottom: 1px solid var(--surface-muted);
+  text-decoration: none;
+  color: inherit;
+  align-items: center;
+}
+
+.bellItem:hover {
+  background: var(--surface-muted);
+}
+
+.bellItem:last-child {
+  border-bottom: none;
+}
+
+.bellItemBody {
+  flex: 1;
+  min-width: 0;
+  color: var(--text);
+  font-size: 0.88rem;
+  line-height: 1.3;
+}
+
+.bellItemMeta {
+  color: var(--text-subtle);
+  font-size: 0.75rem;
+  margin-top: 0.15rem;
+}
+
+.bellItemUnread {
+  background: rgba(220, 38, 38, 0.04);
 }

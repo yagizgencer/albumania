@@ -20,15 +20,115 @@
 .avatar {
   width: 88px;
   height: 88px;
+}
+
+.avatarButton {
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  cursor: zoom-in;
+  border-radius: 50%;
+  line-height: 0;
+}
+
+.avatarButton:focus-visible {
+  outline: 2px solid #3e95cd;
+  outline-offset: 2px;
+}
+
+.lightboxBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 1.5rem;
+}
+
+.lightbox {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  max-width: min(90vw, 520px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.lightboxImg {
+  display: block;
+  max-width: 100%;
+  max-height: 70vh;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+.lightboxFallback {
+  width: 240px;
+  height: 240px;
   border-radius: 50%;
   background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
   color: #fff;
-  font-size: 2.25rem;
+  font-size: 6rem;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
   user-select: none;
+}
+
+.lightboxActions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.lightboxBtnPrimary {
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.lightboxBtnPrimary:hover {
+  background: var(--btn-primary-bg-hover);
+}
+
+.lightboxBtnDanger {
+  background: var(--btn-danger-bg);
+  color: var(--btn-danger-fg);
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.lightboxBtnDanger:hover {
+  background: var(--btn-danger-bg-hover);
+}
+
+.lightboxBtnGhost {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+.lightboxBtnGhost:hover {
+  background: var(--surface-muted);
 }
 
 .headerInfo {
@@ -93,9 +193,9 @@
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  background: #4f46e5;
-  color: #fff;
-  border: 1px solid #4f46e5;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+  border: 1px solid var(--btn-primary-bg);
   padding: 0.45rem 0.9rem;
   border-radius: 6px;
   font-weight: 600;
@@ -104,8 +204,8 @@
 }
 
 .friendBtn:hover:not(:disabled) {
-  background: #4338ca;
-  border-color: #4338ca;
+  background: var(--btn-primary-bg-hover);
+  border-color: var(--btn-primary-bg-hover);
 }
 
 .friendBtn:disabled {
@@ -120,31 +220,31 @@
 }
 
 .friendBtnPending:hover:not(:disabled) {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
-  border-color: #ef4444;
+  background: rgba(220, 38, 38, 0.08);
+  color: var(--btn-danger-bg);
+  border-color: var(--btn-danger-bg);
 }
 
 .friendBtnAccept {
-  background: #059669;
-  border-color: #059669;
+  background: var(--btn-success-bg);
+  border-color: var(--btn-success-bg);
 }
 
 .friendBtnAccept:hover:not(:disabled) {
-  background: #047857;
-  border-color: #047857;
+  background: var(--btn-success-bg-hover);
+  border-color: var(--btn-success-bg-hover);
 }
 
 .friendBtnFriends {
   background: transparent;
-  color: #059669;
-  border-color: #059669;
+  color: var(--btn-success-bg);
+  border-color: var(--btn-success-bg);
 }
 
 .friendBtnFriends:hover:not(:disabled) {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
-  border-color: #ef4444;
+  background: rgba(220, 38, 38, 0.08);
+  color: var(--btn-danger-bg);
+  border-color: var(--btn-danger-bg);
 }
 
 .friendIcon {
@@ -187,8 +287,7 @@
 }
 
 .compareLabel {
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
 }
 
 .compareSelect {
@@ -265,8 +364,8 @@
 }
 
 .compareToggleBtn {
-  background: #4f46e5;
-  color: #fff;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
   border: none;
   border-radius: 6px;
   padding: 0.45rem 0.9rem;
@@ -276,7 +375,7 @@
 }
 
 .compareToggleBtn:hover {
-  background: #4338ca;
+  background: var(--btn-primary-bg-hover);
 }
 
 .editor {
@@ -316,8 +415,8 @@
 }
 
 .saveBtn {
-  background: #4f46e5;
-  color: #fff;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
   border: none;
   padding: 0.5rem 1rem;
   border-radius: 6px;
@@ -326,7 +425,7 @@
 }
 
 .saveBtn:hover:not(:disabled) {
-  background: #4338ca;
+  background: var(--btn-primary-bg-hover);
 }
 
 .cancelBtn {

@@ -140,6 +140,21 @@ Each phase is sized to be 1–2 sittings. Test count is a floor, not a ceiling.
   - `GET /listen-later/with-friends` hides albums you've already published.
   - Auth tests: `POST /invites` 401 without token; accepting an invite you're not the receiver of returns 403.
 
+### Phase 7.5 — Profile pictures (avatars)
+**Goal**: let users upload, replace, and remove a profile picture, and surface it everywhere a user appears in the UI (profile, friends list, invites, Listen Later participant chips). Lands before Phase 8 so the deploy step can configure R2 alongside the rest of the env.
+
+- Storage abstraction (`backend/app/services/storage.py`) with three implementations behind one `Storage` Protocol:
+  - `LocalStorage` (dev) writes under `static/avatars/`; FastAPI mounts `/static` when `STORAGE_BACKEND=local`.
+  - `R2Storage` (prod) talks to Cloudflare R2 via the S3 API (`boto3`). 10 GB free tier; no egress fees.
+  - `InMemoryStorage` (tests) — injected via `app.dependency_overrides[get_storage]` in `conftest.py`.
+  - Alternative considered: Postgres `bytea` — rejected because every avatar render would go through FastAPI.
+- New deps: `boto3`, `python-multipart` (FastAPI's `UploadFile` requires it).
+- Model: `User.profile_picture_key: str | None`. Migration `d4e91c2a87bf` chained on `c91d27e54b80`.
+- Endpoints: `POST /users/me/avatar` (multipart; validates `image/jpeg|png|webp` → 415, ≤ 2 MB → 413; generates `avatars/{username}-{shortuuid}.{ext}` and deletes the old object on replace) and `DELETE /users/me/avatar`. Both reuse `get_current_user`.
+- Surface URLs everywhere a user is referenced: `UserResponse.profile_picture_url`, `UserSearchResult.profile_picture_url`, `FriendshipResponse.{user_a,user_b,requested_by}_picture_url`, `ListenInviteOut.{sender,receiver}_picture_url`, `ListenLaterParticipant.picture_url`. Friendship + invite routers do one batched `username → url` lookup per request via `services/avatars.py::picture_url_map`.
+- Frontend: reusable `<Avatar username pictureUrl size />` component with a gradient-initial fallback (and `onError` fallback if R2 ever 404s). Render on `ProfilePage` (88 px, plus an upload UI in the editor), the friends list (28 px next to each username), the invites page (22 px on the inline sender/receiver mention), and the Listen Later participant chips (18 px).
+- Tests: 8 new in `tests/test_avatar.py` — upload happy path, replace deletes old object, wrong content-type → 415, oversized → 413, auth-required, delete clears key + object, `GET /users/{username}` exposes the URL, friendship + invite payloads carry it.
+
 ### Phase 8 — Polish, hardening, deployment
 **Goal**: ship it.
 - Rate limiting on `/auth/*` (slowapi or hand-rolled), bcrypt cost tuned, refresh token rotation.

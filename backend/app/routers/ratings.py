@@ -100,9 +100,9 @@ def patch_rating(rating_id: int, body: RatingPatch, user: CurrentUser, db: DB) -
         )
 
     if body.top_track_indices is not None:
-        if (
-            rating.status == RatingStatus.published
-            and len(body.top_track_indices) != 5
+        if rating.status == RatingStatus.published and (
+            len(body.top_track_indices) != 5
+            or any(i is None for i in body.top_track_indices)
         ):
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -139,7 +139,8 @@ def publish_rating(rating_id: int, user: CurrentUser, db: DB) -> Rating:
     errors: list[str] = []
     if rating.score is None:
         errors.append("score is required")
-    if not rating.top_track_indices or len(rating.top_track_indices) != 5:
+    top = rating.top_track_indices or []
+    if len(top) != 5 or any(i is None for i in top):
         errors.append("exactly 5 top tracks are required")
     if errors:
         raise HTTPException(

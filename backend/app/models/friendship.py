@@ -46,6 +46,11 @@ class Friendship(Base):
     dashboard_entries: Mapped[list["FriendDashboardEntry"]] = relationship(
         "FriendDashboardEntry", cascade="all, delete-orphan"
     )
+    notifications: Mapped[list["Notification"]] = relationship(  # noqa: F821 — forward ref
+        "Notification",
+        cascade="all, delete-orphan",
+        primaryjoin="Friendship.id == Notification.friendship_id",
+    )
 
     __table_args__ = (
         UniqueConstraint("user_a_username", "user_b_username", name="uq_friendship_pair"),

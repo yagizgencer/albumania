@@ -14,9 +14,9 @@
 }
 
 .tab.active {
-  background: #1d4ed8;
-  color: #fff;
-  border-color: #1d4ed8;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+  border-color: var(--btn-primary-bg);
 }
 
 .card {
@@ -38,23 +38,39 @@
 
 .actions button {
   padding: 0.35rem 0.8rem;
-  border-radius: 4px;
-  border: 1px solid var(--border);
+  border-radius: 6px;
+  border: 1px solid var(--btn-secondary-border);
   cursor: pointer;
-  background: var(--surface);
-  color: var(--text);
+  font-weight: 600;
+  font-size: 0.85rem;
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-fg);
+}
+
+.actions button:hover {
+  background: var(--btn-secondary-bg-hover);
 }
 
 .actions button.primary {
-  background: #1d4ed8;
-  color: #fff;
-  border-color: #1d4ed8;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+  border-color: var(--btn-primary-bg);
+}
+
+.actions button.primary:hover {
+  background: var(--btn-primary-bg-hover);
+  border-color: var(--btn-primary-bg-hover);
 }
 
 .actions button.danger {
-  background: #b91c1c;
-  color: #fff;
-  border-color: #b91c1c;
+  background: var(--btn-danger-bg);
+  color: var(--btn-danger-fg);
+  border-color: var(--btn-danger-bg);
+}
+
+.actions button.danger:hover {
+  background: var(--btn-danger-bg-hover);
+  border-color: var(--btn-danger-bg-hover);
 }
 
 .searchBar {
@@ -95,4 +111,25 @@
 
 .error {
   color: #ef4444;
+}
+
+.userInline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.userLink {
+  text-decoration: none;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.userLink:hover {
+  color: var(--btn-primary-bg);
+}
+
+.userHandle {
+  color: var(--text-subtle);
+  font-weight: 400;
 }

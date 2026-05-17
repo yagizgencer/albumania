@@ -6,15 +6,18 @@ import {
   useState,
 } from "react";
 import { apiClient, setAccessToken } from "../api/client";
+import { getUser, type UserProfile } from "../api/users";
 
 interface AuthState {
   username: string | null;
+  profile: UserProfile | null;
   isLoading: boolean;
 }
 
 interface AuthContextValue extends AuthState {
   login: (token: string) => void;
   logout: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 function parseUsername(token: string): string {
@@ -25,12 +28,32 @@ function parseUsername(token: string): string {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<AuthState>({ username: null, isLoading: true });
+  const [state, setState] = useState<AuthState>({
+    username: null,
+    profile: null,
+    isLoading: true,
+  });
 
-  const login = useCallback((token: string) => {
-    setAccessToken(token);
-    setState({ username: parseUsername(token), isLoading: false });
+  const loadProfile = useCallback(async (username: string) => {
+    try {
+      const profile = await getUser(username);
+      setState((prev) =>
+        prev.username === username ? { ...prev, profile } : prev
+      );
+    } catch {
+      // ignore — NavBar will fall back to the gradient initial
+    }
   }, []);
+
+  const login = useCallback(
+    (token: string) => {
+      setAccessToken(token);
+      const username = parseUsername(token);
+      setState({ username, profile: null, isLoading: false });
+      void loadProfile(username);
+    },
+    [loadProfile]
+  );
 
   const logout = useCallback(async () => {
     try {
@@ -39,8 +62,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // ignore — cookie is cleared server-side on best-effort basis
     }
     setAccessToken(null);
-    setState({ username: null, isLoading: false });
+    setState({ username: null, profile: null, isLoading: false });
   }, []);
+
+  const refreshProfile = useCallback(async () => {
+    if (!state.username) return;
+    await loadProfile(state.username);
+  }, [loadProfile, state.username]);
 
   // On mount, try a silent refresh so users don't have to log in again
   // after closing the tab (as long as the httpOnly refresh cookie is still valid).
@@ -48,11 +76,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     apiClient
       .post<{ access_token: string }>("/auth/refresh")
       .then(({ data }) => login(data.access_token))
-      .catch(() => setState({ username: null, isLoading: false }));
+      .catch(() => setState({ username: null, profile: null, isLoading: false }));
   }, [login]);
 
   return (
-    <AuthContext.Provider value={{ ...state, login, logout }}>
+    <AuthContext.Provider value={{ ...state, login, logout, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
