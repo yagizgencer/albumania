@@ -6,7 +6,33 @@ from sqlalchemy.pool import StaticPool
 
 from app.db.session import Base, get_db
 from app.main import app
+from app.services.spotify import SpotifyClient, get_spotify_client
 from app.services.storage import InMemoryStorage, get_storage
+
+
+class _StubSpotifyClient(SpotifyClient):
+    def __init__(self) -> None:
+        pass  # skip real credentials
+
+    def search_albums(self, query, limit=10):
+        return []
+
+    def get_album(self, spotify_id):
+        return None
+
+    def get_album_tracks(self, spotify_id):
+        return []
+
+    def get_top5_popular_indices(self, spotify_id):
+        return []
+
+
+@pytest.fixture(autouse=True)
+def _stub_spotify():
+    stub = _StubSpotifyClient()
+    app.dependency_overrides[get_spotify_client] = lambda: stub
+    yield
+    app.dependency_overrides.pop(get_spotify_client, None)
 
 
 @pytest.fixture()
