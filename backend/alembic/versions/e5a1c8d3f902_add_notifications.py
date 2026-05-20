@@ -37,7 +37,7 @@ def upgrade() -> None:
         sa.Column("friendship_id", sa.Integer(), nullable=True),
         sa.Column("invite_id", sa.Integer(), nullable=True),
         sa.Column("album_id", sa.Integer(), nullable=True),
-        sa.Column("read", sa.Boolean(), nullable=False, server_default=sa.text("0")),
+        sa.Column("read", sa.Boolean(), nullable=False, server_default=sa.false()),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
