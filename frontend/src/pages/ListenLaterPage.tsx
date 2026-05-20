@@ -10,6 +10,7 @@ import {
   type ListenLaterEntry,
   type ListenLaterParticipant,
 } from "../api/invites";
+import { AlbumSearchBar } from "../components/AlbumSearchBar";
 import { Avatar } from "../components/Avatar";
 import styles from "./ListenLaterPage.module.css";
 
@@ -53,6 +54,10 @@ export function ListenLaterPage() {
   return (
     <main className={styles.page}>
       <h1>Listen Later</h1>
+
+      <section className={styles.searchSection}>
+        <AlbumSearchBar placeholder="Add an album — search by title or artist…" />
+      </section>
 
       <div className={styles.layout}>
         <aside className={styles.sidebar}>

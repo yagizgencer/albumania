@@ -18,10 +18,12 @@ vi.mock("./api/client", () => ({
 }));
 
 describe("App", () => {
-  it("redirects unauthenticated users to the login page", async () => {
+  it("shows the public landing with login + signup CTAs when unauthenticated", async () => {
     await act(async () => {
       render(<App />);
     });
-    expect(screen.getByRole("heading", { name: /log in/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /albumania/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /log in/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /sign up/i })).toBeInTheDocument();
   });
 });

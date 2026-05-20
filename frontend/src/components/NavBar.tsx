@@ -15,7 +15,13 @@ export function NavBar() {
   return (
     <nav className={styles.nav}>
       <NavLink to="/" className={styles.brand}>
-        Albumania
+        <img
+          src="/albumania_icon.png"
+          alt=""
+          className={styles.brandLogo}
+          aria-hidden
+        />
+        <span>Albumania</span>
       </NavLink>
 
       <div className={styles.itemsRow}>

@@ -5,6 +5,10 @@
   color: var(--text);
 }
 
+.searchSection {
+  margin-bottom: 1.25rem;
+}
+
 .layout {
   display: grid;
   grid-template-columns: 280px 1fr;

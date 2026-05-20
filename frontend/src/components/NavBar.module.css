@@ -11,14 +11,26 @@
 }
 
 .brand {
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  gap: 0.65rem;
   font-weight: 700;
-  font-size: 1.1rem;
+  font-size: 1.4rem;
   color: var(--text);
   text-decoration: none;
   letter-spacing: 0.02em;
   padding: 0 0.75rem;
+}
+
+.brandLogo {
+  width: 80px;
+  height: 80px;
+  display: block;
+  flex-shrink: 0;
+}
+
+.brand span {
+  margin-top: 0.6rem;
 }
 
 .itemsRow {
