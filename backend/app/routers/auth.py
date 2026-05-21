@@ -11,6 +11,7 @@ from app.core.security import (
     hash_password,
     verify_password,
 )
+from app.core.config import get_settings
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.auth import LoginRequest, TokenResponse
@@ -19,8 +20,13 @@ from app.schemas.user import UserCreate
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 _REFRESH_COOKIE = "refresh_token"
-# secure=False is intentional for local HTTP dev; set True behind HTTPS in prod.
-_COOKIE_OPTS: dict = {"httponly": True, "samesite": "lax", "secure": False}
+
+
+def _cookie_opts() -> dict:
+    secure = get_settings().cookie_secure
+    # SameSite=None is required for cross-site cookies (Vercel → Render).
+    # SameSite=None mandates Secure=True, so lax is only used in local dev.
+    return {"httponly": True, "samesite": "none" if secure else "lax", "secure": secure}
 
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
@@ -44,7 +50,7 @@ def register(
     db.commit()
     db.refresh(user)
 
-    response.set_cookie(_REFRESH_COOKIE, create_refresh_token(user.username), **_COOKIE_OPTS)
+    response.set_cookie(_REFRESH_COOKIE, create_refresh_token(user.username), **_cookie_opts())
     return TokenResponse(access_token=create_access_token(user.username))
 
 
@@ -58,7 +64,7 @@ def login(
     if not user or not verify_password(body.password, user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
-    response.set_cookie(_REFRESH_COOKIE, create_refresh_token(user.username), **_COOKIE_OPTS)
+    response.set_cookie(_REFRESH_COOKIE, create_refresh_token(user.username), **_cookie_opts())
     return TokenResponse(access_token=create_access_token(user.username))
 
 
@@ -79,7 +85,7 @@ def refresh(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type")
 
     username = payload["sub"]
-    response.set_cookie(_REFRESH_COOKIE, create_refresh_token(username), **_COOKIE_OPTS)
+    response.set_cookie(_REFRESH_COOKIE, create_refresh_token(username), **_cookie_opts())
     return TokenResponse(access_token=create_access_token(username))
 
 

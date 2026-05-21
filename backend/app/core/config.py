@@ -32,6 +32,10 @@ class Settings(BaseSettings):
     r2_bucket: str = ""
     r2_public_url_base: str = ""
 
+    # Set to true in production (Render). Enables Secure + SameSite=None so
+    # the httpOnly refresh cookie is sent on cross-site requests (Vercel → Render).
+    cookie_secure: bool = False
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
