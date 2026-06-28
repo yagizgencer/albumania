@@ -16,6 +16,7 @@ import {
   type ProfileVisibility,
   type UserProfile,
 } from "../api/users";
+import { usePersistentState } from "../lib/usePersistentState";
 import { Avatar } from "../components/Avatar";
 import { ProfileDashboard } from "./ProfileDashboardPage";
 import { FriendDashboard } from "./FriendDashboardPage";
@@ -39,8 +40,12 @@ export function ProfilePage() {
   const [friendships, setFriendships] = useState<Friendship[] | null>(null);
   const [editing, setEditing] = useState(false);
   const [avatarOpen, setAvatarOpen] = useState(false);
-  // friendshipId we're comparing against, or null = solo dashboard vs Spotify
-  const [compareFriendshipId, setCompareFriendshipId] = useState<number | null>(null);
+  // friendshipId we're comparing against, or null = solo dashboard vs Spotify.
+  // Persisted per profile so returning from an album re-opens the same view.
+  const [compareFriendshipId, setCompareFriendshipId] = usePersistentState<number | null>(
+    `dash:compare:${username ?? ""}`,
+    null
+  );
 
   const isOwner = !!profile && !!me && profile.username === me;
 
@@ -67,7 +72,8 @@ export function ProfilePage() {
     setProfile(null);
     setError(null);
     setEditing(false);
-    setCompareFriendshipId(null);
+    // compareFriendshipId is keyed by username via usePersistentState, so it
+    // restores per profile and resets naturally when viewing a different user.
     void reloadProfile();
     void reloadFriendships();
     // eslint-disable-next-line react-hooks/exhaustive-deps

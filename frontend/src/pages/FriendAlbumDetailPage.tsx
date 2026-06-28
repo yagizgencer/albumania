@@ -69,7 +69,7 @@ export function FriendAlbumDetailPage() {
         onClick={() => navigate(-1)}
         className={styles.backLink}
       >
-        ← Back to pair dashboard
+        ← Back to dashboard
       </button>
 
       <header className={styles.header}>

@@ -90,21 +90,77 @@
   color: var(--btn-primary-fg);
 }
 
+/* Metric flip switch — both labels visible, active side highlighted, one click flips. */
+.switch {
+  display: inline-flex;
+  align-items: stretch;
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--surface);
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+}
+
+.switchOption {
+  padding: 0.4rem 0.95rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  line-height: 1.2;
+  transition: background 0.12s, color 0.12s;
+}
+
+.switchActive {
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+}
+
 .chartCard {
   background: var(--surface);
   color: var(--text);
   border: 2px solid var(--border);
   border-radius: 12px;
-  padding: 1rem;
+  padding: 1rem 1.75rem 1.25rem;
   margin-bottom: 1.5rem;
+}
+
+.chartToolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.25rem;
+}
+
+.fitBtn {
+  background: var(--surface);
+  color: var(--text-muted);
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  padding: 0.25rem 0.7rem;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.fitBtn:hover {
+  background: var(--surface-muted);
+  color: var(--text);
+}
+
+/* Horizontal scroll keeps the wide friend table from squishing columns out of
+   alignment; the solo table is narrow enough that it never triggers. */
+.tableWrap {
+  overflow-x: auto;
+  border: 2px solid var(--border);
+  border-radius: 12px;
 }
 
 .table {
   width: 100%;
   background: var(--surface);
   color: var(--text);
-  border: 2px solid var(--border);
-  border-radius: 12px;
   border-collapse: separate;
   border-spacing: 0;
   overflow: hidden;
@@ -116,6 +172,12 @@
   text-align: left;
   border-bottom: 1px solid var(--surface-muted);
   vertical-align: middle;
+}
+
+/* Multi-line similarity headers in the friend view baseline-align with the
+   single-line ones. */
+.table th {
+  vertical-align: bottom;
 }
 
 .th {
@@ -174,16 +236,20 @@
   background: var(--surface-muted);
 }
 
+/* Numeric columns shrink to their content (width: 1%) so the Album column takes
+   the remaining width — this keeps every header sitting directly above its values. */
 .numCell {
   text-align: right;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  width: 1%;
 }
 
 .albumCell {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  min-width: 180px;
 }
 
 .albumArt {

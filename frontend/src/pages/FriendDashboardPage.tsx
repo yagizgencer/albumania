@@ -1,15 +1,4 @@
-import {
-  CategoryScale,
-  Chart as ChartJS,
-  Legend,
-  LineElement,
-  LinearScale,
-  PointElement,
-  Title,
-  Tooltip,
-} from "chart.js";
 import { useEffect, useMemo, useState } from "react";
-import { Line } from "react-chartjs-2";
 import { useNavigate } from "react-router-dom";
 import {
   getFriendDashboard,
@@ -17,19 +6,12 @@ import {
   type FriendDashboardResponse,
 } from "../api/friendDashboard";
 import { chartPalette } from "../lib/chartTheme";
+import { usePersistentState } from "../lib/usePersistentState";
 import { Alert } from "../components/Alert";
 import { LoadingState } from "../components/Spinner";
+import { DashboardChart } from "../components/DashboardChart";
+import { MetricSwitch } from "../components/MetricSwitch";
 import styles from "./ProfileDashboardPage.module.css";
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-);
 
 type SortColumn =
   | "album"
@@ -62,12 +44,13 @@ export function FriendDashboard({ friendshipId }: { friendshipId: number }) {
   const [data, setData] = useState<FriendDashboardResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const [sort, setSort] = useState<SortState | null>(null);
-  const [artistFilter, setArtistFilter] = useState("");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
-  const [cumulative, setCumulative] = useState(false);
-  const [mode, setMode] = useState<Mode>("similarity");
+  // Persisted per friendship so opening an album and coming back keeps the view.
+  const ns = `dash:pair:${friendshipId}`;
+  const [sort, setSort] = usePersistentState<SortState | null>(`${ns}:sort`, null);
+  const [artistFilter, setArtistFilter] = usePersistentState(`${ns}:filter`, "");
+  const [fromDate, setFromDate] = usePersistentState(`${ns}:from`, "");
+  const [toDate, setToDate] = usePersistentState(`${ns}:to`, "");
+  const [mode, setMode] = usePersistentState<Mode>(`${ns}:mode`, "similarity");
 
   useEffect(() => {
     setError(null);
@@ -143,18 +126,10 @@ export function FriendDashboard({ friendshipId }: { friendshipId: number }) {
     });
   }
 
+  // Plot follows the table order, so sorting re-orders the lines.
   const chartData = useMemo(() => {
-    const byDate = [...filtered].sort((a, b) =>
-      a.mutual_date.localeCompare(b.mutual_date)
-    );
-    const labels = byDate.map((e) => e.mutual_date.slice(0, 10));
-
-    const series = (values: (number | null)[]) => {
-      const clean = values.map((v) => v ?? 0);
-      if (!cumulative) return clean;
-      let sum = 0;
-      return clean.map((v, i) => (sum += v) / (i + 1));
-    };
+    const labels = sorted.map((e) => e.album.title);
+    const series = (values: (number | null)[]) => values.map((v) => v ?? 0);
 
     const aLabel = data?.user_a_username ?? "User A";
     const bLabel = data?.user_b_username ?? "User B";
@@ -164,21 +139,21 @@ export function FriendDashboard({ friendshipId }: { friendshipId: number }) {
         ? [
             {
               label: `${aLabel} ↔ ${bLabel}`,
-              data: series(byDate.map((e) => e.similarity_users)),
+              data: series(sorted.map((e) => e.similarity_users)),
               borderColor: PAIR_COLOR,
               backgroundColor: PAIR_COLOR,
               tension: 0.25,
             },
             {
               label: `${aLabel} ↔ Spotify`,
-              data: series(byDate.map((e) => e.similarity_a_vs_spotify)),
+              data: series(sorted.map((e) => e.similarity_a_vs_spotify)),
               borderColor: A_COLOR,
               backgroundColor: A_COLOR,
               tension: 0.25,
             },
             {
               label: `${bLabel} ↔ Spotify`,
-              data: series(byDate.map((e) => e.similarity_b_vs_spotify)),
+              data: series(sorted.map((e) => e.similarity_b_vs_spotify)),
               borderColor: B_COLOR,
               backgroundColor: B_COLOR,
               tension: 0.25,
@@ -187,21 +162,21 @@ export function FriendDashboard({ friendshipId }: { friendshipId: number }) {
         : [
             {
               label: `${aLabel} score`,
-              data: series(byDate.map((e) => e.user_a_score)),
+              data: series(sorted.map((e) => e.user_a_score)),
               borderColor: A_COLOR,
               backgroundColor: A_COLOR,
               tension: 0.25,
             },
             {
               label: `${bLabel} score`,
-              data: series(byDate.map((e) => e.user_b_score)),
+              data: series(sorted.map((e) => e.user_b_score)),
               borderColor: B_COLOR,
               backgroundColor: B_COLOR,
               tension: 0.25,
             },
             {
               label: "Mean",
-              data: series(byDate.map((e) => e.mean_score)),
+              data: series(sorted.map((e) => e.mean_score)),
               borderColor: MEAN_COLOR,
               backgroundColor: MEAN_COLOR,
               tension: 0.25,
@@ -209,7 +184,7 @@ export function FriendDashboard({ friendshipId }: { friendshipId: number }) {
           ];
 
     return { labels, datasets };
-  }, [filtered, mode, cumulative, data]);
+  }, [sorted, mode, data]);
 
   if (error) return <Alert>{error}</Alert>;
   if (!data) return <LoadingState />;
@@ -224,49 +199,15 @@ export function FriendDashboard({ friendshipId }: { friendshipId: number }) {
       </header>
 
       <section className={styles.controls}>
-        <div className={styles.toggleGroup}>
-          <span className={styles.toggleLabel}>Metric</span>
-          <div className={styles.segmented} role="group" aria-label="Metric">
-            <button
-              type="button"
-              className={`${styles.seg} ${mode === "similarity" ? styles.segActive : ""}`}
-              onClick={() => setMode("similarity")}
-              aria-pressed={mode === "similarity"}
-            >
-              Similarity
-            </button>
-            <button
-              type="button"
-              className={`${styles.seg} ${mode === "ratings" ? styles.segActive : ""}`}
-              onClick={() => setMode("ratings")}
-              aria-pressed={mode === "ratings"}
-            >
-              Ratings
-            </button>
-          </div>
-        </div>
-
-        <div className={styles.toggleGroup}>
-          <span className={styles.toggleLabel}>Trend</span>
-          <div className={styles.segmented} role="group" aria-label="Trend">
-            <button
-              type="button"
-              className={`${styles.seg} ${!cumulative ? styles.segActive : ""}`}
-              onClick={() => setCumulative(false)}
-              aria-pressed={!cumulative}
-            >
-              Flat
-            </button>
-            <button
-              type="button"
-              className={`${styles.seg} ${cumulative ? styles.segActive : ""}`}
-              onClick={() => setCumulative(true)}
-              aria-pressed={cumulative}
-            >
-              Running avg
-            </button>
-          </div>
-        </div>
+        <MetricSwitch
+          label="Metric"
+          options={[
+            { value: "similarity", label: "Similarity" },
+            { value: "ratings", label: "Ratings" },
+          ]}
+          value={mode}
+          onChange={setMode}
+        />
 
         <label>
           Artist / album
@@ -293,13 +234,14 @@ export function FriendDashboard({ friendshipId }: { friendshipId: number }) {
         {filtered.length === 0 ? (
           <p className={styles.empty}>No mutual ratings match the current filters.</p>
         ) : (
-          <Line
-            data={chartData}
-            options={{
-              responsive: true,
-              plugins: { legend: { position: "top" as const } },
-              scales: { y: { beginAtZero: mode === "ratings" } },
-            }}
+          <DashboardChart
+            labels={chartData.labels}
+            datasets={chartData.datasets}
+            onPointClick={(i) =>
+              navigate(`/friendships/${data.friendship_id}/albums/${sorted[i].album.spotify_id}`)
+            }
+            resetKey={sort}
+            beginAtZero={mode === "ratings"}
           />
         )}
       </section>
@@ -307,49 +249,62 @@ export function FriendDashboard({ friendshipId }: { friendshipId: number }) {
       {sorted.length === 0 ? (
         <p className={styles.empty}>No mutual ratings yet.</p>
       ) : (
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <SortableHeader label="Album" column="album" sort={sort} onClick={cycleSort} align="left" />
-              <SortableHeader label="Released" column="release" sort={sort} onClick={cycleSort} align="right" />
-              <SortableHeader label="Rated" column="rated" sort={sort} onClick={cycleSort} align="right" />
-              <SortableHeader label={data.user_a_username} column="a-score" sort={sort} onClick={cycleSort} align="right" />
-              <SortableHeader label={data.user_b_username} column="b-score" sort={sort} onClick={cycleSort} align="right" />
-              <SortableHeader label="Mean" column="mean" sort={sort} onClick={cycleSort} align="right" />
-              <SortableHeader label={`${data.user_a_username} ↔ ${data.user_b_username}`} column="pair-similarity" sort={sort} onClick={cycleSort} align="right" />
-              <SortableHeader label={`${data.user_a_username} ↔ Spotify`} column="a-similarity" sort={sort} onClick={cycleSort} align="right" />
-              <SortableHeader label={`${data.user_b_username} ↔ Spotify`} column="b-similarity" sort={sort} onClick={cycleSort} align="right" />
-            </tr>
-          </thead>
-          <tbody>
-            {sorted.map((e) => (
-              <tr
-                key={e.album.id}
-                className={styles.row}
-                onClick={() =>
-                  navigate(`/friendships/${data.friendship_id}/albums/${e.album.spotify_id}`)
-                }
-              >
-                <td>
-                  {e.album.album_art_url && (
-                    <img src={e.album.album_art_url} alt="" className={styles.albumArt} />
-                  )}
-                  <strong>{e.album.title}</strong>
-                  <br />
-                  <small>{e.album.artist}</small>
-                </td>
-                <td className={styles.numCell}>{e.album.release_date}</td>
-                <td className={styles.numCell}>{e.mutual_date.slice(0, 10)}</td>
-                <td className={styles.numCell}>{e.user_a_score.toFixed(1)}</td>
-                <td className={styles.numCell}>{e.user_b_score.toFixed(1)}</td>
-                <td className={styles.numCell}>{e.mean_score.toFixed(2)}</td>
-                <td className={styles.numCell}>{fmt(e.similarity_users)}</td>
-                <td className={styles.numCell}>{fmt(e.similarity_a_vs_spotify)}</td>
-                <td className={styles.numCell}>{fmt(e.similarity_b_vs_spotify)}</td>
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <SortableHeader label="Album" column="album" sort={sort} onClick={cycleSort} align="left" />
+                <SortableHeader label="Released" column="release" sort={sort} onClick={cycleSort} align="right" />
+                <SortableHeader label="Rated" column="rated" sort={sort} onClick={cycleSort} align="right" />
+                <SortableHeader label={data.user_a_username} column="a-score" sort={sort} onClick={cycleSort} align="right" />
+                <SortableHeader label={data.user_b_username} column="b-score" sort={sort} onClick={cycleSort} align="right" />
+                <SortableHeader label="Mean" column="mean" sort={sort} onClick={cycleSort} align="right" />
+                <SortableHeader label={`${data.user_a_username} ↔ ${data.user_b_username}`} column="pair-similarity" sort={sort} onClick={cycleSort} align="right" />
+                <SortableHeader label={`${data.user_a_username} ↔ Spotify`} column="a-similarity" sort={sort} onClick={cycleSort} align="right" />
+                <SortableHeader label={`${data.user_b_username} ↔ Spotify`} column="b-similarity" sort={sort} onClick={cycleSort} align="right" />
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {sorted.map((e) => (
+                <tr
+                  key={e.album.id}
+                  className={styles.row}
+                  onClick={() =>
+                    navigate(`/friendships/${data.friendship_id}/albums/${e.album.spotify_id}`)
+                  }
+                >
+                  <td>
+                    <div className={styles.albumCell}>
+                      {e.album.album_art_url && (
+                        <img
+                          src={e.album.album_art_url}
+                          alt=""
+                          className={styles.albumArt}
+                          onClick={(ev) => {
+                            ev.stopPropagation();
+                            navigate(`/albums/${e.album.spotify_id}`);
+                          }}
+                        />
+                      )}
+                      <span className={styles.albumText}>
+                        <strong className={styles.albumTitle}>{e.album.title}</strong>
+                        <small className={styles.albumArtist}>{e.album.artist}</small>
+                      </span>
+                    </div>
+                  </td>
+                  <td className={styles.numCell}>{e.album.release_date.slice(0, 10)}</td>
+                  <td className={styles.numCell}>{e.mutual_date.slice(0, 10)}</td>
+                  <td className={styles.numCell}>{e.user_a_score.toFixed(1)}</td>
+                  <td className={styles.numCell}>{e.user_b_score.toFixed(1)}</td>
+                  <td className={styles.numCell}>{e.mean_score.toFixed(2)}</td>
+                  <td className={styles.numCell}>{fmt(e.similarity_users)}</td>
+                  <td className={styles.numCell}>{fmt(e.similarity_a_vs_spotify)}</td>
+                  <td className={styles.numCell}>{fmt(e.similarity_b_vs_spotify)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </>
   );

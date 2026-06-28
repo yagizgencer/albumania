@@ -1,31 +1,13 @@
-import {
-  CategoryScale,
-  Chart as ChartJS,
-  Legend,
-  LineElement,
-  LinearScale,
-  PointElement,
-  Title,
-  Tooltip,
-} from "chart.js";
 import { useEffect, useMemo, useState } from "react";
-import { Line } from "react-chartjs-2";
 import { useNavigate } from "react-router-dom";
 import { getDashboard, type DashboardEntry } from "../api/dashboard";
 import { chartFill, chartPalette } from "../lib/chartTheme";
+import { usePersistentState } from "../lib/usePersistentState";
 import { Alert } from "../components/Alert";
 import { LoadingState } from "../components/Spinner";
+import { DashboardChart } from "../components/DashboardChart";
+import { MetricSwitch } from "../components/MetricSwitch";
 import styles from "./ProfileDashboardPage.module.css";
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-);
 
 type SortColumn = "album" | "release" | "rated" | "score" | "similarity";
 type SortDirection = "asc" | "desc";
@@ -40,12 +22,13 @@ export function ProfileDashboard({ username }: { username: string }) {
   const [entries, setEntries] = useState<DashboardEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const [sort, setSort] = useState<SortState | null>(null);
-  const [artistFilter, setArtistFilter] = useState("");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
-  const [cumulative, setCumulative] = useState(false);
-  const [mode, setMode] = useState<Mode>("similarity");
+  // Persisted per profile so opening an album and coming back keeps the view.
+  const ns = `dash:solo:${username}`;
+  const [sort, setSort] = usePersistentState<SortState | null>(`${ns}:sort`, null);
+  const [artistFilter, setArtistFilter] = usePersistentState(`${ns}:filter`, "");
+  const [fromDate, setFromDate] = usePersistentState(`${ns}:from`, "");
+  const [toDate, setToDate] = usePersistentState(`${ns}:to`, "");
+  const [mode, setMode] = usePersistentState<Mode>(`${ns}:mode`, "similarity");
 
   useEffect(() => {
     if (!username) return;
@@ -114,41 +97,24 @@ export function ProfileDashboard({ username }: { username: string }) {
     });
   }
 
-  const chartData = useMemo(() => {
-    const byDate = [...filtered].sort((a, b) =>
-      a.completed_at.localeCompare(b.completed_at)
-    );
-
-    const rawValues = byDate.map((e) =>
-      mode === "rating" ? e.score : e.similarity_user_vs_spotify ?? 0
-    );
-
-    const values: number[] = [];
-    if (cumulative) {
-      let sum = 0;
-      rawValues.forEach((v, i) => {
-        sum += v;
-        values.push(sum / (i + 1));
-      });
-    } else {
-      values.push(...rawValues);
-    }
-
-    return {
-      labels: byDate.map((e) => e.completed_at.slice(0, 10)),
+  // Plot follows the table order, so sorting re-orders the line.
+  const chartData = useMemo(
+    () => ({
+      labels: sorted.map((e) => e.album.title),
       datasets: [
         {
-          label:
-            (mode === "rating" ? "Score" : "Similarity vs Spotify") +
-            (cumulative ? " (running avg)" : ""),
-          data: values,
+          label: mode === "rating" ? "Score" : "Similarity vs Spotify",
+          data: sorted.map((e) =>
+            mode === "rating" ? e.score : e.similarity_user_vs_spotify ?? 0
+          ),
           borderColor: chartPalette.lavender,
           backgroundColor: chartFill.lavender,
           tension: 0.25,
         },
       ],
-    };
-  }, [filtered, mode, cumulative]);
+    }),
+    [sorted, mode]
+  );
 
   if (error) return <Alert>{error}</Alert>;
   if (!entries) return <LoadingState />;
@@ -156,49 +122,15 @@ export function ProfileDashboard({ username }: { username: string }) {
   return (
     <>
       <section className={styles.controls}>
-        <div className={styles.toggleGroup}>
-          <span className={styles.toggleLabel}>Metric</span>
-          <div className={styles.segmented} role="group" aria-label="Metric">
-            <button
-              type="button"
-              className={`${styles.seg} ${mode === "similarity" ? styles.segActive : ""}`}
-              onClick={() => setMode("similarity")}
-              aria-pressed={mode === "similarity"}
-            >
-              Similarity
-            </button>
-            <button
-              type="button"
-              className={`${styles.seg} ${mode === "rating" ? styles.segActive : ""}`}
-              onClick={() => setMode("rating")}
-              aria-pressed={mode === "rating"}
-            >
-              Rating
-            </button>
-          </div>
-        </div>
-
-        <div className={styles.toggleGroup}>
-          <span className={styles.toggleLabel}>Trend</span>
-          <div className={styles.segmented} role="group" aria-label="Trend">
-            <button
-              type="button"
-              className={`${styles.seg} ${!cumulative ? styles.segActive : ""}`}
-              onClick={() => setCumulative(false)}
-              aria-pressed={!cumulative}
-            >
-              Flat
-            </button>
-            <button
-              type="button"
-              className={`${styles.seg} ${cumulative ? styles.segActive : ""}`}
-              onClick={() => setCumulative(true)}
-              aria-pressed={cumulative}
-            >
-              Running avg
-            </button>
-          </div>
-        </div>
+        <MetricSwitch
+          label="Metric"
+          options={[
+            { value: "similarity", label: "Similarity" },
+            { value: "rating", label: "Rating" },
+          ]}
+          value={mode}
+          onChange={setMode}
+        />
 
         <label>
           Artist / album
@@ -225,13 +157,14 @@ export function ProfileDashboard({ username }: { username: string }) {
         {filtered.length === 0 ? (
           <p className={styles.empty}>No ratings match the current filters.</p>
         ) : (
-          <Line
-            data={chartData}
-            options={{
-              responsive: true,
-              plugins: { legend: { position: "top" as const } },
-              scales: { y: { beginAtZero: mode === "rating" } },
-            }}
+          <DashboardChart
+            labels={chartData.labels}
+            datasets={chartData.datasets}
+            onPointClick={(i) =>
+              navigate(`/users/${username}/albums/${sorted[i].album.spotify_id}`)
+            }
+            resetKey={sort}
+            beginAtZero={mode === "rating"}
           />
         )}
       </section>
@@ -239,54 +172,56 @@ export function ProfileDashboard({ username }: { username: string }) {
       {sorted.length === 0 ? (
         <p className={styles.empty}>No published ratings yet.</p>
       ) : (
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <SortableHeader label="Album" column="album" sort={sort} onClick={cycleSort} align="left" />
-              <SortableHeader label="Released" column="release" sort={sort} onClick={cycleSort} align="right" />
-              <SortableHeader label="Rated" column="rated" sort={sort} onClick={cycleSort} align="right" />
-              <SortableHeader label="Score" column="score" sort={sort} onClick={cycleSort} align="right" />
-              <SortableHeader label="Similarity" column="similarity" sort={sort} onClick={cycleSort} align="right" />
-            </tr>
-          </thead>
-          <tbody>
-            {sorted.map((e) => (
-              <tr
-                key={e.album.id}
-                className={styles.row}
-                onClick={() => navigate(`/users/${username}/albums/${e.album.spotify_id}`)}
-              >
-                <td>
-                  <div className={styles.albumCell}>
-                    {e.album.album_art_url && (
-                      <img
-                        src={e.album.album_art_url}
-                        alt=""
-                        className={styles.albumArt}
-                        onClick={(ev) => {
-                          ev.stopPropagation();
-                          navigate(`/albums/${e.album.spotify_id}`);
-                        }}
-                      />
-                    )}
-                    <span className={styles.albumText}>
-                      <strong className={styles.albumTitle}>{e.album.title}</strong>
-                      <small className={styles.albumArtist}>{e.album.artist}</small>
-                    </span>
-                  </div>
-                </td>
-                <td className={styles.numCell}>{e.album.release_date.slice(0, 10)}</td>
-                <td className={styles.numCell}>{e.completed_at.slice(0, 10)}</td>
-                <td className={styles.numCell}>{e.score.toFixed(1)}</td>
-                <td className={styles.numCell}>
-                  {e.similarity_user_vs_spotify === null
-                    ? "—"
-                    : e.similarity_user_vs_spotify.toFixed(2)}
-                </td>
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <SortableHeader label="Album" column="album" sort={sort} onClick={cycleSort} align="left" />
+                <SortableHeader label="Released" column="release" sort={sort} onClick={cycleSort} align="right" />
+                <SortableHeader label="Rated" column="rated" sort={sort} onClick={cycleSort} align="right" />
+                <SortableHeader label="Score" column="score" sort={sort} onClick={cycleSort} align="right" />
+                <SortableHeader label="Similarity" column="similarity" sort={sort} onClick={cycleSort} align="right" />
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {sorted.map((e) => (
+                <tr
+                  key={e.album.id}
+                  className={styles.row}
+                  onClick={() => navigate(`/users/${username}/albums/${e.album.spotify_id}`)}
+                >
+                  <td>
+                    <div className={styles.albumCell}>
+                      {e.album.album_art_url && (
+                        <img
+                          src={e.album.album_art_url}
+                          alt=""
+                          className={styles.albumArt}
+                          onClick={(ev) => {
+                            ev.stopPropagation();
+                            navigate(`/albums/${e.album.spotify_id}`);
+                          }}
+                        />
+                      )}
+                      <span className={styles.albumText}>
+                        <strong className={styles.albumTitle}>{e.album.title}</strong>
+                        <small className={styles.albumArtist}>{e.album.artist}</small>
+                      </span>
+                    </div>
+                  </td>
+                  <td className={styles.numCell}>{e.album.release_date.slice(0, 10)}</td>
+                  <td className={styles.numCell}>{e.completed_at.slice(0, 10)}</td>
+                  <td className={styles.numCell}>{e.score.toFixed(1)}</td>
+                  <td className={styles.numCell}>
+                    {e.similarity_user_vs_spotify === null
+                      ? "—"
+                      : e.similarity_user_vs_spotify.toFixed(2)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </>
   );
