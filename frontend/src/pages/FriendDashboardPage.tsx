@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   getFriendDashboard,
@@ -214,6 +214,16 @@ export function FriendDashboard({ friendshipId }: { friendshipId: number }) {
           onChange={setMode}
         />
 
+        <MetricSwitch
+          label="View"
+          options={[
+            { value: "detailed", label: "Detailed" },
+            { value: "overview", label: "Overview" },
+          ]}
+          value={view}
+          onChange={setView}
+        />
+
         <label>
           Artist / album
           <input
@@ -247,7 +257,6 @@ export function FriendDashboard({ friendshipId }: { friendshipId: number }) {
             }
             beginAtZero={mode === "ratings"}
             view={view}
-            onViewChange={setView}
             sortKey={sort}
           />
         )}
@@ -266,9 +275,9 @@ export function FriendDashboard({ friendshipId }: { friendshipId: number }) {
                 <SortableHeader label={trunc(a)} title={a} column="a-score" sort={sort} onClick={cycleSort} align="right" />
                 <SortableHeader label={trunc(b)} title={b} column="b-score" sort={sort} onClick={cycleSort} align="right" />
                 <SortableHeader label="Mean" column="mean" sort={sort} onClick={cycleSort} align="right" />
-                <SortableHeader label={`${trunc(a)} ↔ ${trunc(b)}`} title={`${a} ↔ ${b}`} column="pair-similarity" sort={sort} onClick={cycleSort} align="right" />
-                <SortableHeader label={`${trunc(a)} ↔ Spotify`} title={`${a} ↔ Spotify`} column="a-similarity" sort={sort} onClick={cycleSort} align="right" />
-                <SortableHeader label={`${trunc(b)} ↔ Spotify`} title={`${b} ↔ Spotify`} column="b-similarity" sort={sort} onClick={cycleSort} align="right" />
+                <SortableHeader label={stack(trunc(a), trunc(b))} title={`${a} ↔ ${b}`} column="pair-similarity" sort={sort} onClick={cycleSort} align="right" />
+                <SortableHeader label={stack(trunc(a), "Spotify")} title={`${a} ↔ Spotify`} column="a-similarity" sort={sort} onClick={cycleSort} align="right" />
+                <SortableHeader label={stack(trunc(b), "Spotify")} title={`${b} ↔ Spotify`} column="b-similarity" sort={sort} onClick={cycleSort} align="right" />
               </tr>
             </thead>
             <tbody>
@@ -321,8 +330,19 @@ function fmt(v: number | null): string {
   return v === null ? "—" : v.toFixed(3);
 }
 
-function trunc(s: string, n = 14): string {
+function trunc(s: string, n = 12): string {
   return s.length > n ? `${s.slice(0, n - 1)}…` : s;
+}
+
+// Vertical "userA ↔ userB" header so similarity columns stay narrow.
+function stack(top: string, bottom: string): ReactNode {
+  return (
+    <span className={styles.stackHeader}>
+      <span>{top}</span>
+      <span>↔</span>
+      <span>{bottom}</span>
+    </span>
+  );
 }
 
 function SortableHeader({
@@ -333,7 +353,7 @@ function SortableHeader({
   onClick,
   align,
 }: {
-  label: string;
+  label: ReactNode;
   title?: string;
   column: SortColumn;
   sort: SortState | null;

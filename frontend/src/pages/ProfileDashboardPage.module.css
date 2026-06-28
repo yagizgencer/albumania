@@ -129,7 +129,7 @@
 .chartHeader {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 0.5rem;
   margin-bottom: 0.5rem;
   flex-wrap: wrap;
@@ -159,19 +159,20 @@
   color: var(--text);
 }
 
-/* Horizontal scroll/zoom for the plot: the canvas (.sizer) is widened beyond the
-   viewport and panned via native scroll — predictable, no plugin. */
-.scrollArea {
+/* The canvas stays fixed-size (so y-axis + legend never move); only the visible
+   x-window changes via the range scrollbar / drag / zoom. */
+.chartBox {
   position: relative;
   width: 100%;
-  height: 360px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  overscroll-behavior-x: contain;
+  height: 340px;
+  touch-action: pan-y;
 }
 
-.sizer {
-  height: 100%;
+.chartScrollbar {
+  width: 100%;
+  margin-top: 0.6rem;
+  accent-color: var(--btn-primary-bg);
+  cursor: pointer;
 }
 
 /* The table fits the page: fixed layout shares width across the (fixed number of)
@@ -191,10 +192,19 @@
   border-spacing: 0;
 }
 
-/* Album column takes a fixed share; the numeric columns split the rest evenly. */
+/* Album column takes a modest fixed share; the numeric columns split the rest
+   evenly. Each numeric column is then wide enough to fit a ~username-length header. */
 .table th:first-child,
 .table td:first-child {
-  width: 26%;
+  width: 18%;
+}
+
+/* Stacked similarity header: "userA / ↔ / userB" on three lines. */
+.stackHeader {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.15;
 }
 
 .table th,

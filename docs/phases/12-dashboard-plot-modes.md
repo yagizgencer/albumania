@@ -6,15 +6,20 @@ date displays to `DD.MM.YYYY`.
 
 ## Approach / choice
 - **Dropped `chartjs-plugin-zoom`** (it shifted the whole plot on small zooms).
-  Zoom/scroll is now a **CSS overflow scroll container + a width-scaled canvas**
-  (`maintainAspectRatio:false`, fixed-height scroll area, width driven by a sizer
-  div). Zoom = wider canvas, pan = native scroll — predictable and dependency-free.
-  Alternative considered: reconfigure the plugin — rejected; the canvas-width
-  approach is the standard, controllable way to do horizontal zoom/scroll.
-- **Two modes:** **Detailed** (default) — ~10 diagonal album-name x labels, y
-  fully fitted, horizontal scroll for the rest. **Overview** — labels hidden,
-  fit-all by default, zoom in/out/pan via a subtle toolbox plus free mouse
-  (wheel zoom anchored at the cursor, drag-to-pan).
+  The plot is a **fixed-size canvas that windows the x-range** via `scales.x.min/max`
+  (with a fixed global `y.min/max` so y never rescales). This keeps the **y-axis and
+  legend always in view** — only the visible x-window scrolls/zooms — and is fully
+  controllable. Panning = a range scrollbar + drag + wheel; zoom (overview) =
+  changing the window size. Alternative considered (and initially built): a wide
+  overflow-scrolled canvas — rejected because the y-axis/legend scrolled out of view.
+- **Two modes:** **Detailed** (default) — ~10 diagonal album-name x labels, y fully
+  fitted, scrollbar/drag/wheel to move the window. **Overview** — labels hidden,
+  fit-all by default, zoom in/out/pan via a subtle toolbox plus free mouse (cursor-
+  anchored wheel zoom, drag-to-pan). The **Detailed/Overview toggle is a `MetricSwitch`
+  in the controls row** (matching the Metric switch), not inside the chart.
+- Tables use the **widened profile layout** (max-width 1320px), a slimmer 18% Album
+  column, and **stacked similarity headers** (`userA / ↔ / userB`) truncated to
+  ~username length with a `title` tooltip, so the fixed columns fit without scrolling.
 
 ## Files touched
 

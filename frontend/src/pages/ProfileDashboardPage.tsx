@@ -134,6 +134,16 @@ export function ProfileDashboard({ username }: { username: string }) {
           onChange={setMode}
         />
 
+        <MetricSwitch
+          label="View"
+          options={[
+            { value: "detailed", label: "Detailed" },
+            { value: "overview", label: "Overview" },
+          ]}
+          value={view}
+          onChange={setView}
+        />
+
         <label>
           Artist / album
           <input
@@ -167,7 +177,6 @@ export function ProfileDashboard({ username }: { username: string }) {
             }
             beginAtZero={mode === "rating"}
             view={view}
-            onViewChange={setView}
             sortKey={sort}
           />
         )}
