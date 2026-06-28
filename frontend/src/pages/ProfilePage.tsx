@@ -17,6 +17,7 @@ import {
   type UserProfile,
 } from "../api/users";
 import { usePersistentState } from "../lib/usePersistentState";
+import { formatDate } from "../lib/date";
 import { Avatar } from "../components/Avatar";
 import { ProfileDashboard } from "./ProfileDashboardPage";
 import { FriendDashboard } from "./FriendDashboardPage";
@@ -150,7 +151,7 @@ export function ProfilePage() {
                 )
               )}
               <p className={styles.memberSince}>
-                Member since {new Date(profile.created_at).toLocaleDateString()}
+                Member since {formatDate(profile.created_at)}
               </p>
             </>
           )}

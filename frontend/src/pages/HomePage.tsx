@@ -7,6 +7,7 @@ import { useAuth } from "../context/AuthContext";
 import { Avatar } from "../components/Avatar";
 import SketchUnderline from "../components/SketchUnderline";
 import { LoadingState } from "../components/Spinner";
+import { formatDate } from "../lib/date";
 import styles from "./HomePage.module.css";
 
 export function HomePage() {
@@ -173,7 +174,7 @@ function LoggedInHome({ username, displayName, pictureUrl }: LoggedInHomeProps) 
                 <div className={styles.recentArtist}>{e.album.artist}</div>
                 <div className={styles.recentFooter}>
                   <span className={styles.recentScore}>{e.score.toFixed(1)}</span>
-                  <span>{e.completed_at.slice(0, 10)}</span>
+                  <span>{formatDate(e.completed_at)}</span>
                 </div>
               </Link>
             ))}

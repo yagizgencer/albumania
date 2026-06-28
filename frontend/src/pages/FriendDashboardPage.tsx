@@ -7,9 +7,10 @@ import {
 } from "../api/friendDashboard";
 import { chartPalette } from "../lib/chartTheme";
 import { usePersistentState } from "../lib/usePersistentState";
+import { formatDate } from "../lib/date";
 import { Alert } from "../components/Alert";
 import { LoadingState } from "../components/Spinner";
-import { DashboardChart } from "../components/DashboardChart";
+import { DashboardChart, type ChartView } from "../components/DashboardChart";
 import { MetricSwitch } from "../components/MetricSwitch";
 import styles from "./ProfileDashboardPage.module.css";
 
@@ -51,6 +52,7 @@ export function FriendDashboard({ friendshipId }: { friendshipId: number }) {
   const [fromDate, setFromDate] = usePersistentState(`${ns}:from`, "");
   const [toDate, setToDate] = usePersistentState(`${ns}:to`, "");
   const [mode, setMode] = usePersistentState<Mode>(`${ns}:mode`, "similarity");
+  const [view, setView] = usePersistentState<ChartView>(`${ns}:view`, "detailed");
 
   useEffect(() => {
     setError(null);
@@ -189,6 +191,9 @@ export function FriendDashboard({ friendshipId }: { friendshipId: number }) {
   if (error) return <Alert>{error}</Alert>;
   if (!data) return <LoadingState />;
 
+  const a = data.user_a_username;
+  const b = data.user_b_username;
+
   return (
     <>
       <header className={styles.header}>
@@ -240,8 +245,10 @@ export function FriendDashboard({ friendshipId }: { friendshipId: number }) {
             onPointClick={(i) =>
               navigate(`/friendships/${data.friendship_id}/albums/${sorted[i].album.spotify_id}`)
             }
-            resetKey={sort}
             beginAtZero={mode === "ratings"}
+            view={view}
+            onViewChange={setView}
+            sortKey={sort}
           />
         )}
       </section>
@@ -256,12 +263,12 @@ export function FriendDashboard({ friendshipId }: { friendshipId: number }) {
                 <SortableHeader label="Album" column="album" sort={sort} onClick={cycleSort} align="left" />
                 <SortableHeader label="Released" column="release" sort={sort} onClick={cycleSort} align="right" />
                 <SortableHeader label="Rated" column="rated" sort={sort} onClick={cycleSort} align="right" />
-                <SortableHeader label={data.user_a_username} column="a-score" sort={sort} onClick={cycleSort} align="right" />
-                <SortableHeader label={data.user_b_username} column="b-score" sort={sort} onClick={cycleSort} align="right" />
+                <SortableHeader label={trunc(a)} title={a} column="a-score" sort={sort} onClick={cycleSort} align="right" />
+                <SortableHeader label={trunc(b)} title={b} column="b-score" sort={sort} onClick={cycleSort} align="right" />
                 <SortableHeader label="Mean" column="mean" sort={sort} onClick={cycleSort} align="right" />
-                <SortableHeader label={`${data.user_a_username} ↔ ${data.user_b_username}`} column="pair-similarity" sort={sort} onClick={cycleSort} align="right" />
-                <SortableHeader label={`${data.user_a_username} ↔ Spotify`} column="a-similarity" sort={sort} onClick={cycleSort} align="right" />
-                <SortableHeader label={`${data.user_b_username} ↔ Spotify`} column="b-similarity" sort={sort} onClick={cycleSort} align="right" />
+                <SortableHeader label={`${trunc(a)} ↔ ${trunc(b)}`} title={`${a} ↔ ${b}`} column="pair-similarity" sort={sort} onClick={cycleSort} align="right" />
+                <SortableHeader label={`${trunc(a)} ↔ Spotify`} title={`${a} ↔ Spotify`} column="a-similarity" sort={sort} onClick={cycleSort} align="right" />
+                <SortableHeader label={`${trunc(b)} ↔ Spotify`} title={`${b} ↔ Spotify`} column="b-similarity" sort={sort} onClick={cycleSort} align="right" />
               </tr>
             </thead>
             <tbody>
@@ -292,8 +299,8 @@ export function FriendDashboard({ friendshipId }: { friendshipId: number }) {
                       </span>
                     </div>
                   </td>
-                  <td className={styles.numCell}>{e.album.release_date.slice(0, 10)}</td>
-                  <td className={styles.numCell}>{e.mutual_date.slice(0, 10)}</td>
+                  <td className={styles.numCell}>{formatDate(e.album.release_date)}</td>
+                  <td className={styles.numCell}>{formatDate(e.mutual_date)}</td>
                   <td className={styles.numCell}>{e.user_a_score.toFixed(1)}</td>
                   <td className={styles.numCell}>{e.user_b_score.toFixed(1)}</td>
                   <td className={styles.numCell}>{e.mean_score.toFixed(2)}</td>
@@ -314,14 +321,20 @@ function fmt(v: number | null): string {
   return v === null ? "—" : v.toFixed(3);
 }
 
+function trunc(s: string, n = 14): string {
+  return s.length > n ? `${s.slice(0, n - 1)}…` : s;
+}
+
 function SortableHeader({
   label,
+  title,
   column,
   sort,
   onClick,
   align,
 }: {
   label: string;
+  title?: string;
   column: SortColumn;
   sort: SortState | null;
   onClick: (column: SortColumn) => void;
@@ -338,6 +351,7 @@ function SortableHeader({
     <th
       className={`${styles.th} ${align === "right" ? styles.thRight : ""}`}
       aria-sort={ariaSort}
+      title={title}
     >
       <button
         type="button"

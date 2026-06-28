@@ -3,9 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { getDashboard, type DashboardEntry } from "../api/dashboard";
 import { chartFill, chartPalette } from "../lib/chartTheme";
 import { usePersistentState } from "../lib/usePersistentState";
+import { formatDate } from "../lib/date";
 import { Alert } from "../components/Alert";
 import { LoadingState } from "../components/Spinner";
-import { DashboardChart } from "../components/DashboardChart";
+import { DashboardChart, type ChartView } from "../components/DashboardChart";
 import { MetricSwitch } from "../components/MetricSwitch";
 import styles from "./ProfileDashboardPage.module.css";
 
@@ -29,6 +30,7 @@ export function ProfileDashboard({ username }: { username: string }) {
   const [fromDate, setFromDate] = usePersistentState(`${ns}:from`, "");
   const [toDate, setToDate] = usePersistentState(`${ns}:to`, "");
   const [mode, setMode] = usePersistentState<Mode>(`${ns}:mode`, "similarity");
+  const [view, setView] = usePersistentState<ChartView>(`${ns}:view`, "detailed");
 
   useEffect(() => {
     if (!username) return;
@@ -163,8 +165,10 @@ export function ProfileDashboard({ username }: { username: string }) {
             onPointClick={(i) =>
               navigate(`/users/${username}/albums/${sorted[i].album.spotify_id}`)
             }
-            resetKey={sort}
             beginAtZero={mode === "rating"}
+            view={view}
+            onViewChange={setView}
+            sortKey={sort}
           />
         )}
       </section>
@@ -209,8 +213,8 @@ export function ProfileDashboard({ username }: { username: string }) {
                       </span>
                     </div>
                   </td>
-                  <td className={styles.numCell}>{e.album.release_date.slice(0, 10)}</td>
-                  <td className={styles.numCell}>{e.completed_at.slice(0, 10)}</td>
+                  <td className={styles.numCell}>{formatDate(e.album.release_date)}</td>
+                  <td className={styles.numCell}>{formatDate(e.completed_at)}</td>
                   <td className={styles.numCell}>{e.score.toFixed(1)}</td>
                   <td className={styles.numCell}>
                     {e.similarity_user_vs_spotify === null

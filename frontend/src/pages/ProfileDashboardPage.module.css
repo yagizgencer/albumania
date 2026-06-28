@@ -126,49 +126,80 @@
   margin-bottom: 1.5rem;
 }
 
-.chartToolbar {
+.chartHeader {
   display: flex;
-  justify-content: flex-end;
-  margin-bottom: 0.25rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
 }
 
-.fitBtn {
+.toolbox {
+  display: inline-flex;
+  gap: 0.25rem;
+}
+
+.toolBtn {
+  min-width: 1.9rem;
   background: var(--surface);
   color: var(--text-muted);
   border: 2px solid var(--border);
   border-radius: 6px;
-  padding: 0.25rem 0.7rem;
+  padding: 0.2rem 0.5rem;
   font: inherit;
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1;
   cursor: pointer;
 }
 
-.fitBtn:hover {
+.toolBtn:hover {
   background: var(--surface-muted);
   color: var(--text);
 }
 
-/* Horizontal scroll keeps the wide friend table from squishing columns out of
-   alignment; the solo table is narrow enough that it never triggers. */
-.tableWrap {
+/* Horizontal scroll/zoom for the plot: the canvas (.sizer) is widened beyond the
+   viewport and panned via native scroll — predictable, no plugin. */
+.scrollArea {
+  position: relative;
+  width: 100%;
+  height: 360px;
   overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+}
+
+.sizer {
+  height: 100%;
+}
+
+/* The table fits the page: fixed layout shares width across the (fixed number of)
+   columns so it never overflows, regardless of username length. */
+.tableWrap {
   border: 2px solid var(--border);
   border-radius: 12px;
+  overflow: hidden;
 }
 
 .table {
   width: 100%;
+  table-layout: fixed;
   background: var(--surface);
   color: var(--text);
   border-collapse: separate;
   border-spacing: 0;
-  overflow: hidden;
+}
+
+/* Album column takes a fixed share; the numeric columns split the rest evenly. */
+.table th:first-child,
+.table td:first-child {
+  width: 26%;
 }
 
 .table th,
 .table td {
-  padding: 0.6rem 0.9rem;
+  padding: 0.55rem 0.6rem;
   text-align: left;
   border-bottom: 1px solid var(--surface-muted);
   vertical-align: middle;
@@ -195,8 +226,8 @@
 
 .sortBtn {
   display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
+  align-items: flex-end;
+  gap: 0.3rem;
   background: none;
   border: none;
   padding: 0;
@@ -205,9 +236,21 @@
   color: inherit;
   cursor: pointer;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   user-select: none;
-  line-height: 1;
+  line-height: 1.15;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* Allow the header label to wrap inside its (fixed-width) column. */
+.sortBtn > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.thRight .sortBtn {
+  text-align: right;
 }
 
 .sortBtn:hover {
@@ -242,14 +285,13 @@
   text-align: right;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  width: 1%;
 }
 
 .albumCell {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  min-width: 180px;
+  gap: 0.6rem;
+  min-width: 0;
 }
 
 .albumArt {

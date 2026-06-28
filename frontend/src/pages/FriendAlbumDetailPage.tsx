@@ -9,6 +9,7 @@ import {
 import { formatDuration } from "../utils/duration";
 import { Alert } from "../components/Alert";
 import { LoadingState } from "../components/Spinner";
+import { formatDate } from "../lib/date";
 import styles from "./AlbumDetailPage.module.css";
 
 export function FriendAlbumDetailPage() {
@@ -82,9 +83,9 @@ export function FriendAlbumDetailPage() {
           <h1>{album.title}</h1>
           <h2>{album.artist}</h2>
           <p>
-            <strong>Release date:</strong> {album.release_date}
+            <strong>Release date:</strong> {formatDate(album.release_date)}
             <br />
-            <strong>Rated:</strong> {entry.mutual_date.slice(0, 10)}
+            <strong>Rated:</strong> {formatDate(entry.mutual_date)}
             <br />
             <strong>Total songs:</strong> {album.total_songs}
             {album.tracks.some((t) => t.duration_ms != null) && (

@@ -5,6 +5,7 @@ import { getDashboard, type DashboardEntry } from "../api/dashboard";
 import { formatDuration } from "../utils/duration";
 import { Alert } from "../components/Alert";
 import { LoadingState } from "../components/Spinner";
+import { formatDate } from "../lib/date";
 import styles from "./AlbumDetailPage.module.css";
 
 export function AlbumDetailPage() {
@@ -70,7 +71,7 @@ export function AlbumDetailPage() {
           <h1>{album.title}</h1>
           <h2>{album.artist}</h2>
           <p>
-            Released {album.release_date} · {album.total_songs} tracks
+            Released {formatDate(album.release_date)} · {album.total_songs} tracks
             {album.tracks.some((t) => t.duration_ms != null) && (
               <>
                 {" "}
@@ -93,7 +94,7 @@ export function AlbumDetailPage() {
             </div>
             <div className={styles.metric}>
               Rated on
-              <strong>{entry.completed_at.slice(0, 10)}</strong>
+              <strong>{formatDate(entry.completed_at)}</strong>
             </div>
           </div>
         </div>

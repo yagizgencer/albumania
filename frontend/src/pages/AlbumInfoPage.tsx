@@ -15,6 +15,7 @@ import { listFriendships, type Friendship } from "../api/friendships";
 import { formatDuration } from "../utils/duration";
 import { Alert } from "../components/Alert";
 import { LoadingState } from "../components/Spinner";
+import { formatDate } from "../lib/date";
 import styles from "./AlbumInfoPage.module.css";
 
 interface FriendForInvite {
@@ -112,7 +113,7 @@ export function AlbumInfoPage() {
           <h1>{album.title}</h1>
           <h2>{album.artist}</h2>
           <p>
-            Released {album.release_date} · {album.total_songs} tracks
+            Released {formatDate(album.release_date)} · {album.total_songs} tracks
             {hasAnyDuration && <> · {formatDuration(totalMs)}</>}
           </p>
 
