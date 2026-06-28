@@ -40,13 +40,13 @@
 }
 
 .badgeDraft {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--status-warn-bg);
+  color: var(--status-warn-fg);
 }
 
 .badgePublished {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--status-ok-bg);
+  color: var(--status-ok-fg);
 }
 
 .section {
@@ -71,7 +71,7 @@
 .scoreInput {
   flex: 1;
   cursor: pointer;
-  accent-color: #4f46e5;
+  accent-color: var(--accent);
 }
 
 .scoreValue {
@@ -93,7 +93,7 @@
 
 .trackItem {
   background: var(--surface-muted);
-  border: 1px solid var(--border);
+  border: 2px solid var(--border);
   border-radius: 6px;
   overflow: hidden;
   color: var(--text);
@@ -122,7 +122,7 @@
   font-weight: 700;
   font-size: 0.85rem;
   min-width: 1.5rem;
-  color: #6366f1;
+  color: var(--accent);
 }
 
 .trackName {
@@ -133,7 +133,7 @@
 
 .trackBtn {
   background: transparent;
-  border: 1px solid var(--border);
+  border: 2px solid var(--border);
   border-radius: 4px;
   padding: 0.2rem 0.5rem;
   font-size: 0.75rem;
@@ -147,8 +147,8 @@
 }
 
 .trackBtnRemove {
-  border-color: #ef4444;
-  color: #ef4444;
+  border-color: var(--danger-text);
+  color: var(--danger-text);
 }
 
 .trackBtnRemove:hover {
@@ -166,7 +166,7 @@
   height: 1.75rem;
   padding: 0;
   border-radius: 4px;
-  border: 1px solid var(--border);
+  border: 2px solid var(--border);
   background: var(--surface);
   color: var(--text);
   font-size: 0.8rem;
@@ -188,7 +188,7 @@
   width: 100%;
   box-sizing: border-box;
   border: none;
-  border-top: 1px solid var(--border);
+  border-top: 2px solid var(--border);
   padding: 0.4rem 0.75rem;
   font-size: 0.85rem;
   background: transparent;
@@ -215,7 +215,7 @@
 }
 
 .slotOver {
-  border-color: #6366f1;
+  border-color: var(--accent);
   background: rgba(99, 102, 241, 0.12);
 }
 
@@ -232,7 +232,7 @@
 
 .slotNumber {
   font-weight: 700;
-  color: #6366f1;
+  color: var(--accent);
   min-width: 1.5rem;
 }
 
@@ -282,7 +282,7 @@
 }
 
 .restZoneOver {
-  border-color: #ef4444;
+  border-color: var(--danger-text);
   background: rgba(239, 68, 68, 0.08);
 }
 
@@ -298,7 +298,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #6366f1;
+  color: var(--accent);
   background: rgba(99, 102, 241, 0.12);
   padding: 0.15rem 0.5rem;
   border-radius: 999px;
@@ -311,7 +311,7 @@
   padding: 0.5rem 0.75rem;
   background: var(--surface);
   color: var(--text);
-  border: 1px solid #6366f1;
+  border: 1px solid var(--accent);
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   font-size: 0.95rem;
@@ -368,7 +368,7 @@
 }
 
 .error {
-  color: #ef4444;
+  color: var(--danger-text);
   font-size: 0.9rem;
   margin-top: 0.5rem;
 }

@@ -12,6 +12,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Line } from "react-chartjs-2";
 import { useNavigate } from "react-router-dom";
 import { getDashboard, type DashboardEntry } from "../api/dashboard";
+import { chartFill, chartPalette } from "../lib/chartTheme";
 import styles from "./ProfileDashboardPage.module.css";
 
 ChartJS.register(
@@ -139,8 +140,8 @@ export function ProfileDashboard({ username }: { username: string }) {
             (mode === "rating" ? "Score" : "Similarity vs Spotify") +
             (cumulative ? " (running avg)" : ""),
           data: values,
-          borderColor: "#4caf50",
-          backgroundColor: "rgba(76, 175, 80, 0.15)",
+          borderColor: chartPalette.lavender,
+          backgroundColor: chartFill.lavender,
           tension: 0.25,
         },
       ],

@@ -14,7 +14,7 @@
   color: var(--text);
   padding: 1.5rem;
   border-radius: 12px;
-  border: 1px solid var(--border);
+  border: 2px solid var(--border);
 }
 
 .art {
@@ -84,7 +84,7 @@
 .tracks {
   background: var(--surface);
   color: var(--text);
-  border: 1px solid var(--border);
+  border: 2px solid var(--border);
   border-radius: 12px;
   padding: 1rem 1.25rem;
 }
@@ -140,13 +140,13 @@
 }
 
 .error {
-  color: #c1121f;
+  color: var(--danger-text);
   font-size: 0.9rem;
   margin: 0.5rem 0;
 }
 
 .info {
-  color: #047857;
+  color: var(--status-ok-fg);
   font-size: 0.9rem;
   margin: 0.5rem 0;
 }
@@ -170,7 +170,7 @@
   display: flex;
   flex-direction: column;
   padding: 1.25rem;
-  border: 1px solid var(--border);
+  border: 2px solid var(--border);
 }
 
 .modal h3 {
@@ -180,7 +180,7 @@
 .modal input {
   width: 100%;
   padding: 0.5rem 0.75rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-soft);
   border-radius: 6px;
   margin-bottom: 0.75rem;
   font-size: 0.95rem;
@@ -192,7 +192,7 @@
   padding: 0;
   overflow-y: auto;
   flex: 1;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--border-soft);
 }
 
 .friendItem {
@@ -200,7 +200,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 0.55rem 0.25rem;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .friendItem button {

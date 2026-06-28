@@ -12,7 +12,7 @@
 .controls {
   background: var(--surface);
   color: var(--text);
-  border: 1px solid var(--border);
+  border: 2px solid var(--border);
   border-radius: 12px;
   padding: 1rem 1.25rem;
   margin-bottom: 1.5rem;
@@ -34,7 +34,7 @@
 .controls input[type="date"] {
   padding: 0.3rem 0.5rem;
   border-radius: 6px;
-  border: 1px solid var(--border);
+  border: 2px solid var(--border);
   background: var(--surface);
   color: var(--text);
   font: inherit;
@@ -58,7 +58,7 @@
 
 .segmented {
   display: inline-flex;
-  border: 1px solid var(--border);
+  border: 2px solid var(--border);
   border-radius: 6px;
   overflow: hidden;
   background: var(--surface);
@@ -93,7 +93,7 @@
 .chartCard {
   background: var(--surface);
   color: var(--text);
-  border: 1px solid var(--border);
+  border: 2px solid var(--border);
   border-radius: 12px;
   padding: 1rem;
   margin-bottom: 1.5rem;
@@ -103,7 +103,7 @@
   width: 100%;
   background: var(--surface);
   color: var(--text);
-  border: 1px solid var(--border);
+  border: 2px solid var(--border);
   border-radius: 12px;
   border-collapse: separate;
   border-spacing: 0;
@@ -163,7 +163,7 @@
 
 .sortBtnActive .sortIcon {
   opacity: 1;
-  color: #6366f1;
+  color: var(--accent);
 }
 
 .row {

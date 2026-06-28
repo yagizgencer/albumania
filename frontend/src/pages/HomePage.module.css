@@ -23,13 +23,16 @@
 
 
 .landingHero {
-  font-size: 2.5rem;
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-size: 3.25rem;
+  font-weight: 400;
   margin: 0 0 0.5rem;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--text);
+}
+
+.heroUnderline {
+  max-width: 240px;
+  margin: -0.5rem auto 1.5rem;
 }
 
 .landingTagline {
@@ -50,8 +53,9 @@
 
 .landingBullet {
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
   padding: 1rem 1.1rem;
 }
 
@@ -78,10 +82,19 @@
 .ctaSecondary {
   display: inline-block;
   padding: 0.65rem 1.5rem;
-  border-radius: 8px;
-  font-weight: 600;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+  font-weight: 700;
   text-decoration: none;
   font-size: 1rem;
+  transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.12s ease;
+}
+
+.ctaPrimary:hover,
+.ctaSecondary:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: var(--shadow-pop);
 }
 
 .ctaPrimary {
@@ -95,7 +108,6 @@
 .ctaSecondary {
   background: var(--btn-secondary-bg);
   color: var(--btn-secondary-fg);
-  border: 1px solid var(--btn-secondary-border);
 }
 .ctaSecondary:hover {
   background: var(--btn-secondary-bg-hover);
@@ -109,8 +121,9 @@
   gap: 1rem;
   align-items: center;
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
   padding: 1.25rem;
   margin-bottom: 1.25rem;
 }
@@ -118,6 +131,10 @@
 .welcomeText h1 {
   margin: 0;
   font-size: 1.4rem;
+}
+
+.welcomeUnderline {
+  max-width: 220px;
 }
 
 .welcomeText p {
@@ -135,16 +152,18 @@
 
 .statCard {
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
   padding: 1rem;
   text-decoration: none;
   color: inherit;
-  transition: border-color 0.12s;
+  transition: transform 0.12s, box-shadow 0.12s;
 }
 
 .statCard:hover {
-  border-color: var(--btn-primary-bg);
+  transform: translate(-1px, -1px);
+  box-shadow: var(--shadow-pop);
 }
 
 .statValue {
@@ -193,20 +212,21 @@
 
 .recentCard {
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
   padding: 0.75rem;
   text-decoration: none;
   color: inherit;
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
-  transition: border-color 0.12s, transform 0.12s;
+  transition: transform 0.12s, box-shadow 0.12s;
 }
 
 .recentCard:hover {
-  border-color: var(--btn-primary-bg);
-  transform: translateY(-1px);
+  transform: translate(-1px, -1px);
+  box-shadow: var(--shadow-pop);
 }
 
 .recentArt {

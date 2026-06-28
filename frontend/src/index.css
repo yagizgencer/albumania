@@ -1,73 +1,102 @@
 :root {
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  line-height: 1.5;
-  color-scheme: light dark;
+  /* Body copy: Nunito (rounded, friendly, very readable for tables/data).
+     Headings use Patrick Hand (hand-drawn, sketchy) — see --font-display. */
+  font-family: "Nunito", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.55;
+  color-scheme: light;
 
-  --surface: #ffffff;
-  --surface-muted: #f1f5f9;
-  --border: #e0e0e0;
-  --text: #1a1a1a;
-  --text-muted: #555555;
-  --text-subtle: #6b7280;
-  --link-underline: #aaaaaa;
-  --link-underline-hover: #333333;
+  --font-display: "Patrick Hand", "Comic Sans MS", system-ui, cursive;
 
-  /* Button intents — single palette referenced across every module. The
-     four intents (primary/success/danger/secondary) cover the whole app;
-     anything not buttoned uses --surface/--text. */
-  --btn-primary-bg: #4f46e5;          /* indigo-600 */
-  --btn-primary-bg-hover: #4338ca;    /* indigo-700 */
-  --btn-primary-fg: #ffffff;
+  /* Cozy "paper" surfaces — warm off-white, like a sketchbook page. */
+  --paper: #fdf4e7;
+  --surface: #fffdf8;
+  --surface-muted: #f6ebd9;
+  --border: #3a342e;          /* sketch ink — dark & warm, drawn ~2px */
+  --border-soft: #d9c9ad;     /* faint ink for inner dividers */
+  --text: #3a322a;
+  --text-muted: #6f6457;
+  --text-subtle: #98897a;
+  --link-underline: #c9b89a;
+  --link-underline-hover: #3a322e;
 
-  --btn-success-bg: #059669;          /* emerald-600 */
-  --btn-success-bg-hover: #047857;    /* emerald-700 */
-  --btn-success-fg: #ffffff;
+  /* Pastel "happy hues" — a small, cohesive set. Used as fills behind dark
+     ink text (cozy/sketch look), not as text colors on white. */
+  --pastel-coral: #ffadad;
+  --pastel-peach: #ffd6a5;
+  --pastel-butter: #fdffb6;
+  --pastel-mint: #c7f0c4;
+  --pastel-sky: #a8dce0;
+  --pastel-lavender: #cdc1ff;
+  --pastel-pink: #ffc8dd;
 
-  --btn-danger-bg: #dc2626;           /* red-600 */
-  --btn-danger-bg-hover: #b91c1c;     /* red-700 */
-  --btn-danger-fg: #ffffff;
+  /* Sketch geometry: soft rounding + a hand-placed offset shadow. */
+  --radius: 14px;
+  --radius-lg: 20px;
+  --radius-pill: 999px;
+  --shadow-soft: 3px 3px 0 rgba(58, 52, 46, 0.16);
+  --shadow-pop: 4px 4px 0 rgba(58, 52, 46, 0.22);
 
-  --btn-secondary-bg: #f3f4f6;        /* gray-100 */
-  --btn-secondary-bg-hover: #e5e7eb;  /* gray-200 */
-  --btn-secondary-fg: #111827;        /* gray-900 */
-  --btn-secondary-border: #d1d5db;    /* gray-300 */
+  /* Button intents — pastel fills with dark ink text + an inked border,
+     keeping the four semantic intents the app already references. */
+  --btn-primary-bg: var(--pastel-lavender);
+  --btn-primary-bg-hover: #b9aaff;
+  --btn-primary-fg: var(--text);
 
-  --btn-disabled-bg: #e5e7eb;
-  --btn-disabled-fg: #9ca3af;
-}
+  --btn-success-bg: var(--pastel-mint);
+  --btn-success-bg-hover: #aee7aa;
+  --btn-success-fg: var(--text);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --surface: #1e1e1e;
-    --surface-muted: #2a2a2a;
-    --border: #3a3a3a;
-    --text: #f1f1f1;
-    --text-muted: #c0c0c0;
-    --text-subtle: #9aa0a6;
-    --link-underline: #666666;
-    --link-underline-hover: #f1f1f1;
+  --btn-danger-bg: var(--pastel-coral);
+  --btn-danger-bg-hover: #ff8f8f;
+  --btn-danger-fg: var(--text);
 
-    /* Secondary buttons get a darker neutral so they read against the
-       dark surface; primary/success/danger keep their saturated fill. */
-    --btn-secondary-bg: #27272a;
-    --btn-secondary-bg-hover: #3f3f46;
-    --btn-secondary-fg: #f5f5f5;
-    --btn-secondary-border: #3f3f46;
+  --btn-secondary-bg: var(--surface);
+  --btn-secondary-bg-hover: var(--surface-muted);
+  --btn-secondary-fg: var(--text);
+  --btn-secondary-border: var(--border);
 
-    --btn-disabled-bg: #2a2a2a;
-    --btn-disabled-fg: #6b7280;
-  }
+  --btn-disabled-bg: #ece2d2;
+  --btn-disabled-fg: #b3a999;
+
+  /* Status pill palette (used by ListenLater / RatingEditor badges). */
+  --status-info-bg: var(--pastel-sky);
+  --status-info-fg: #1f5760;
+  --status-warn-bg: var(--pastel-peach);
+  --status-warn-fg: #8a5a1a;
+  --status-ok-bg: var(--pastel-mint);
+  --status-ok-fg: #2f6b34;
+
+  --danger-text: #d6453f;
+
+  /* Readable accent for links / icons / active states — a deeper lavender
+     that holds contrast on cream (the pastel fills are too light for text). */
+  --accent: #7a6ad0;
+  --accent-hover: #6354bd;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
   color: var(--text);
+  background-color: var(--paper);
+  /* Faint dotted "grid paper" texture — barely there, just cozy. */
+  background-image: radial-gradient(rgba(58, 52, 46, 0.05) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  color: var(--text);
 }
 
 main {
   max-width: 720px;
-  margin: 4rem auto;
+  margin: 3rem auto;
   padding: 0 1rem;
 }
 
@@ -89,37 +118,68 @@ label {
   font-size: 0.9rem;
 }
 
-input {
-  padding: 0.5rem 0.75rem;
+input,
+select,
+textarea {
+  padding: 0.55rem 0.8rem;
   font-size: 1rem;
-  border: 1px solid var(--border);
-  border-radius: 4px;
+  font-family: inherit;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
   background: var(--surface);
   color: var(--text);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  box-shadow: var(--shadow-soft);
 }
 
 button {
   padding: 0.55rem 1.1rem;
   font-size: 0.95rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  border: none;
-  border-radius: 6px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
   background: var(--btn-primary-bg);
   color: var(--btn-primary-fg);
-  transition: background 0.12s ease;
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.12s ease;
 }
 
-button:hover {
+button:hover:not(:disabled) {
   background: var(--btn-primary-bg-hover);
+  transform: translate(-1px, -1px);
+  box-shadow: var(--shadow-pop);
+}
+
+button:active:not(:disabled) {
+  transform: translate(1px, 1px);
+  box-shadow: none;
 }
 
 button:disabled {
-  opacity: 0.6;
+  background: var(--btn-disabled-bg);
+  color: var(--btn-disabled-fg);
+  border-color: var(--border-soft);
+  box-shadow: none;
   cursor: not-allowed;
 }
 
+a {
+  color: var(--text);
+  text-decoration-color: var(--link-underline);
+  text-underline-offset: 3px;
+}
+
+a:hover {
+  text-decoration-color: var(--link-underline-hover);
+}
+
 .error {
-  color: #ef4444;
+  color: var(--danger-text);
   font-size: 0.9rem;
 }

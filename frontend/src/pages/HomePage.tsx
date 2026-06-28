@@ -5,6 +5,7 @@ import { listFriendships } from "../api/friendships";
 import { getListenLater, type ListenLaterEntry } from "../api/invites";
 import { useAuth } from "../context/AuthContext";
 import { Avatar } from "../components/Avatar";
+import SketchUnderline from "../components/SketchUnderline";
 import styles from "./HomePage.module.css";
 
 export function HomePage() {
@@ -29,6 +30,9 @@ function PublicLanding() {
         aria-hidden
       />
       <h1 className={styles.landingHero}>Albumania</h1>
+      <div className={styles.heroUnderline}>
+        <SketchUnderline strokeWidth={3} />
+      </div>
       <p className={styles.landingTagline}>
         Rate albums, pick your top 5 tracks, and see how your taste lines up
         with friends and Spotify's most-popular.
@@ -115,6 +119,9 @@ function LoggedInHome({ username, displayName, pictureUrl }: LoggedInHomeProps) 
         />
         <div className={styles.welcomeText}>
           <h1>Welcome back, {displayName}.</h1>
+          <div className={styles.welcomeUnderline}>
+            <SketchUnderline color="#8a78dd" />
+          </div>
           <p>What did you listen to today?</p>
         </div>
       </section>

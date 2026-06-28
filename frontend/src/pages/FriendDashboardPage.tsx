@@ -16,6 +16,7 @@ import {
   type FriendDashboardEntry,
   type FriendDashboardResponse,
 } from "../api/friendDashboard";
+import { chartPalette } from "../lib/chartTheme";
 import styles from "./ProfileDashboardPage.module.css";
 
 ChartJS.register(
@@ -48,10 +49,10 @@ interface SortState {
 
 type Mode = "similarity" | "ratings";
 
-const A_COLOR = "#4caf50";
-const B_COLOR = "#e91e63";
-const PAIR_COLOR = "#3e95cd";
-const MEAN_COLOR = "#555";
+const A_COLOR = chartPalette.mint;
+const B_COLOR = chartPalette.coral;
+const PAIR_COLOR = chartPalette.sky;
+const MEAN_COLOR = chartPalette.ink;
 
 export function FriendDashboard({ friendshipId }: { friendshipId: number }) {
   const navigate = useNavigate();
