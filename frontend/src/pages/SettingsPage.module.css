@@ -1,0 +1,39 @@
+.page {
+  max-width: 480px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+  color: var(--text);
+}
+
+.section {
+  margin: 1.5rem 0 2rem;
+}
+
+.section h2 {
+  font-size: 1.15rem;
+  margin: 0 0 0.6rem;
+}
+
+.section form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.section label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.9rem;
+}
+
+.email {
+  color: var(--text-muted);
+  margin: 0 0 0.6rem;
+}
+
+.verified {
+  color: #10b981;
+  font-weight: 600;
+  margin: 0;
+}

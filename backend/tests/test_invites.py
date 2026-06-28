@@ -32,6 +32,7 @@ def _seed_user(username: str) -> User:
         email=f"{username}@x.com",
         password_hash="x",
         display_name=username.title(),
+        email_verified=True,
     )
     db.add(u)
     db.commit()
@@ -396,3 +397,39 @@ def test_delete_rating_removes_invites(client: TestClient) -> None:
 
     db = _db()
     assert db.query(ListenInvite).count() == 0
+
+
+def test_unfriend_removes_listen_invites(client: TestClient) -> None:
+    from app.models.notification import Notification, NotificationType
+
+    alice = _seed_user("alice")
+    bob = _seed_user("bob")
+    a1 = _seed_album()
+    fid = _send_and_accept_friendship(client, alice, bob)
+
+    _auth_as(alice)
+    client.post("/invites", json={"username": "bob", "album_id": a1})
+    _clear_auth()
+
+    db = _db()
+    assert db.query(ListenInvite).count() == 1
+    assert (
+        db.query(Notification)
+        .filter(Notification.type == NotificationType.listen_invite)
+        .count()
+        == 1
+    )
+
+    # Unfriend → invite and its notification are torn down for both sides.
+    _auth_as(bob)
+    assert client.delete(f"/friendships/{fid}").status_code == 204
+    _clear_auth()
+
+    db = _db()
+    assert db.query(ListenInvite).count() == 0
+    assert (
+        db.query(Notification)
+        .filter(Notification.type == NotificationType.listen_invite)
+        .count()
+        == 0
+    )

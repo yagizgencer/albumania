@@ -17,6 +17,13 @@ services:
         sync: false
       - key: CORS_ORIGINS
         sync: false
+      # Transactional email (Resend). RESEND_API_KEY is a secret → set in dashboard.
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        value: Albumania <noreply@albumania.net>
+      - key: FRONTEND_BASE_URL
+        sync: false
       - key: STORAGE_BACKEND
         value: r2
       - key: API_BASE_URL

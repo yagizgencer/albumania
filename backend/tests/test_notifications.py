@@ -36,6 +36,7 @@ def _seed_user(username: str) -> User:
         email=f"{username}@x.com",
         password_hash="x",
         display_name=username.title(),
+        email_verified=True,
     )
     db.add(u)
     db.commit()

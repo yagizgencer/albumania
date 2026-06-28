@@ -5,6 +5,7 @@ export type ProfileVisibility = "public" | "private";
 export interface UserProfile {
   username: string;
   email: string;
+  email_verified: boolean;
   display_name: string;
   description: string | null;
   profile_visibility: ProfileVisibility;

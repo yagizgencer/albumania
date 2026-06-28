@@ -19,6 +19,8 @@ import {
 import { Avatar } from "../components/Avatar";
 import { ProfileDashboard } from "./ProfileDashboardPage";
 import { FriendDashboard } from "./FriendDashboardPage";
+import { Alert } from "../components/Alert";
+import { LoadingState } from "../components/Spinner";
 import styles from "./ProfilePage.module.css";
 
 type FriendState =
@@ -98,8 +100,8 @@ export function ProfilePage() {
       .sort((a, b) => a.username.localeCompare(b.username));
   }, [friendships, me]);
 
-  if (error) return <main className={styles.page}><p className="error">{error}</p></main>;
-  if (!profile) return <main className={styles.page}><p>Loading…</p></main>;
+  if (error) return <main className={styles.page}><Alert>{error}</Alert></main>;
+  if (!profile) return <main className={styles.page}><LoadingState /></main>;
 
   return (
     <main className={styles.page}>
@@ -278,7 +280,7 @@ function AvatarLightbox({
           </div>
         )}
 
-        {err && <p className="error">{err}</p>}
+        {err && <Alert>{err}</Alert>}
 
         <div className={styles.lightboxActions}>
           {canEdit && (

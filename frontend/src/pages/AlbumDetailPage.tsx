@@ -3,6 +3,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { getAlbum, type Album } from "../api/albums";
 import { getDashboard, type DashboardEntry } from "../api/dashboard";
 import { formatDuration } from "../utils/duration";
+import { Alert } from "../components/Alert";
+import { LoadingState } from "../components/Spinner";
 import styles from "./AlbumDetailPage.module.css";
 
 export function AlbumDetailPage() {
@@ -32,8 +34,8 @@ export function AlbumDetailPage() {
       });
   }, [username, spotifyId]);
 
-  if (error) return <main className={styles.page}><p className="error">{error}</p></main>;
-  if (!album || !entry) return <main className={styles.page}><p>Loading…</p></main>;
+  if (error) return <main className={styles.page}><Alert>{error}</Alert></main>;
+  if (!album || !entry) return <main className={styles.page}><LoadingState /></main>;
 
   const trackByIndex = new Map(album.tracks.map((t) => [t.index, t]));
   const renderList = (indices: number[]) =>

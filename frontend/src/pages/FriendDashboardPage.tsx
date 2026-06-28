@@ -17,6 +17,8 @@ import {
   type FriendDashboardResponse,
 } from "../api/friendDashboard";
 import { chartPalette } from "../lib/chartTheme";
+import { Alert } from "../components/Alert";
+import { LoadingState } from "../components/Spinner";
 import styles from "./ProfileDashboardPage.module.css";
 
 ChartJS.register(
@@ -209,8 +211,8 @@ export function FriendDashboard({ friendshipId }: { friendshipId: number }) {
     return { labels, datasets };
   }, [filtered, mode, cumulative, data]);
 
-  if (error) return <p className="error">{error}</p>;
-  if (!data) return <p>Loading…</p>;
+  if (error) return <Alert>{error}</Alert>;
+  if (!data) return <LoadingState />;
 
   return (
     <>

@@ -14,6 +14,7 @@ def _seed_user(username: str, visibility: ProfileVisibility = ProfileVisibility.
         password_hash="x",
         display_name=username.title(),
         profile_visibility=visibility,
+        email_verified=True,
     )
     db.add(user)
     db.commit()

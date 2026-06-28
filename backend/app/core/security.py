@@ -34,6 +34,19 @@ def create_refresh_token(username: str) -> str:
     )
 
 
+def create_email_token(username: str) -> str:
+    """Short-lived signed token emailed to a user to confirm ownership of their
+    inbox. Stateless: 'resend' simply mints a new one, and clicking an old link
+    after verifying is harmless (verification is idempotent)."""
+    settings = get_settings()
+    expire = datetime.now(timezone.utc) + timedelta(hours=24)
+    return jwt.encode(
+        {"sub": username, "exp": expire, "type": "email_verify"},
+        settings.jwt_secret,
+        algorithm="HS256",
+    )
+
+
 def decode_token(token: str) -> dict:
     settings = get_settings()
     try:

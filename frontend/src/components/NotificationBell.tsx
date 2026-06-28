@@ -131,9 +131,9 @@ function BellItem({
 function linkFor(item: NotificationItem): string {
   switch (item.type) {
     case "friend_request":
-      return "/friends";
+      return "/friends?tab=incoming";
     case "friend_accept":
-      return item.actor_username ? `/profile/${item.actor_username}` : "/friends";
+      return "/friends";
     case "listen_invite":
       return "/listen-later";
     case "friend_published":

@@ -36,6 +36,14 @@ class Settings(BaseSettings):
     # the httpOnly refresh cookie is sent on cross-site requests (Vercel → Render).
     cookie_secure: bool = False
 
+    # Transactional email via Resend (https://resend.com). When resend_api_key is
+    # empty (local dev) the email service logs the message to the console instead
+    # of sending, so the flow is testable without an account or key.
+    resend_api_key: str = ""
+    email_from: str = "Albumania <onboarding@resend.dev>"
+    # Public base URL of the frontend, used to build links inside emails.
+    frontend_base_url: str = "http://localhost:5173"
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

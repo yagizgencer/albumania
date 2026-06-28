@@ -23,6 +23,8 @@ import {
   publishRating,
   type Rating,
 } from "../api/ratings";
+import { Alert } from "../components/Alert";
+import { LoadingState } from "../components/Spinner";
 import styles from "./RatingEditorPage.module.css";
 
 const TOP_5_SIZE = 5;
@@ -399,8 +401,8 @@ export function RatingEditorPage() {
     });
   }
 
-  if (loading) return <div className={styles.page}>Loading…</div>;
-  if (error && !album) return <div className={styles.page}>{error}</div>;
+  if (loading) return <div className={styles.page}><LoadingState /></div>;
+  if (error && !album) return <div className={styles.page}><Alert>{error}</Alert></div>;
   if (!album) return null;
 
   const trackMap = new Map(album.tracks.map((t) => [t.index, t]));
@@ -521,7 +523,7 @@ export function RatingEditorPage() {
           </DndContext>
 
           {/* Actions */}
-          {error && <p className={styles.error}>{error}</p>}
+          {error && <Alert>{error}</Alert>}
           <div className={styles.actions}>
             <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={handleSave} disabled={saving}>
               {saving ? "Saving…" : "Save Draft"}

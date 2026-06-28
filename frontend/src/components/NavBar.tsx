@@ -3,7 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationsContext";
 import { Avatar } from "./Avatar";
 import { NotificationBell } from "./NotificationBell";
-import { HeadphonesIcon, HomeIcon, PeopleIcon } from "./Icons";
+import { HeadphonesIcon, HomeIcon, PeopleIcon, SettingsIcon } from "./Icons";
 import styles from "./NavBar.module.css";
 
 export function NavBar() {
@@ -59,6 +59,10 @@ export function NavBar() {
           }}
         >
           <PeopleIcon size={26} />
+        </NavItem>
+
+        <NavItem to="/settings" label="Settings">
+          <SettingsIcon size={26} />
         </NavItem>
       </div>
 

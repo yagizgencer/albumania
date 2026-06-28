@@ -7,10 +7,11 @@ from sqlalchemy.orm import Session
 
 from app.models.notification import Notification
 
-from app.core.deps import get_current_user
+from app.core.deps import get_current_user, get_verified_user
 from app.db.session import get_db
 from app.models.album import Album, BaselineStat
 from app.models.friendship import FriendDashboardEntry, Friendship, FriendshipStatus
+from app.models.invite import ListenInvite
 from app.models.rating import Rating, RatingStatus
 from app.models.user import User
 from app.schemas.dashboard import DashboardAlbum
@@ -52,7 +53,7 @@ def _hydrate_friendship(
 @router.post("", response_model=FriendshipResponse, status_code=status.HTTP_201_CREATED)
 def create_friendship(
     body: FriendshipCreate,
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(get_verified_user)],
     db: Annotated[Session, Depends(get_db)],
     storage: Annotated[Storage, Depends(get_storage)],
 ) -> FriendshipResponse:
@@ -163,6 +164,20 @@ def delete_friendship(
     db: Annotated[Session, Depends(get_db)],
 ) -> None:
     friendship = _get_for_user(db, friendship_id, current_user.username)
+    # Tear down any listen invites between the pair (either direction) so a
+    # severed friendship doesn't leave stray invites or their notifications
+    # behind. Deleting each invite cascades to its notifications.
+    a, b = friendship.user_a_username, friendship.user_b_username
+    invites = db.scalars(
+        select(ListenInvite).where(
+            or_(
+                (ListenInvite.sender_username == a) & (ListenInvite.receiver_username == b),
+                (ListenInvite.sender_username == b) & (ListenInvite.receiver_username == a),
+            )
+        )
+    ).all()
+    for invite in invites:
+        db.delete(invite)
     db.delete(friendship)
     db.commit()
 

@@ -12,6 +12,8 @@ import {
 } from "../api/invites";
 import { AlbumSearchBar } from "../components/AlbumSearchBar";
 import { Avatar } from "../components/Avatar";
+import { Alert } from "../components/Alert";
+import { LoadingState } from "../components/Spinner";
 import styles from "./ListenLaterPage.module.css";
 
 export function ListenLaterPage() {
@@ -48,8 +50,8 @@ export function ListenLaterPage() {
     await reload();
   }
 
-  if (error) return <main className={styles.page}><p>{error}</p></main>;
-  if (entries === null) return <main className={styles.page}><p>Loading…</p></main>;
+  if (error) return <main className={styles.page}><Alert>{error}</Alert></main>;
+  if (entries === null) return <main className={styles.page}><LoadingState /></main>;
 
   return (
     <main className={styles.page}>

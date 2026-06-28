@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.models.notification import Notification
 
-from app.core.deps import get_current_user
+from app.core.deps import get_current_user, get_verified_user
 from app.db.session import get_db
 from app.models.album import Album
 from app.models.invite import ListenInvite, ListenInviteStatus
@@ -31,6 +31,7 @@ from app.services.storage import Storage, get_storage
 router = APIRouter(prefix="/invites", tags=["invites"])
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
+VerifiedUser = Annotated[User, Depends(get_verified_user)]
 DB = Annotated[Session, Depends(get_db)]
 StorageDep = Annotated[Storage, Depends(get_storage)]
 
@@ -72,7 +73,7 @@ def _album_out(album: Album) -> AlbumOut:
 
 @router.post("", response_model=ListenInviteOut, status_code=status.HTTP_201_CREATED)
 def create_invite(
-    body: ListenInviteCreate, user: CurrentUser, db: DB, storage: StorageDep
+    body: ListenInviteCreate, user: VerifiedUser, db: DB, storage: StorageDep
 ) -> ListenInviteOut:
     if body.username == user.username:
         raise HTTPException(

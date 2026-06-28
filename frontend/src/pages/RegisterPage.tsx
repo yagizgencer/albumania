@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { apiClient } from "../api/client";
+import { register as registerRequest } from "../api/auth";
 import { useAuth } from "../context/AuthContext";
+import { getErrorMessage } from "../lib/apiError";
+import { Alert } from "../components/Alert";
+import { PasswordInput } from "../components/PasswordInput";
 
 export function RegisterPage() {
   const { login } = useAuth();
@@ -10,23 +13,28 @@ export function RegisterPage() {
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
     setSubmitting(true);
     try {
-      const { data } = await apiClient.post<{ access_token: string }>(
-        "/auth/register",
-        { username, email, display_name: displayName, password }
-      );
-      login(data.access_token);
+      const token = await registerRequest({ username, email, displayName, password });
+      login(token);
       navigate("/");
     } catch (err: unknown) {
-      const msg = extractMessage(err) ?? "Registration failed";
-      setError(msg);
+      setError(getErrorMessage(err, "Registration failed"));
     } finally {
       setSubmitting(false);
     }
@@ -50,9 +58,23 @@ export function RegisterPage() {
         </label>
         <label>
           Password
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          <PasswordInput
+            value={password}
+            onChange={setPassword}
+            autoComplete="new-password"
+            required
+          />
         </label>
-        {error && <p className="error">{error}</p>}
+        <label>
+          Confirm password
+          <PasswordInput
+            value={confirmPassword}
+            onChange={setConfirmPassword}
+            autoComplete="new-password"
+            required
+          />
+        </label>
+        {error && <Alert>{error}</Alert>}
         <button type="submit" disabled={submitting}>
           {submitting ? "Creating…" : "Create account"}
         </button>
@@ -60,21 +82,4 @@ export function RegisterPage() {
       <p>Already have an account? <Link to="/login">Log in</Link></p>
     </main>
   );
-}
-
-function extractMessage(err: unknown): string | null {
-  if (
-    err &&
-    typeof err === "object" &&
-    "response" in err &&
-    err.response &&
-    typeof err.response === "object" &&
-    "data" in err.response &&
-    err.response.data &&
-    typeof err.response.data === "object" &&
-    "detail" in err.response.data
-  ) {
-    return String((err.response.data as { detail: string }).detail);
-  }
-  return null;
 }

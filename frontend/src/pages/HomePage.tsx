@@ -6,12 +6,13 @@ import { getListenLater, type ListenLaterEntry } from "../api/invites";
 import { useAuth } from "../context/AuthContext";
 import { Avatar } from "../components/Avatar";
 import SketchUnderline from "../components/SketchUnderline";
+import { LoadingState } from "../components/Spinner";
 import styles from "./HomePage.module.css";
 
 export function HomePage() {
   const { username, profile, isLoading } = useAuth();
 
-  if (isLoading) return <main className={styles.page}><p>Loading…</p></main>;
+  if (isLoading) return <main className={styles.page}><LoadingState /></main>;
   if (!username) return <PublicLanding />;
   return <LoggedInHome username={username} displayName={profile?.display_name ?? username} pictureUrl={profile?.profile_picture_url ?? null} />;
 }
@@ -147,7 +148,7 @@ function LoggedInHome({ username, displayName, pictureUrl }: LoggedInHomeProps) 
           <Link to={`/profile/${username}`}>See full dashboard →</Link>
         </div>
         {recent === null ? (
-          <p style={{ color: "var(--text-muted)" }}>Loading…</p>
+          <LoadingState />
         ) : recent.length === 0 ? (
           <div className={styles.emptyCard}>
             You haven't published a rating yet.{" "}

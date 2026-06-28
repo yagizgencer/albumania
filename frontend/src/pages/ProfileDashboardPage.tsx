@@ -13,6 +13,8 @@ import { Line } from "react-chartjs-2";
 import { useNavigate } from "react-router-dom";
 import { getDashboard, type DashboardEntry } from "../api/dashboard";
 import { chartFill, chartPalette } from "../lib/chartTheme";
+import { Alert } from "../components/Alert";
+import { LoadingState } from "../components/Spinner";
 import styles from "./ProfileDashboardPage.module.css";
 
 ChartJS.register(
@@ -148,8 +150,8 @@ export function ProfileDashboard({ username }: { username: string }) {
     };
   }, [filtered, mode, cumulative]);
 
-  if (error) return <p className="error">{error}</p>;
-  if (!entries) return <p>Loading…</p>;
+  if (error) return <Alert>{error}</Alert>;
+  if (!entries) return <LoadingState />;
 
   return (
     <>

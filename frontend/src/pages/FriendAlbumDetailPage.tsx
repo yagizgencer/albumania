@@ -7,6 +7,8 @@ import {
   type FriendDashboardResponse,
 } from "../api/friendDashboard";
 import { formatDuration } from "../utils/duration";
+import { Alert } from "../components/Alert";
+import { LoadingState } from "../components/Spinner";
 import styles from "./AlbumDetailPage.module.css";
 
 export function FriendAlbumDetailPage() {
@@ -49,9 +51,9 @@ export function FriendAlbumDetailPage() {
     [album]
   );
 
-  if (error) return <main className={styles.page}><p className="error">{error}</p></main>;
+  if (error) return <main className={styles.page}><Alert>{error}</Alert></main>;
   if (!album || !pair || !entry)
-    return <main className={styles.page}><p>Loading…</p></main>;
+    return <main className={styles.page}><LoadingState /></main>;
 
   const renderList = (indices: number[]) =>
     indices

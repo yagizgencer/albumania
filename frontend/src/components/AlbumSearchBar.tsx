@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { searchAlbums, type AlbumSearchResult } from "../api/albums";
+import { Alert } from "./Alert";
 import styles from "../pages/AlbumSearchPage.module.css";
 
 interface AlbumSearchBarProps {
@@ -61,7 +62,7 @@ export function AlbumSearchBar({
         autoFocus={autoFocus}
       />
       {loading && <p className={styles.status}>Searching…</p>}
-      {error && <p className={styles.error}>{error}</p>}
+      {error && <Alert>{error}</Alert>}
       {results.length > 0 && (
         <ul className={styles.dropdown} role="listbox">
           {results.map((album) => (

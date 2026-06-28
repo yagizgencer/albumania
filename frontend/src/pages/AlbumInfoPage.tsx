@@ -13,6 +13,8 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { listFriendships, type Friendship } from "../api/friendships";
 import { formatDuration } from "../utils/duration";
+import { Alert } from "../components/Alert";
+import { LoadingState } from "../components/Spinner";
 import styles from "./AlbumInfoPage.module.css";
 
 interface FriendForInvite {
@@ -87,8 +89,8 @@ export function AlbumInfoPage() {
     }
   }
 
-  if (loading) return <main className={styles.page}><p>Loading…</p></main>;
-  if (error || !album) return <main className={styles.page}><p className={styles.error}>{error ?? "Not found."}</p></main>;
+  if (loading) return <main className={styles.page}><LoadingState /></main>;
+  if (error || !album) return <main className={styles.page}><Alert>{error ?? "Not found."}</Alert></main>;
 
   const totalMs = album.tracks.reduce((sum, t) => sum + (t.duration_ms ?? 0), 0);
   const hasAnyDuration = album.tracks.some((t) => t.duration_ms != null);
@@ -157,7 +159,7 @@ export function AlbumInfoPage() {
               </button>
             )}
           </div>
-          {actionError && <p className={styles.error}>{actionError}</p>}
+          {actionError && <Alert>{actionError}</Alert>}
           {actionInfo && <p className={styles.info}>{actionInfo}</p>}
         </div>
       </header>

@@ -39,6 +39,7 @@ def _user_response(user: User, storage: Storage) -> UserResponse:
     return UserResponse(
         username=user.username,
         email=user.email,
+        email_verified=user.email_verified,
         display_name=user.display_name,
         description=user.description,
         profile_visibility=user.profile_visibility,

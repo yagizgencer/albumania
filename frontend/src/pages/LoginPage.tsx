@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { apiClient } from "../api/client";
+import { login as loginRequest } from "../api/auth";
 import { useAuth } from "../context/AuthContext";
+import { Alert } from "../components/Alert";
+import { PasswordInput } from "../components/PasswordInput";
 
 export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -16,14 +18,11 @@ export function LoginPage() {
     setError(null);
     setSubmitting(true);
     try {
-      const { data } = await apiClient.post<{ access_token: string }>(
-        "/auth/login",
-        { email, password }
-      );
-      login(data.access_token);
+      const token = await loginRequest(identifier, password);
+      login(token);
       navigate("/");
     } catch {
-      setError("Invalid email or password");
+      setError("Invalid login or password");
     } finally {
       setSubmitting(false);
     }
@@ -34,14 +33,25 @@ export function LoginPage() {
       <h1>Log in</h1>
       <form onSubmit={handleSubmit}>
         <label>
-          Email
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          Email or username
+          <input
+            type="text"
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
+            autoComplete="username"
+            required
+          />
         </label>
         <label>
           Password
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          <PasswordInput
+            value={password}
+            onChange={setPassword}
+            autoComplete="current-password"
+            required
+          />
         </label>
-        {error && <p className="error">{error}</p>}
+        {error && <Alert>{error}</Alert>}
         <button type="submit" disabled={submitting}>
           {submitting ? "Logging in…" : "Log in"}
         </button>
@@ -50,4 +60,3 @@ export function LoginPage() {
     </main>
   );
 }
-

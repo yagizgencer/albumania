@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
   Friendship,
@@ -13,13 +13,24 @@ import {
   sendFriendRequest,
 } from "../api/friendships";
 import { Avatar } from "../components/Avatar";
+import { Alert } from "../components/Alert";
+import { LoadingState } from "../components/Spinner";
+import { getErrorMessage } from "../lib/apiError";
 import styles from "./FriendsPage.module.css";
 
 type Tab = "friends" | "incoming" | "outgoing";
 
+const TABS: Tab[] = ["friends", "incoming", "outgoing"];
+
 export function FriendsPage() {
   const { username } = useAuth();
-  const [tab, setTab] = useState<Tab>("friends");
+  // Drive the active tab from the URL so notifications can deep-link
+  // (e.g. /friends?tab=incoming).
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const tab: Tab = TABS.includes(tabParam as Tab) ? (tabParam as Tab) : "friends";
+  const setTab = (next: Tab) =>
+    setSearchParams(next === "friends" ? {} : { tab: next }, { replace: true });
   const [data, setData] = useState<FriendshipList | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
@@ -58,9 +69,7 @@ export function FriendsPage() {
       await refresh();
       setResults((prev) => prev.filter((u) => u.username !== target));
     } catch (err: unknown) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const detail = (err as any)?.response?.data?.detail ?? "Failed to send request";
-      setSearchError(detail);
+      setSearchError(getErrorMessage(err, "Failed to send request"));
     }
   }
 
@@ -100,7 +109,7 @@ export function FriendsPage() {
         <button type="submit">Search</button>
       </form>
 
-      {searchError && <p className={styles.error}>{searchError}</p>}
+      {searchError && <Alert>{searchError}</Alert>}
 
       {results.length > 0 && (
         <div className={styles.searchResults}>
@@ -143,8 +152,8 @@ export function FriendsPage() {
         </button>
       </div>
 
-      {error && <p className={styles.error}>{error}</p>}
-      {!data && !error && <p>Loading…</p>}
+      {error && <Alert>{error}</Alert>}
+      {!data && !error && <LoadingState />}
 
       {data && tab === "friends" && (
         <FriendList

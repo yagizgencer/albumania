@@ -15,6 +15,7 @@ class UserCreate(BaseModel):
 class UserResponse(BaseModel):
     username: str
     email: str
+    email_verified: bool
     display_name: str
     description: str | None
     profile_visibility: ProfileVisibility
