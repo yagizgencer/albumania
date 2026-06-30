@@ -164,7 +164,7 @@
 .chartBox {
   position: relative;
   width: 100%;
-  height: 340px;
+  height: 380px;
   touch-action: pan-y;
 }
 
@@ -180,7 +180,10 @@
 .tableWrap {
   border: 2px solid var(--border);
   border-radius: 12px;
-  overflow: hidden;
+  /* Cap the table so it scrolls internally (~25 rows) instead of growing the
+     page forever; the header stays pinned via the sticky .th rule below. */
+  max-height: 1100px;
+  overflow-y: auto;
 }
 
 .table {
@@ -209,15 +212,20 @@
 
 .table th,
 .table td {
-  padding: 0.55rem 0.6rem;
   text-align: left;
   border-bottom: 1px solid var(--surface-muted);
   vertical-align: middle;
 }
 
-/* Multi-line similarity headers in the friend view baseline-align with the
-   single-line ones. */
+.table td {
+  padding: 0.55rem 0.6rem;
+}
+
+/* Header padding lives only here (the .th class no longer sets padding) so header
+   spacing isn't doubled. Multi-line similarity headers in the friend view
+   baseline-align with the single-line ones. */
 .table th {
+  padding: 0.75rem 0.9rem;
   vertical-align: bottom;
 }
 
@@ -226,8 +234,11 @@
   font-weight: 600;
   font-size: 0.85rem;
   color: var(--text-muted);
-  padding: 0.6rem 0.9rem;
   text-align: left;
+  /* Keep headers visible while the table body scrolls. */
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 .thRight {
@@ -236,7 +247,9 @@
 
 .sortBtn {
   display: inline-flex;
-  align-items: flex-end;
+  /* center (not flex-end) so the sort icon stays put against multi-line,
+     wrapped headers instead of dropping to the last line. */
+  align-items: center;
   gap: 0.3rem;
   background: none;
   border: none;
@@ -295,41 +308,6 @@
   text-align: right;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-}
-
-.albumCell {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  min-width: 0;
-}
-
-.albumArt {
-  width: 40px;
-  height: 40px;
-  border-radius: 4px;
-  flex-shrink: 0;
-  object-fit: cover;
-}
-
-.albumText {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.albumTitle {
-  font-weight: 600;
-  line-height: 1.2;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.albumArtist {
-  color: var(--text-muted);
-  font-size: 0.85rem;
-  line-height: 1.2;
 }
 
 .empty {

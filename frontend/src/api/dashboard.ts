@@ -5,6 +5,7 @@ export interface DashboardAlbum {
   spotify_id: string;
   title: string;
   artist: string;
+  artist_spotify_id: string | null;
   release_date: string;
   total_songs: number;
   album_art_url: string | null;

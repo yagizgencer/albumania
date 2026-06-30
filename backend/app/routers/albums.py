@@ -1,13 +1,15 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
 from app.db.session import get_db
 from app.models.album import Album, AlbumTrack
+from app.models.rating import Rating, RatingStatus
 from app.models.user import User
-from app.schemas.album import AlbumOut, AlbumSearchResult, TrackOut
+from app.schemas.album import AlbumOut, AlbumSearchResult, AlbumStats, TrackOut
 from app.services.spotify import SpotifyClient, get_spotify_client
 
 router = APIRouter(prefix="/albums", tags=["albums"])
@@ -26,12 +28,38 @@ def search_albums(
             spotify_id=r.spotify_id,
             title=r.title,
             artist=r.artist,
+            artist_spotify_id=r.artist_spotify_id,
             release_date=r.release_date,
             total_songs=r.total_songs,
             album_art_url=r.album_art_url,
         )
         for r in results
     ]
+
+
+@router.get("/{spotify_id}/stats", response_model=AlbumStats)
+def get_album_stats(
+    spotify_id: str,
+    _current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> AlbumStats:
+    """Global mean score + rater count over all published ratings for this album."""
+    album = db.query(Album).filter(Album.spotify_id == spotify_id).first()
+    if album is None:
+        # Album not imported yet → no published ratings can exist.
+        return AlbumStats(mean_score=None, num_raters=0)
+
+    mean, count = db.execute(
+        select(func.avg(Rating.score), func.count(Rating.id)).where(
+            Rating.album_id == album.id,
+            Rating.status == RatingStatus.published,
+            Rating.score.is_not(None),
+        )
+    ).one()
+    return AlbumStats(
+        mean_score=round(mean, 2) if mean is not None else None,
+        num_raters=count,
+    )
 
 
 @router.get("/{spotify_id}", response_model=AlbumOut)
@@ -43,6 +71,13 @@ def get_or_import_album(
 ) -> AlbumOut:
     existing = db.query(Album).filter(Album.spotify_id == spotify_id).first()
     if existing:
+        # Lazily backfill artist_spotify_id for rows imported before that column
+        # existed, so artist links/pages work for the whole catalog over time.
+        if existing.artist_spotify_id is None:
+            existing.artist_spotify_id = spotify.get_album(spotify_id).artist_spotify_id
+            if existing.artist_spotify_id is not None:
+                db.commit()
+                db.refresh(existing)
         return _to_album_out(existing)
 
     album_data = spotify.get_album(spotify_id)
@@ -52,6 +87,7 @@ def get_or_import_album(
         spotify_id=album_data.spotify_id,
         title=album_data.title,
         artist=album_data.artist,
+        artist_spotify_id=album_data.artist_spotify_id,
         release_date=album_data.release_date,
         total_songs=album_data.total_songs,
         album_art_url=album_data.album_art_url,
@@ -81,6 +117,7 @@ def _to_album_out(album: Album) -> AlbumOut:
         spotify_id=album.spotify_id,
         title=album.title,
         artist=album.artist,
+        artist_spotify_id=album.artist_spotify_id,
         release_date=album.release_date,
         total_songs=album.total_songs,
         album_art_url=album.album_art_url,

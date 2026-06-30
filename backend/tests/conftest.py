@@ -26,6 +26,15 @@ class _StubSpotifyClient(SpotifyClient):
     def get_top5_popular_indices(self, spotify_id):
         return []
 
+    def get_artist(self, artist_id):
+        return None
+
+    def get_artist_albums(self, artist_id):
+        return []
+
+    def search_artists(self, query, limit=10):
+        return []
+
 
 @pytest.fixture(autouse=True)
 def _stub_spotify():

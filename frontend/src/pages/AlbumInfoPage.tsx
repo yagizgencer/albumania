@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { getAlbum, type Album } from "../api/albums";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { getAlbum, getAlbumStats, type Album, type AlbumStats } from "../api/albums";
 import {
   createInvite,
   type ListenInvite,
@@ -29,6 +29,7 @@ export function AlbumInfoPage() {
 
   const [album, setAlbum] = useState<Album | null>(null);
   const [rating, setRating] = useState<Rating | null>(null);
+  const [stats, setStats] = useState<AlbumStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -48,6 +49,11 @@ export function AlbumInfoPage() {
         } catch {
           setRating(null);
         }
+        try {
+          setStats(await getAlbumStats(spotifyId));
+        } catch {
+          setStats(null);
+        }
       })
       .catch(() => setError("Could not load album."))
       .finally(() => setLoading(false));
@@ -55,6 +61,16 @@ export function AlbumInfoPage() {
 
   const isPublished = rating?.status === "published";
   const isDraft = rating?.status === "draft";
+
+  // The viewer's top-5 track indices (1-based), only relevant once published.
+  const top5Set = useMemo(() => {
+    if (rating?.status !== "published" || !rating.top_track_indices) {
+      return new Set<number>();
+    }
+    return new Set(
+      rating.top_track_indices.filter((i): i is number => i != null)
+    );
+  }, [rating]);
 
   async function handleAddToListenLater() {
     if (!album) return;
@@ -95,29 +111,74 @@ export function AlbumInfoPage() {
 
   const totalMs = album.tracks.reduce((sum, t) => sum + (t.duration_ms ?? 0), 0);
   const hasAnyDuration = album.tracks.some((t) => t.duration_ms != null);
+  const spotifyAlbumUrl = `https://open.spotify.com/album/${album.spotify_id}`;
 
   return (
     <main className={styles.page}>
       <header className={styles.header}>
         {album.album_art_url && (
           <a
-            href={`https://open.spotify.com/album/${album.spotify_id}`}
+            href={spotifyAlbumUrl}
             target="_blank"
             rel="noreferrer"
             title="Open on Spotify"
           >
-            <img src={album.album_art_url} alt={album.title} className={styles.art} />
+            <img src={album.album_art_url} alt="" className={styles.art} />
           </a>
         )}
         <div className={styles.meta}>
-          <h1>{album.title}</h1>
-          <h2>{album.artist}</h2>
+          <h1>
+            <a
+              className={styles.headerLink}
+              href={spotifyAlbumUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {album.title}
+            </a>
+          </h1>
+          <h2>
+            {album.artist_spotify_id ? (
+              <a
+                className={styles.headerLink}
+                href={`https://open.spotify.com/artist/${album.artist_spotify_id}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {album.artist}
+              </a>
+            ) : (
+              album.artist
+            )}
+          </h2>
           <p>
             Released {formatDate(album.release_date)} · {album.total_songs} tracks
             {hasAnyDuration && <> · {formatDuration(totalMs)}</>}
           </p>
 
+          <p className={styles.stats}>
+            {stats && stats.num_raters > 0 && stats.mean_score !== null ? (
+              <>
+                <strong>{stats.mean_score.toFixed(1)}</strong> ·{" "}
+                {stats.num_raters} {stats.num_raters === 1 ? "rating" : "ratings"}
+              </>
+            ) : (
+              "No ratings yet"
+            )}
+            {isPublished && rating?.score != null && (
+              <> · Your score: <strong>{rating.score.toFixed(1)}</strong></>
+            )}
+          </p>
+
           <div className={styles.actions}>
+            {album.artist_spotify_id && (
+              <Link
+                className={`${styles.btn} ${styles.btnSecondary}`}
+                to={`/artists/${album.artist_spotify_id}`}
+              >
+                Go to artist page
+              </Link>
+            )}
             {isPublished && (
               <button className={`${styles.btn} ${styles.btnDisabled}`} disabled>
                 Rated
@@ -178,6 +239,9 @@ export function AlbumInfoPage() {
                   </a>
                 ) : (
                   t.name
+                )}
+                {isPublished && top5Set.has(t.index) && (
+                  <span className={styles.top5}>Top 5</span>
                 )}
               </span>
               <span className={styles.trackDuration}>{formatDuration(t.duration_ms)}</span>

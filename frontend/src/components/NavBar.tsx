@@ -1,9 +1,11 @@
-import { NavLink } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationsContext";
 import { Avatar } from "./Avatar";
 import { NotificationBell } from "./NotificationBell";
-import { HeadphonesIcon, HomeIcon, PeopleIcon, SettingsIcon } from "./Icons";
+import { TopSearch } from "./TopSearch";
+import { HeadphonesIcon, HomeIcon, PeopleIcon } from "./Icons";
 import styles from "./NavBar.module.css";
 
 export function NavBar() {
@@ -24,20 +26,12 @@ export function NavBar() {
         <span>Albumania</span>
       </NavLink>
 
-      <div className={styles.itemsRow}>
+      <div className={styles.center}>
         <NavItem to="/" label="Home">
           <HomeIcon size={26} />
         </NavItem>
 
-        <NavItem to={`/profile/${username}`} label="Me">
-          <Avatar
-            username={username}
-            pictureUrl={profile?.profile_picture_url ?? null}
-            displayName={profile?.display_name ?? username}
-            size={26}
-            className={styles.avatarWrap}
-          />
-        </NavItem>
+        <TopSearch />
 
         <NavItem
           to="/listen-later"
@@ -49,6 +43,10 @@ export function NavBar() {
         >
           <HeadphonesIcon size={26} />
         </NavItem>
+      </div>
+
+      <div className={styles.right}>
+        <NotificationBell />
 
         <NavItem
           to="/friends"
@@ -61,18 +59,105 @@ export function NavBar() {
           <PeopleIcon size={26} />
         </NavItem>
 
-        <NavItem to="/settings" label="Settings">
-          <SettingsIcon size={26} />
-        </NavItem>
-      </div>
-
-      <div className={styles.right}>
-        <NotificationBell />
-        <button className={styles.logout} onClick={logout}>
-          Log out
-        </button>
+        <ProfileMenu
+          username={username}
+          pictureUrl={profile?.profile_picture_url ?? null}
+          displayName={profile?.display_name ?? username}
+          onLogout={logout}
+        />
       </div>
     </nav>
+  );
+}
+
+function ProfileMenu({
+  username,
+  pictureUrl,
+  displayName,
+  onLogout,
+}: {
+  username: string;
+  pictureUrl: string | null;
+  displayName: string;
+  onLogout: () => Promise<void>;
+}) {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!open) return;
+    function onDoc(e: MouseEvent) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  function go(path: string) {
+    setOpen(false);
+    navigate(path);
+  }
+
+  return (
+    <div className={styles.profileWrap} ref={wrapRef}>
+      <button
+        type="button"
+        className={styles.profileBtn}
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label="Account menu"
+      >
+        <Avatar
+          username={username}
+          pictureUrl={pictureUrl}
+          displayName={displayName}
+          size={32}
+        />
+      </button>
+
+      {open && (
+        <div className={styles.menu} role="menu">
+          <button
+            type="button"
+            role="menuitem"
+            className={styles.menuItem}
+            onClick={() => go(`/profile/${username}`)}
+          >
+            Profile
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            className={styles.menuItem}
+            onClick={() => go("/settings")}
+          >
+            Settings
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            className={styles.menuItem}
+            onClick={() => {
+              setOpen(false);
+              void onLogout();
+            }}
+          >
+            Log out
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 

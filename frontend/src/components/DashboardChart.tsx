@@ -53,6 +53,17 @@ function radiusFor(spacingPx: number): number {
   return 0;
 }
 
+// A "nice" step (1, 2, or 5 × 10^n) so the y-axis lands ~`targetTicks` evenly
+// spaced gridlines instead of Chart.js's auto-spacing.
+export function niceStep(range: number, targetTicks = 5): number {
+  if (!Number.isFinite(range) || range <= 0) return 1;
+  const rough = range / targetTicks;
+  const mag = Math.pow(10, Math.floor(Math.log10(rough)));
+  const norm = rough / mag;
+  const nice = norm < 1.5 ? 1 : norm < 3 ? 2 : norm < 7 ? 5 : 10;
+  return nice * mag;
+}
+
 export function DashboardChart({
   labels,
   datasets,
@@ -179,9 +190,23 @@ export function DashboardChart({
         }
       }
     }
-    if (min === Infinity) return { min: undefined as number | undefined, max: undefined as number | undefined };
+    if (min === Infinity) {
+      return {
+        min: undefined as number | undefined,
+        max: undefined as number | undefined,
+        stepSize: undefined as number | undefined,
+      };
+    }
     const pad = (max - min) * 0.08 || 1;
-    return { min: beginAtZero ? 0 : min - pad, max: max + pad };
+    const paddedMin = beginAtZero ? 0 : min - pad;
+    const paddedMax = max + pad;
+    // Round the bounds to whole steps so every gridline sits on a step multiple.
+    const step = niceStep(paddedMax - paddedMin);
+    return {
+      min: Math.floor(paddedMin / step) * step,
+      max: Math.ceil(paddedMax / step) * step,
+      stepSize: step,
+    };
   }, [datasets, beginAtZero]);
 
   const radius = radiusFor(containerW / Math.max(1, effSpan));
@@ -221,7 +246,11 @@ export function DashboardChart({
             callback: (value: number) => truncate(labels[value] ?? ""),
           },
         },
-        y: { min: yBounds.min, max: yBounds.max },
+        y: {
+          min: yBounds.min,
+          max: yBounds.max,
+          ticks: { stepSize: yBounds.stepSize },
+        },
       },
     }),
     [view, labels, radius, onPointClick, effStart, effSpan, yBounds]

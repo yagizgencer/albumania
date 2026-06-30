@@ -4,6 +4,7 @@ export interface AlbumSearchResult {
   spotify_id: string;
   title: string;
   artist: string;
+  artist_spotify_id: string | null;
   release_date: string;
   total_songs: number;
   album_art_url: string | null;
@@ -21,6 +22,7 @@ export interface Album {
   spotify_id: string;
   title: string;
   artist: string;
+  artist_spotify_id: string | null;
   release_date: string;
   total_songs: number;
   album_art_url: string | null;
@@ -39,5 +41,15 @@ export async function searchAlbums(
 
 export async function getAlbum(spotifyId: string): Promise<Album> {
   const { data } = await apiClient.get<Album>(`/albums/${spotifyId}`);
+  return data;
+}
+
+export interface AlbumStats {
+  mean_score: number | null;
+  num_raters: number;
+}
+
+export async function getAlbumStats(spotifyId: string): Promise<AlbumStats> {
+  const { data } = await apiClient.get<AlbumStats>(`/albums/${spotifyId}/stats`);
   return data;
 }

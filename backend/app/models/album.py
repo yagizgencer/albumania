@@ -11,6 +11,9 @@ class Album(Base):
     spotify_id: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     artist: Mapped[str] = mapped_column(String(255), nullable=False)
+    # Spotify id of the primary artist. Nullable: existing rows backfill lazily
+    # the next time the album is fetched from Spotify (see albums router).
+    artist_spotify_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     release_date: Mapped[str] = mapped_column(String(20), nullable=False)
     total_songs: Mapped[int] = mapped_column(Integer, nullable=False)
     album_art_url: Mapped[str | None] = mapped_column(String(512), nullable=True)

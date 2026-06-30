@@ -11,9 +11,17 @@ class SpotifyAlbumResult:
     spotify_id: str
     title: str
     artist: str
+    artist_spotify_id: str | None
     release_date: str
     total_songs: int
     album_art_url: str | None
+
+
+@dataclass
+class SpotifyArtist:
+    spotify_id: str
+    name: str
+    image_url: str | None
 
 
 @dataclass
@@ -22,6 +30,19 @@ class SpotifyTrack:
     name: str
     spotify_url: str | None
     duration_ms: int | None
+
+
+def _album_result_from_item(item: dict) -> SpotifyAlbumResult:
+    artists = item.get("artists") or []
+    return SpotifyAlbumResult(
+        spotify_id=item["id"],
+        title=item["name"],
+        artist=artists[0]["name"] if artists else "",
+        artist_spotify_id=artists[0]["id"] if artists else None,
+        release_date=item["release_date"],
+        total_songs=item["total_tracks"],
+        album_art_url=item["images"][0]["url"] if item["images"] else None,
+    )
 
 
 class SpotifyClient:
@@ -35,31 +56,45 @@ class SpotifyClient:
 
     def search_albums(self, query: str, limit: int = 10) -> list[SpotifyAlbumResult]:
         data = self._sp.search(q=query, type="album", limit=limit)
-        items = data["albums"]["items"]
+        return [_album_result_from_item(item) for item in data["albums"]["items"]]
+
+    def search_artists(self, query: str, limit: int = 10) -> list[SpotifyArtist]:
+        data = self._sp.search(q=query, type="artist", limit=limit)
         results = []
-        for item in items:
+        for item in data["artists"]["items"]:
             results.append(
-                SpotifyAlbumResult(
+                SpotifyArtist(
                     spotify_id=item["id"],
-                    title=item["name"],
-                    artist=item["artists"][0]["name"] if item["artists"] else "",
-                    release_date=item["release_date"],
-                    total_songs=item["total_tracks"],
-                    album_art_url=item["images"][0]["url"] if item["images"] else None,
+                    name=item["name"],
+                    image_url=item["images"][0]["url"] if item["images"] else None,
                 )
             )
         return results
 
     def get_album(self, spotify_id: str) -> SpotifyAlbumResult:
-        item = self._sp.album(spotify_id)
-        return SpotifyAlbumResult(
+        return _album_result_from_item(self._sp.album(spotify_id))
+
+    def get_artist(self, artist_id: str) -> SpotifyArtist:
+        item = self._sp.artist(artist_id)
+        return SpotifyArtist(
             spotify_id=item["id"],
-            title=item["name"],
-            artist=item["artists"][0]["name"] if item["artists"] else "",
-            release_date=item["release_date"],
-            total_songs=item["total_tracks"],
-            album_art_url=item["images"][0]["url"] if item["images"] else None,
+            name=item["name"],
+            image_url=item["images"][0]["url"] if item["images"] else None,
         )
+
+    def get_artist_albums(self, artist_id: str) -> list[SpotifyAlbumResult]:
+        """Full studio-album discography, de-duped by name (Spotify returns many
+        editions: deluxe, remasters, regional variants, etc.)."""
+        data = self._sp.artist_albums(artist_id, album_type="album", limit=50)
+        results: list[SpotifyAlbumResult] = []
+        seen_names: set[str] = set()
+        for item in data["items"]:
+            name_key = item["name"].strip().lower()
+            if name_key in seen_names:
+                continue
+            seen_names.add(name_key)
+            results.append(_album_result_from_item(item))
+        return results
 
     def get_album_tracks(self, spotify_id: str) -> list[SpotifyTrack]:
         item = self._sp.album(spotify_id)

@@ -9,6 +9,7 @@ import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
 import { AlbumDetailPage } from "./pages/AlbumDetailPage";
 import { AlbumInfoPage } from "./pages/AlbumInfoPage";
+import { ArtistPage } from "./pages/ArtistPage";
 import { FriendAlbumDetailPage } from "./pages/FriendAlbumDetailPage";
 import { ListenLaterPage } from "./pages/ListenLaterPage";
 import { FriendsPage } from "./pages/FriendsPage";
@@ -84,6 +85,14 @@ export default function App() {
               element={
                 <ProtectedRoute>
                   <AlbumInfoPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/artists/:artistId"
+              element={
+                <ProtectedRoute>
+                  <ArtistPage />
                 </ProtectedRoute>
               }
             />

@@ -8,6 +8,7 @@ class DashboardAlbum(BaseModel):
     spotify_id: str
     title: str
     artist: str
+    artist_spotify_id: str | None
     release_date: str
     total_songs: int
     album_art_url: str | None

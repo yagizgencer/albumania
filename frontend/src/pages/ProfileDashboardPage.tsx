@@ -7,6 +7,7 @@ import { formatDate } from "../lib/date";
 import { Alert } from "../components/Alert";
 import { LoadingState } from "../components/Spinner";
 import { DashboardChart, type ChartView } from "../components/DashboardChart";
+import { DashboardAlbumCell } from "../components/DashboardAlbumCell";
 import { MetricSwitch } from "../components/MetricSwitch";
 import styles from "./ProfileDashboardPage.module.css";
 
@@ -204,23 +205,7 @@ export function ProfileDashboard({ username }: { username: string }) {
                   onClick={() => navigate(`/users/${username}/albums/${e.album.spotify_id}`)}
                 >
                   <td>
-                    <div className={styles.albumCell}>
-                      {e.album.album_art_url && (
-                        <img
-                          src={e.album.album_art_url}
-                          alt=""
-                          className={styles.albumArt}
-                          onClick={(ev) => {
-                            ev.stopPropagation();
-                            navigate(`/albums/${e.album.spotify_id}`);
-                          }}
-                        />
-                      )}
-                      <span className={styles.albumText}>
-                        <strong className={styles.albumTitle}>{e.album.title}</strong>
-                        <small className={styles.albumArtist}>{e.album.artist}</small>
-                      </span>
-                    </div>
+                    <DashboardAlbumCell album={e.album} />
                   </td>
                   <td className={styles.numCell}>{formatDate(e.album.release_date)}</td>
                   <td className={styles.numCell}>{formatDate(e.completed_at)}</td>

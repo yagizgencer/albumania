@@ -56,6 +56,7 @@ def _album_out(album: Album) -> AlbumOut:
         spotify_id=album.spotify_id,
         title=album.title,
         artist=album.artist,
+        artist_spotify_id=album.artist_spotify_id,
         release_date=album.release_date,
         total_songs=album.total_songs,
         album_art_url=album.album_art_url,
