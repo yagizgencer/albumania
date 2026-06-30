@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
+from app.core.album_rules import require_rateable
 from app.core.deps import get_current_user
 from app.db.session import get_db
 from app.models.album import Album
@@ -44,6 +45,7 @@ def create_rating(body: RatingCreate, user: CurrentUser, db: DB) -> Rating:
     album = db.scalar(select(Album).where(Album.id == body.album_id))
     if album is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Album not found")
+    require_rateable(album)
 
     existing = db.scalar(
         select(Rating).where(Rating.username == user.username, Rating.album_id == body.album_id)

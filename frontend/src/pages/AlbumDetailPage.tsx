@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { getAlbum, type Album } from "../api/albums";
 import { getDashboard, type DashboardEntry } from "../api/dashboard";
 import { formatDuration } from "../utils/duration";
@@ -68,8 +68,30 @@ export function AlbumDetailPage() {
           </a>
         )}
         <div className={styles.meta}>
-          <h1>{album.title}</h1>
-          <h2>{album.artist}</h2>
+          <h1>
+            <a
+              className={styles.headerLink}
+              href={`https://open.spotify.com/album/${album.spotify_id}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {album.title}
+            </a>
+          </h1>
+          <h2>
+            {album.artist_spotify_id ? (
+              <a
+                className={styles.headerLink}
+                href={`https://open.spotify.com/artist/${album.artist_spotify_id}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {album.artist}
+              </a>
+            ) : (
+              album.artist
+            )}
+          </h2>
           <p>
             Released {formatDate(album.release_date)} · {album.total_songs} tracks
             {album.tracks.some((t) => t.duration_ms != null) && (
@@ -79,6 +101,16 @@ export function AlbumDetailPage() {
               </>
             )}
           </p>
+          <div className={styles.pageButtons}>
+            <Link className={styles.pageBtn} to={`/albums/${album.spotify_id}`}>
+              Go to album page
+            </Link>
+            {album.artist_spotify_id && (
+              <Link className={styles.pageBtn} to={`/artists/${album.artist_spotify_id}`}>
+                Go to artist page
+              </Link>
+            )}
+          </div>
           <div className={styles.metricRow}>
             <div className={styles.metric}>
               Score

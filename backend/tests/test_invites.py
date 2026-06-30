@@ -105,6 +105,18 @@ def test_create_invite_happy_path(client: TestClient) -> None:
     _clear_auth()
 
 
+def test_create_invite_rejects_album_out_of_track_range(client: TestClient) -> None:
+    alice = _seed_user("alice")
+    bob = _seed_user("bob")
+    a1 = _seed_album(spotify_id="huge", total_songs=40)
+    _send_and_accept_friendship(client, alice, bob)
+
+    _auth_as(alice)
+    r = client.post("/invites", json={"username": "bob", "album_id": a1})
+    assert r.status_code == 400
+    _clear_auth()
+
+
 def test_create_invite_rejects_non_friend(client: TestClient) -> None:
     alice = _seed_user("alice")
     _seed_user("bob")

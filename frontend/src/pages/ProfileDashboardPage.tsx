@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { getDashboard, type DashboardEntry } from "../api/dashboard";
 import { chartFill, chartPalette } from "../lib/chartTheme";
@@ -194,7 +194,14 @@ export function ProfileDashboard({ username }: { username: string }) {
                 <SortableHeader label="Released" column="release" sort={sort} onClick={cycleSort} align="right" />
                 <SortableHeader label="Rated" column="rated" sort={sort} onClick={cycleSort} align="right" />
                 <SortableHeader label="Score" column="score" sort={sort} onClick={cycleSort} align="right" />
-                <SortableHeader label="Similarity" column="similarity" sort={sort} onClick={cycleSort} align="right" />
+                <SortableHeader
+                  label={stack(trunc(username), "Spotify")}
+                  title={`${username} ↔ Spotify`}
+                  column="similarity"
+                  sort={sort}
+                  onClick={cycleSort}
+                  align="right"
+                />
               </tr>
             </thead>
             <tbody>
@@ -229,14 +236,32 @@ export function ProfileDashboard({ username }: { username: string }) {
 // SortableHeader — click to cycle asc → desc → none for this column
 // ---------------------------------------------------------------------------
 
+// Vertical "username ↔ Spotify" header so the similarity column stays narrow,
+// matching the friend dashboard's stacked headers.
+function stack(top: string, bottom: string): ReactNode {
+  return (
+    <span className={styles.stackHeader}>
+      <span>{top}</span>
+      <span>↔</span>
+      <span>{bottom}</span>
+    </span>
+  );
+}
+
+function trunc(s: string): string {
+  return s.length > 12 ? `${s.slice(0, 11)}…` : s;
+}
+
 function SortableHeader({
   label,
+  title,
   column,
   sort,
   onClick,
   align,
 }: {
-  label: string;
+  label: ReactNode;
+  title?: string;
   column: SortColumn;
   sort: SortState | null;
   onClick: (column: SortColumn) => void;
@@ -253,6 +278,7 @@ function SortableHeader({
     <th
       className={`${styles.th} ${align === "right" ? styles.thRight : ""}`}
       aria-sort={ariaSort}
+      title={title}
     >
       <button
         type="button"

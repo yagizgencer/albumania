@@ -15,7 +15,9 @@ import { listFriendships, type Friendship } from "../api/friendships";
 import { formatDuration } from "../utils/duration";
 import { Alert } from "../components/Alert";
 import { LoadingState } from "../components/Spinner";
+import { ScoreMeter } from "../components/ScoreMeter";
 import { formatDate } from "../lib/date";
+import { isRateable, RATEABLE_RULE_TEXT } from "../lib/albumRules";
 import styles from "./AlbumInfoPage.module.css";
 
 interface FriendForInvite {
@@ -62,14 +64,16 @@ export function AlbumInfoPage() {
   const isPublished = rating?.status === "published";
   const isDraft = rating?.status === "draft";
 
-  // The viewer's top-5 track indices (1-based), only relevant once published.
-  const top5Set = useMemo(() => {
-    if (rating?.status !== "published" || !rating.top_track_indices) {
-      return new Set<number>();
+  // The viewer's top-5 ranking: track index → position (1 = favourite), only
+  // relevant once published.
+  const top5Rank = useMemo(() => {
+    const ranks = new Map<number, number>();
+    if (rating?.status === "published" && rating.top_track_indices) {
+      rating.top_track_indices.forEach((idx, i) => {
+        if (idx != null) ranks.set(idx, i + 1);
+      });
     }
-    return new Set(
-      rating.top_track_indices.filter((i): i is number => i != null)
-    );
+    return ranks;
   }, [rating]);
 
   async function handleAddToListenLater() {
@@ -112,6 +116,7 @@ export function AlbumInfoPage() {
   const totalMs = album.tracks.reduce((sum, t) => sum + (t.duration_ms ?? 0), 0);
   const hasAnyDuration = album.tracks.some((t) => t.duration_ms != null);
   const spotifyAlbumUrl = `https://open.spotify.com/album/${album.spotify_id}`;
+  const rateable = isRateable(album.total_songs);
 
   return (
     <main className={styles.page}>
@@ -156,19 +161,22 @@ export function AlbumInfoPage() {
             {hasAnyDuration && <> · {formatDuration(totalMs)}</>}
           </p>
 
-          <p className={styles.stats}>
-            {stats && stats.num_raters > 0 && stats.mean_score !== null ? (
-              <>
-                <strong>{stats.mean_score.toFixed(1)}</strong> ·{" "}
-                {stats.num_raters} {stats.num_raters === 1 ? "rating" : "ratings"}
-              </>
-            ) : (
-              "No ratings yet"
-            )}
+          <div className={styles.stats}>
+            <span className={styles.statItem}>
+              <span className={styles.statLabel}>Average</span>
+              {stats && stats.num_raters > 0 && stats.mean_score !== null ? (
+                <ScoreMeter score={stats.mean_score} count={stats.num_raters} />
+              ) : (
+                <span className={styles.statEmpty}>No ratings yet</span>
+              )}
+            </span>
             {isPublished && rating?.score != null && (
-              <> · Your score: <strong>{rating.score.toFixed(1)}</strong></>
+              <span className={styles.statItem}>
+                <span className={styles.statLabel}>Your score</span>
+                <ScoreMeter score={rating.score} />
+              </span>
             )}
-          </p>
+          </div>
 
           <div className={styles.actions}>
             {album.artist_spotify_id && (
@@ -198,14 +206,14 @@ export function AlbumInfoPage() {
                 <button
                   className={`${styles.btn} ${styles.btnSecondary}`}
                   onClick={handleAddToListenLater}
-                  disabled={busy}
+                  disabled={busy || !rateable}
                 >
                   Listen Later
                 </button>
                 <button
                   className={`${styles.btn} ${styles.btnPrimary}`}
                   onClick={handleStartRating}
-                  disabled={busy}
+                  disabled={busy || !rateable}
                 >
                   Start Rating
                 </button>
@@ -215,12 +223,13 @@ export function AlbumInfoPage() {
               <button
                 className={`${styles.btn} ${styles.btnSecondary}`}
                 onClick={() => { setInviteModalOpen(true); setActionError(null); setActionInfo(null); }}
-                disabled={busy}
+                disabled={busy || !rateable}
               >
                 Invite a friend
               </button>
             )}
           </div>
+          {!rateable && <p className={styles.ruleNote}>{RATEABLE_RULE_TEXT}</p>}
           {actionError && <Alert>{actionError}</Alert>}
           {actionInfo && <p className={styles.info}>{actionInfo}</p>}
         </div>
@@ -240,8 +249,10 @@ export function AlbumInfoPage() {
                 ) : (
                   t.name
                 )}
-                {isPublished && top5Set.has(t.index) && (
-                  <span className={styles.top5}>Top 5</span>
+                {isPublished && top5Rank.has(t.index) && (
+                  <span className={styles.top5} title={`Your #${top5Rank.get(t.index)} pick`}>
+                    #{top5Rank.get(t.index)}
+                  </span>
                 )}
               </span>
               <span className={styles.trackDuration}>{formatDuration(t.duration_ms)}</span>

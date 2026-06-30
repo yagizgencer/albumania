@@ -57,6 +57,9 @@
   border: none;
   border-top: 2px solid transparent;
   border-bottom: 2px solid transparent;
+  /* The global button rule adds a box-shadow; clear it so the bell <button>
+     looks identical to the Friends/Home <a> items. */
+  box-shadow: none;
   text-decoration: none;
   cursor: pointer;
   font: inherit;
@@ -120,6 +123,7 @@
   border: 2px solid transparent;
   border-radius: 999px;
   background: transparent;
+  box-shadow: none;
   cursor: pointer;
   line-height: 0;
 }

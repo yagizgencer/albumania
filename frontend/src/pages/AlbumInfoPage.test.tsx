@@ -22,7 +22,7 @@ const ALBUM = {
   artist: "The Artist",
   artist_spotify_id: "art1",
   release_date: "2024-01-01",
-  total_songs: 3,
+  total_songs: 10,
   album_art_url: "https://x/art.jpg",
   tracks: [
     { index: 1, name: "Track 1", spotify_url: null, duration_ms: 180000 },
@@ -80,22 +80,23 @@ describe("AlbumInfoPage", () => {
       "/artists/art1"
     );
 
-    // Global stats + our score.
+    // Global mean (stars + value + count) and our score.
     expect(screen.getByText("7.8")).toBeInTheDocument();
-    expect(screen.getByText(/98/)).toBeInTheDocument();
+    expect(screen.getByText("(98)")).toBeInTheDocument();
     expect(screen.getByText(/your score/i)).toBeInTheDocument();
     expect(screen.getByText("9.0")).toBeInTheDocument();
   });
 
-  it("marks only the top-5 tracks", async () => {
+  it("marks the top-5 tracks with their rank position", async () => {
     renderPage();
     await screen.findByRole("link", { name: "Test Album" });
 
-    expect(screen.getAllByText("Top 5")).toHaveLength(2);
-
-    const track2Row = screen.getByText("Track 2").closest("li") as HTMLElement;
-    expect(within(track2Row).queryByText("Top 5")).toBeNull();
+    // top_track_indices [1, 3] → track 1 is rank #1, track 3 is rank #2.
     const track1Row = screen.getByText("Track 1").closest("li") as HTMLElement;
-    expect(within(track1Row).getByText("Top 5")).toBeInTheDocument();
+    expect(within(track1Row).getByText("#1")).toBeInTheDocument();
+    const track3Row = screen.getByText("Track 3").closest("li") as HTMLElement;
+    expect(within(track3Row).getByText("#2")).toBeInTheDocument();
+    const track2Row = screen.getByText("Track 2").closest("li") as HTMLElement;
+    expect(within(track2Row).queryByText(/^#\d+$/)).toBeNull();
   });
 });

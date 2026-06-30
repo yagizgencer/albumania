@@ -72,7 +72,8 @@ describe("ArtistPage", () => {
 
     expect(screen.getByLabelText("Rated")).toBeInTheDocument();
     expect(screen.getByLabelText("In Listen Later")).toBeInTheDocument();
-    expect(screen.getByLabelText("Not in your library")).toBeInTheDocument();
-    expect(screen.getByText("7.8 (98)")).toBeInTheDocument();
+    expect(screen.getByLabelText("Add to Listen Later")).toBeInTheDocument();
+    expect(screen.getByText("7.8")).toBeInTheDocument();
+    expect(screen.getByText("(98)")).toBeInTheDocument();
   });
 });

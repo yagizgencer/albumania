@@ -66,6 +66,7 @@ export function ArtistPage() {
               title={a.title}
               artist={a.artist}
               albumArtUrl={a.album_art_url}
+              totalSongs={a.total_songs}
               meanScore={a.mean_score}
               numRaters={a.num_raters}
               status={a.status}

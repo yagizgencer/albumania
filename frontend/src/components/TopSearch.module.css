@@ -2,6 +2,10 @@
   position: relative;
   width: 100%;
   max-width: 480px;
+  /* The navbar stretches its children full height; center the input so it lines
+     up vertically with the Home / Listen Later icon buttons. */
+  display: flex;
+  align-items: center;
 }
 
 .input {

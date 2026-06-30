@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.models.notification import Notification
 
+from app.core.album_rules import require_rateable
 from app.core.deps import get_current_user, get_verified_user
 from app.db.session import get_db
 from app.models.album import Album
@@ -93,6 +94,7 @@ def create_invite(
     album = db.scalar(select(Album).where(Album.id == body.album_id))
     if album is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Album not found")
+    require_rateable(album)
 
     # Receiver must not have already published a rating for this album.
     receiver_published = db.scalar(

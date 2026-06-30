@@ -1,0 +1,22 @@
+.meter {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.1rem;
+  line-height: 1;
+}
+
+.value {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.outOf {
+  font-size: 0.72em;
+  color: var(--text-muted);
+}
+
+.count {
+  font-size: 0.78em;
+  color: var(--text-subtle);
+  margin-left: 0.3rem;
+}

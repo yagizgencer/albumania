@@ -16,7 +16,7 @@ _FAKE_USER = User(id=1, username="tester", email="t@t.com", password_hash="x", d
 _OTHER_USER = User(id=2, username="other", email="o@o.com", password_hash="x", display_name="Other")
 
 
-def _seed_album(client: TestClient) -> int:
+def _seed_album(client: TestClient, total_songs: int = 10) -> int:
     """Insert an album directly via DB override and return its id."""
     db = next(app.dependency_overrides[get_db]())
     album = Album(
@@ -24,7 +24,7 @@ def _seed_album(client: TestClient) -> int:
         title="Test Album",
         artist="Artist",
         release_date="2024-01-01",
-        total_songs=10,
+        total_songs=total_songs,
     )
     db.add(album)
     db.commit()
@@ -89,6 +89,33 @@ def test_create_draft_duplicate_returns_409(authed_client: TestClient) -> None:
     authed_client.post("/ratings", json={"album_id": album_id})
     r = authed_client.post("/ratings", json={"album_id": album_id})
     assert r.status_code == 409
+
+
+def test_create_draft_rejects_too_few_tracks(authed_client: TestClient) -> None:
+    album_id = _seed_album(authed_client, total_songs=4)
+    r = authed_client.post("/ratings", json={"album_id": album_id})
+    assert r.status_code == 400
+
+
+def test_create_draft_rejects_too_many_tracks(authed_client: TestClient) -> None:
+    album_id = _seed_album(authed_client, total_songs=26)
+    r = authed_client.post("/ratings", json={"album_id": album_id})
+    assert r.status_code == 400
+
+
+def test_create_draft_allows_boundary_track_counts(authed_client: TestClient) -> None:
+    # 5 and 25 are the inclusive bounds and must be allowed.
+    for n in (5, 25):
+        db = next(app.dependency_overrides[get_db]())
+        album = Album(
+            spotify_id=f"spot-{n}", title="A", artist="B",
+            release_date="2024-01-01", total_songs=n,
+        )
+        db.add(album)
+        db.commit()
+        db.refresh(album)
+        r = authed_client.post("/ratings", json={"album_id": album.id})
+        assert r.status_code == 201
 
 
 def test_create_draft_requires_auth(client: TestClient) -> None:

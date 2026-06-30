@@ -32,6 +32,37 @@
   color: var(--text-muted);
 }
 
+.headerLink {
+  color: inherit;
+  text-decoration: none;
+}
+
+.headerLink:hover {
+  text-decoration: underline;
+}
+
+.pageButtons {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.pageBtn {
+  padding: 0.45rem 0.9rem;
+  border-radius: 6px;
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-fg);
+  border: 1px solid var(--btn-secondary-border);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.pageBtn:hover {
+  background: var(--btn-secondary-bg-hover);
+}
+
 .metricRow {
   display: flex;
   gap: 1.5rem;

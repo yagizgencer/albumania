@@ -53,6 +53,33 @@
   background: #6b7280;
 }
 
+/* The "+" badge is interactive: it adds the album to Listen Later. */
+.badgeBtn {
+  cursor: pointer;
+  transition: transform 0.1s ease, filter 0.1s ease, background 0.12s ease;
+}
+
+.badgeBtn:hover {
+  background: var(--btn-primary-bg, #6b7280);
+  transform: scale(1.15);
+  filter: brightness(1.05);
+}
+
+.badgeBtn:active {
+  transform: scale(0.92);
+}
+
+.badgeBtn[aria-busy="true"] {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+.badgeDisabled {
+  background: var(--border);
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .badgeDraft {
   background: #eab308;
 }
