@@ -10,6 +10,7 @@ import {
   type ListenLaterEntry,
   type ListenLaterParticipant,
 } from "../api/invites";
+import { deleteRating } from "../api/ratings";
 import { Avatar } from "../components/Avatar";
 import { Alert } from "../components/Alert";
 import { LoadingState } from "../components/Spinner";
@@ -100,7 +101,7 @@ export function ListenLaterPage() {
           ) : (
             <div className={styles.list}>
               {entries.map((e) => (
-                <Row key={e.album.id} entry={e} />
+                <Row key={e.album.id} entry={e} onRemoved={reload} />
               ))}
             </div>
           )}
@@ -189,8 +190,22 @@ function SidebarInvite({
   );
 }
 
-function Row({ entry }: { entry: ListenLaterEntry }) {
+function Row({ entry, onRemoved }: { entry: ListenLaterEntry; onRemoved: () => Promise<void> }) {
   const action = entry.rating ? "Continue Rating" : "Start Rating";
+  const [confirming, setConfirming] = useState(false);
+  const [removing, setRemoving] = useState(false);
+
+  async function handleRemove() {
+    if (!entry.rating) return;
+    setRemoving(true);
+    try {
+      await deleteRating(entry.rating.id);
+      await onRemoved();
+    } finally {
+      setRemoving(false);
+    }
+  }
+
   // Pending invites don't yet count as a shared listen — render those rows
   // as solo until the other side accepts.
   const activeParticipants = entry.participants.filter(
@@ -225,9 +240,40 @@ function Row({ entry }: { entry: ListenLaterEntry }) {
           </div>
         )}
       </div>
-      <Link className={styles.action} to={`/albums/${entry.album.spotify_id}/rate`}>
-        {action}
-      </Link>
+      <div className={styles.actions}>
+        {confirming ? (
+          <div className={styles.confirm}>
+            <span className={styles.confirmText}>Remove from Listen Later?</span>
+            <div className={styles.confirmButtons}>
+              <button
+                className={styles.removeConfirmBtn}
+                onClick={handleRemove}
+                disabled={removing}
+              >
+                {removing ? "Removing…" : "Yes, remove"}
+              </button>
+              <button
+                className={styles.cancelBtn}
+                onClick={() => setConfirming(false)}
+                disabled={removing}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <Link className={styles.action} to={`/albums/${entry.album.spotify_id}/rate`}>
+              {action}
+            </Link>
+            {entry.rating && (
+              <button className={styles.removeBtn} onClick={() => setConfirming(true)}>
+                Remove
+              </button>
+            )}
+          </>
+        )}
+      </div>
     </article>
   );
 }

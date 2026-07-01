@@ -145,6 +145,10 @@
   list-style: none;
   margin: 0;
   padding: 0;
+  /* Long track lists scroll internally instead of growing the page (like the
+     dashboard table). We currently fetch up to 50 tracks per album. */
+  max-height: 600px;
+  overflow-y: auto;
 }
 
 .trackRow {
