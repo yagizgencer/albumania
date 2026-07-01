@@ -1,15 +1,16 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AlbumInfoPage } from "./AlbumInfoPage";
 import { getAlbum, getAlbumStats } from "../api/albums";
-import { getMyRatingForAlbum } from "../api/ratings";
+import { deleteRating, getMyRatingForAlbum } from "../api/ratings";
 
 vi.mock("../api/albums", () => ({ getAlbum: vi.fn(), getAlbumStats: vi.fn() }));
 vi.mock("../api/ratings", () => ({
   getMyRatingForAlbum: vi.fn(),
   createRating: vi.fn(),
+  deleteRating: vi.fn(),
 }));
 vi.mock("../api/invites", () => ({ createInvite: vi.fn() }));
 vi.mock("../api/friendships", () => ({ listFriendships: vi.fn().mockResolvedValue({ accepted: [] }) }));
@@ -58,6 +59,7 @@ function renderPage() {
 
 describe("AlbumInfoPage", () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     vi.mocked(getAlbum).mockResolvedValue(ALBUM);
     vi.mocked(getAlbumStats).mockResolvedValue({ mean_score: 7.8, num_raters: 98 });
     vi.mocked(getMyRatingForAlbum).mockResolvedValue(PUBLISHED_RATING);
@@ -122,5 +124,41 @@ describe("AlbumInfoPage", () => {
 
     expect(screen.getByText("No ratings yet")).toBeInTheDocument();
     expect(screen.queryByText("Average")).not.toBeInTheDocument();
+  });
+
+  it("removes the rating only after confirming", async () => {
+    vi.mocked(deleteRating).mockResolvedValue(undefined);
+    renderPage();
+    await screen.findByRole("link", { name: "Test Album" });
+
+    // Published → Remove button shows; clicking asks to confirm, nothing deleted yet.
+    fireEvent.click(screen.getByRole("button", { name: /remove rating/i }));
+    expect(screen.getByText(/remove this rating\?/i)).toBeInTheDocument();
+    expect(deleteRating).not.toHaveBeenCalled();
+
+    // Confirm → deletes and the page returns to an unrated state.
+    fireEvent.click(screen.getByRole("button", { name: /yes, remove/i }));
+    await waitFor(() => expect(deleteRating).toHaveBeenCalledWith(9));
+    expect(await screen.findByText(/your rating was removed/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /start rating/i })).toBeInTheDocument();
+  });
+
+  it("cancels removal without deleting", async () => {
+    renderPage();
+    await screen.findByRole("link", { name: "Test Album" });
+
+    fireEvent.click(screen.getByRole("button", { name: /remove rating/i }));
+    fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
+
+    expect(deleteRating).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: /remove rating/i })).toBeInTheDocument();
+  });
+
+  it("hides the remove control for an album the user hasn't rated", async () => {
+    vi.mocked(getMyRatingForAlbum).mockRejectedValue(new Error("no rating"));
+    renderPage();
+    await screen.findByRole("link", { name: "Test Album" });
+
+    expect(screen.queryByRole("button", { name: /remove rating/i })).not.toBeInTheDocument();
   });
 });

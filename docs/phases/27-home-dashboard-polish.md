@@ -94,6 +94,25 @@ values, and the album-page Track List reads as clearly expandable.
   `.columnHeading` (dropped uppercase + `font-weight: 600`). Small Nunito micro-labels
   (`.tag`, `.badge`, `.statLabel`, table sort headers) were intentionally left as-is.
 
+## Remove a rating from the album page
+
+- **`src/pages/AlbumInfoPage.tsx`** — when the viewer has a *published* rating, the
+  actions row now shows a "Remove rating" button beside the "Rated" indicator.
+  Clicking it swaps in the same inline "Remove this rating?" confirm used by the
+  rating editor (Yes, remove / Cancel). Confirming calls the existing
+  `deleteRating(id)`, resets local state to unrated, refreshes album stats (the
+  average no longer includes the removed score), and shows a "Your rating was
+  removed." message.
+- **`src/pages/AlbumInfoPage.module.css`** — `.btnRemove` / `.btnRemoveConfirm` /
+  `.btnCancel` / `.confirm` / `.confirmText`, mirroring the rating editor's styles.
+- **`src/pages/AlbumInfoPage.test.tsx`** — confirm-then-delete happy path, cancel
+  (no delete), and that the control is hidden for an unrated album. Added
+  `vi.clearAllMocks()` to `beforeEach` so call history doesn't leak between tests.
+- Backend unchanged: `DELETE /ratings/{id}` (owner-only, deletes invites + rebuilds
+  the friend dashboard for published ratings) and `deleteRating()` already existed
+  and are covered by `test_ratings.py` (`test_delete_published_rating`,
+  `test_delete_other_users_rating_returns_403`).
+
 ## Notes
 
 - No new libraries (table alignment fixed with CSS per the project's no-new-lib rule;

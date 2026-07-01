@@ -132,6 +132,47 @@
   cursor: not-allowed;
 }
 
+/* Remove-rating control — mirrors the rating editor's inline confirm. */
+.btnRemove {
+  background: transparent;
+  color: var(--danger-text);
+  border: 1px solid var(--danger-text);
+}
+.btnRemove:hover {
+  background: rgba(214, 69, 63, 0.1);
+}
+
+.confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.confirmText {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.btnRemoveConfirm {
+  background: #dc2626;
+  color: #fff;
+  border: 1px solid #dc2626;
+}
+.btnRemoveConfirm:hover {
+  background: #b91c1c;
+  border-color: #b91c1c;
+}
+
+.btnCancel {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.btnCancel:hover {
+  background: var(--surface-muted);
+}
+
 .tracksBlock {
   margin-top: 1.25rem;
   padding-top: 1rem;

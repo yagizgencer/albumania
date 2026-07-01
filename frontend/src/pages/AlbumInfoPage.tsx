@@ -7,6 +7,7 @@ import {
 } from "../api/invites";
 import {
   createRating,
+  deleteRating,
   getMyRatingForAlbum,
   type Rating,
 } from "../api/ratings";
@@ -41,6 +42,7 @@ export function AlbumInfoPage() {
   const [busy, setBusy] = useState(false);
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [tracksOpen, setTracksOpen] = useState(false);
+  const [confirmingRemove, setConfirmingRemove] = useState(false);
 
   useEffect(() => {
     if (!spotifyId) return;
@@ -108,6 +110,26 @@ export function AlbumInfoPage() {
     } catch (e: unknown) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       setActionError((e as any)?.response?.data?.detail ?? "Could not start rating.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleRemoveRating() {
+    if (!rating) return;
+    setBusy(true); setActionError(null); setActionInfo(null);
+    try {
+      await deleteRating(rating.id);
+      setRating(null);
+      setConfirmingRemove(false);
+      setActionInfo("Your rating was removed.");
+      // The album's average no longer includes our score — refresh it.
+      if (spotifyId) {
+        try { setStats(await getAlbumStats(spotifyId)); } catch { /* keep prior stats */ }
+      }
+    } catch (e: unknown) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setActionError((e as any)?.response?.data?.detail ?? "Could not remove your rating.");
     } finally {
       setBusy(false);
     }
@@ -191,10 +213,38 @@ export function AlbumInfoPage() {
                 Go to artist page
               </Link>
             )}
-            {isPublished && (
-              <button className={`${styles.btn} ${styles.btnDisabled}`} disabled>
-                Rated
-              </button>
+            {isPublished && !confirmingRemove && (
+              <>
+                <button className={`${styles.btn} ${styles.btnDisabled}`} disabled>
+                  Rated
+                </button>
+                <button
+                  className={`${styles.btn} ${styles.btnRemove}`}
+                  onClick={() => { setConfirmingRemove(true); setActionError(null); setActionInfo(null); }}
+                  disabled={busy}
+                >
+                  Remove rating
+                </button>
+              </>
+            )}
+            {isPublished && confirmingRemove && (
+              <div className={styles.confirm}>
+                <span className={styles.confirmText}>Remove this rating?</span>
+                <button
+                  className={`${styles.btn} ${styles.btnRemoveConfirm}`}
+                  onClick={handleRemoveRating}
+                  disabled={busy}
+                >
+                  {busy ? "Removing…" : "Yes, remove"}
+                </button>
+                <button
+                  className={`${styles.btn} ${styles.btnCancel}`}
+                  onClick={() => setConfirmingRemove(false)}
+                  disabled={busy}
+                >
+                  Cancel
+                </button>
+              </div>
             )}
             {isDraft && (
               <button
