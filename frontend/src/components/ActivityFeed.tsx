@@ -9,10 +9,10 @@ import { Alert } from "./Alert";
 import { LoadingState } from "./Spinner";
 import styles from "./ActivityFeed.module.css";
 
-const CATEGORIES: { value: FeedCategory; label: string }[] = [
-  { value: "ratings", label: "Ratings" },
-  { value: "comments", label: "Comments" },
-  { value: "friends", label: "Friends" },
+const CATEGORIES: { value: FeedCategory; label: string; Icon: typeof StarIcon }[] = [
+  { value: "ratings", label: "Ratings", Icon: StarIcon },
+  { value: "comments", label: "Comments", Icon: CommentIcon },
+  { value: "friends", label: "Friends", Icon: PeopleIcon },
 ];
 
 export function ActivityFeed() {
@@ -90,18 +90,20 @@ export function ActivityFeed() {
 
   return (
     <>
-      <div className={styles.filter} role="group" aria-label="Filter activity by type">
-        {CATEGORIES.map((c) => {
-          const on = selected.has(c.value);
+      <div className={styles.filterBar} role="group" aria-label="Filter activity by type">
+        <span className={styles.filterLabel}>Show</span>
+        {CATEGORIES.map(({ value, label, Icon }) => {
+          const on = selected.has(value);
           return (
             <button
-              key={c.value}
+              key={value}
               type="button"
               className={`${styles.chip} ${on ? styles.chipOn : ""}`}
               aria-pressed={on}
-              onClick={() => toggleCategory(c.value)}
+              onClick={() => toggleCategory(value)}
             >
-              {c.label}
+              <Icon size={14} className={styles.chipIcon} />
+              {label}
             </button>
           );
         })}

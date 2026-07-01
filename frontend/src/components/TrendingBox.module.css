@@ -17,7 +17,6 @@
 .title {
   margin: 0;
   font-size: 1.2rem;
-  font-weight: 700;
 }
 
 /* Fits ~5 rows; the rest (up to 20) scroll inside so the box stays compact and

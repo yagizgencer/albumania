@@ -29,6 +29,9 @@
   --pastel-lavender: #cdc1ff;
   --pastel-pink: #ffc8dd;
 
+  /* Height of the sticky top nav — shared so sticky panels can offset below it. */
+  --nav-height: 80px;
+
   /* Sketch geometry: soft rounding + a hand-placed offset shadow. */
   --radius: 14px;
   --radius-lg: 20px;

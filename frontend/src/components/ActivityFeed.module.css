@@ -1,19 +1,36 @@
-/* Category filter: a row of independent toggle pills above the feed. */
-.filter {
+/* Category filter: a labelled row of toggle chips above the feed. Selected chips
+   are filled + inked; unselected are outlined — the standard "filter chip" look
+   so it clearly reads as a set of on/off filters. */
+.filterBar {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
-  margin-bottom: 0.85rem;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--surface-muted);
+}
+
+.filterLabel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-subtle);
+  margin-right: 0.2rem;
 }
 
 .chip {
-  background: var(--surface-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--surface);
   color: var(--text-muted);
-  border: 1px solid var(--border-soft);
+  border: 1.5px solid var(--border-soft);
   border-radius: 999px;
-  padding: 0.3rem 0.85rem;
+  padding: 0.4rem 0.9rem;
   font: inherit;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
   box-shadow: none;
@@ -22,20 +39,29 @@
 
 .chip:hover {
   color: var(--text);
-  background: var(--surface-muted);
+  border-color: var(--border);
+  background: var(--surface);
   transform: none;
   box-shadow: none;
 }
 
+.chipIcon {
+  opacity: 0.65;
+}
+
 .chipOn {
   background: var(--btn-primary-bg);
-  color: var(--btn-primary-fg);
-  border-color: var(--btn-primary-bg);
+  color: var(--text);
+  border-color: var(--border);
 }
 
 .chipOn:hover {
-  color: var(--btn-primary-fg);
+  color: var(--text);
   background: var(--btn-primary-bg-hover);
+}
+
+.chipOn .chipIcon {
+  opacity: 1;
 }
 
 .feed {

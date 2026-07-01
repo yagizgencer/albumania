@@ -168,15 +168,16 @@
 }
 
 /* Pinned like Twitter's right rail: the page/feed scrolls, the sidebar stays put
-   and never taller than the viewport. Its two boxes split the available height
-   and each scrolls internally (see TrendingBox `fill`). */
+   just below the sticky nav and fits the viewport. A *definite* height (not just
+   max-height) is required so the two boxes can flex-split it; each then scrolls
+   internally (see TrendingBox `fill`). */
 .sideCol {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
   position: sticky;
-  top: 1rem;
-  max-height: calc(100vh - 2rem);
+  top: calc(var(--nav-height) + 0.75rem);
+  height: calc(100vh - var(--nav-height) - 1.5rem);
 }
 
 .sideCol > * {
@@ -192,7 +193,7 @@
      their own compact scroll height. */
   .sideCol {
     position: static;
-    max-height: none;
+    height: auto;
   }
   .sideCol > * {
     flex: none;

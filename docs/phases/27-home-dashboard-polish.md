@@ -73,6 +73,27 @@ values, and the album-page Track List reads as clearly expandable.
   values; the Track List bar reads as clickable and expands/collapses; opening the
   bell caps read notifications at 10 while unread persist.
 
+## Follow-up fixes
+
+- **`src/index.css`** — new `--nav-height: 80px` token (the sticky nav's height) so
+  sticky panels can offset below it.
+- **`src/pages/HomePage.module.css`** — the earlier `max-height` sidebar collapsed
+  (`flex: 1 1 0` needs a *definite* height): switched `.sideCol` to
+  `height: calc(100vh - var(--nav-height) - 1.5rem)` and `top: calc(var(--nav-height)
+  + 0.75rem)` so it sits below the nav and the two boxes split it. Mobile resets to
+  `height: auto`.
+- **`src/components/ActivityFeed.tsx` + `.module.css`** — redesigned the category
+  filter into a clearer, more standard control: a "Show" label plus outlined/filled
+  toggle chips, each with its category icon (`StarIcon` / `CommentIcon` / `PeopleIcon`,
+  matching the feed badges), a divider, and more breathing room.
+- **Font consistency** — normalized display-font (Patrick Hand) section headings that
+  were faux-bolded / uppercased (which read "too professional" against the cozy
+  sketch style) to the natural sentence-case weight used by the rest of the site:
+  `TrendingBox.module.css` `.title` (dropped `font-weight: 700`),
+  `ProfilePage.module.css` `.sectionTitle` and `RatingEditorPage.module.css`
+  `.columnHeading` (dropped uppercase + `font-weight: 600`). Small Nunito micro-labels
+  (`.tag`, `.badge`, `.statLabel`, table sort headers) were intentionally left as-is.
+
 ## Notes
 
 - No new libraries (table alignment fixed with CSS per the project's no-new-lib rule;
