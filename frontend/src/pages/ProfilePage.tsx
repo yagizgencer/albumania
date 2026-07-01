@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
   acceptFriendship,
@@ -13,7 +13,6 @@ import {
   getUser,
   updateMe,
   uploadAvatar,
-  type ProfileVisibility,
   type UserProfile,
 } from "../api/users";
 import { usePersistentState } from "../lib/usePersistentState";
@@ -433,9 +432,6 @@ function ProfileEditor({
 }) {
   const [displayName, setDisplayName] = useState(profile.display_name);
   const [description, setDescription] = useState(profile.description ?? "");
-  const [visibility, setVisibility] = useState<ProfileVisibility>(
-    profile.profile_visibility
-  );
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -447,7 +443,6 @@ function ProfileEditor({
       const updated = await updateMe({
         display_name: displayName.trim(),
         description: description.trim() ? description.trim() : null,
-        profile_visibility: visibility,
       });
       onSaved(updated);
     } catch {
@@ -478,16 +473,10 @@ function ProfileEditor({
           placeholder="A short description that appears on your profile."
         />
       </label>
-      <label>
-        Visibility
-        <select
-          value={visibility}
-          onChange={(e) => setVisibility(e.target.value as ProfileVisibility)}
-        >
-          <option value="public">Public — anyone can see your dashboard</option>
-          <option value="private">Private — only friends can see your dashboard</option>
-        </select>
-      </label>
+      <p className={styles.editorHint}>
+        Manage who can see your dashboard in{" "}
+        <Link to="/settings?tab=privacy">Settings › Privacy</Link>.
+      </p>
       {err && <p className="error">{err}</p>}
       <div className={styles.editorActions}>
         <button type="submit" className={styles.saveBtn} disabled={saving}>

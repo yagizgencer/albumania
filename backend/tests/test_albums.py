@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 from app.core.deps import get_current_user
 from app.db.session import get_db
 from app.main import app
-from app.models.album import Album
+from app.models.album import Album, AlbumTrack
 from app.models.rating import Rating, RatingStatus
 from app.models.user import User
 from app.services.spotify import SpotifyAlbumResult, SpotifyClient, SpotifyTrack, get_spotify_client
@@ -113,6 +113,30 @@ def test_get_album_is_idempotent(authed_client: TestClient) -> None:
 def test_get_album_requires_auth(client: TestClient) -> None:
     r = client.get("/albums/abc123")
     assert r.status_code in (401, 403)
+
+
+def test_get_album_backfills_missing_tracks(authed_client: TestClient) -> None:
+    # An album imported before we paged past 50 tracks: 60 total, only 2 stored.
+    db = next(app.dependency_overrides[get_db]())
+    album = Album(
+        spotify_id="big", title="Big", artist="A", artist_spotify_id="x",
+        release_date="2024-01-01", total_songs=60,
+    )
+    db.add(album)
+    db.flush()
+    for i in (1, 2):
+        db.add(AlbumTrack(album_id=album.id, index=i, name=f"T{i}", spotify_url=None, duration_ms=None))
+    db.commit()
+
+    mock: MagicMock = app.dependency_overrides[get_spotify_client]()
+    mock.get_album_tracks.return_value = [
+        SpotifyTrack(index=i, name=f"T{i}", spotify_url=None, duration_ms=None)
+        for i in range(1, 61)
+    ]
+
+    r = authed_client.get("/albums/big")
+    assert r.status_code == 200
+    assert len(r.json()["tracks"]) == 60
 
 
 # ---------------------------------------------------------------------------

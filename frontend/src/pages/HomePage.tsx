@@ -1,13 +1,10 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getDashboard, type DashboardEntry } from "../api/dashboard";
-import { listFriendships } from "../api/friendships";
-import { getListenLater, type ListenLaterEntry } from "../api/invites";
+import { getTrendingAlbums, getTrendingArtists } from "../api/home";
 import { useAuth } from "../context/AuthContext";
-import { Avatar } from "../components/Avatar";
+import { ActivityFeed } from "../components/ActivityFeed";
+import { TrendingAlbumRow, TrendingArtistRow, TrendingBox } from "../components/TrendingBox";
 import SketchUnderline from "../components/SketchUnderline";
 import { LoadingState } from "../components/Spinner";
-import { formatDate } from "../lib/date";
 import styles from "./HomePage.module.css";
 
 export function HomePage() {
@@ -15,7 +12,7 @@ export function HomePage() {
 
   if (isLoading) return <main className={styles.page}><LoadingState /></main>;
   if (!username) return <PublicLanding />;
-  return <LoggedInHome username={username} displayName={profile?.display_name ?? username} pictureUrl={profile?.profile_picture_url ?? null} />;
+  return <LoggedInHome displayName={profile?.display_name ?? username} />;
 }
 
 // ---------------------------------------------------------------------------
@@ -64,123 +61,43 @@ function PublicLanding() {
 }
 
 // ---------------------------------------------------------------------------
-// Logged-in home — welcome + stats + recent ratings
+// Logged-in home — welcome + activity timeline + trending
 // ---------------------------------------------------------------------------
 
-interface LoggedInHomeProps {
-  username: string;
-  displayName: string;
-  pictureUrl: string | null;
-}
-
-function LoggedInHome({ username, displayName, pictureUrl }: LoggedInHomeProps) {
-  const [recent, setRecent] = useState<DashboardEntry[] | null>(null);
-  const [albumCount, setAlbumCount] = useState<number | null>(null);
-  const [friendCount, setFriendCount] = useState<number | null>(null);
-  const [listenLaterCount, setListenLaterCount] = useState<number | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      const [dash, friends, later] = await Promise.allSettled([
-        getDashboard(username),
-        listFriendships(),
-        getListenLater(),
-      ]);
-      if (cancelled) return;
-      if (dash.status === "fulfilled") {
-        const entries = dash.value.entries;
-        setAlbumCount(entries.length);
-        // Show the 6 most recent published ratings.
-        const sorted = [...entries].sort((a, b) =>
-          b.completed_at.localeCompare(a.completed_at)
-        );
-        setRecent(sorted.slice(0, 6));
-      } else {
-        setAlbumCount(0);
-        setRecent([]);
-      }
-      if (friends.status === "fulfilled") {
-        setFriendCount(friends.value.accepted.length);
-      }
-      if (later.status === "fulfilled") {
-        setListenLaterCount((later.value as ListenLaterEntry[]).length);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [username]);
-
+function LoggedInHome({ displayName }: { displayName: string }) {
   return (
     <main className={styles.page}>
       <section className={styles.welcome}>
-        <Avatar
-          username={username}
-          pictureUrl={pictureUrl}
-          displayName={displayName}
-          size={72}
-        />
-        <div className={styles.welcomeText}>
-          <h1>Welcome back, {displayName}.</h1>
-          <div className={styles.welcomeUnderline}>
-            <SketchUnderline color="#8a78dd" />
-          </div>
-          <p>What did you listen to today?</p>
+        <h1>Welcome back, {displayName}.</h1>
+        <div className={styles.welcomeUnderline}>
+          <SketchUnderline color="#8a78dd" />
         </div>
+        <p>What did you listen to today?</p>
       </section>
 
-      <section className={styles.statsRow}>
-        <Link to={`/profile/${username}`} className={styles.statCard}>
-          <div className={styles.statValue}>{albumCount ?? "—"}</div>
-          <div className={styles.statLabel}>Albums rated</div>
-        </Link>
-        <Link to="/friends" className={styles.statCard}>
-          <div className={styles.statValue}>{friendCount ?? "—"}</div>
-          <div className={styles.statLabel}>Friends</div>
-        </Link>
-        <Link to="/listen-later" className={styles.statCard}>
-          <div className={styles.statValue}>{listenLaterCount ?? "—"}</div>
-          <div className={styles.statLabel}>In Listen Later</div>
-        </Link>
-      </section>
+      <div className={styles.content}>
+        <section className={styles.feedCol}>
+          <h2 className={styles.colHeading}>Recent activity</h2>
+          <div className={styles.feedCard}>
+            <ActivityFeed />
+          </div>
+        </section>
 
-      <section className={styles.section}>
-        <div className={styles.sectionHeader}>
-          <h2>Recently rated</h2>
-          <Link to={`/profile/${username}`}>See full dashboard →</Link>
-        </div>
-        {recent === null ? (
-          <LoadingState />
-        ) : recent.length === 0 ? (
-          <div className={styles.emptyCard}>
-            You haven't published a rating yet.{" "}
-            <Link to="/listen-later">Find an album to start with</Link>.
-          </div>
-        ) : (
-          <div className={styles.recentList}>
-            {recent.map((e) => (
-              <Link
-                key={e.album.id}
-                to={`/albums/${e.album.spotify_id}`}
-                className={styles.recentCard}
-              >
-                {e.album.album_art_url && (
-                  <img
-                    src={e.album.album_art_url}
-                    alt=""
-                    className={styles.recentArt}
-                  />
-                )}
-                <div className={styles.recentTitle}>{e.album.title}</div>
-                <div className={styles.recentArtist}>{e.album.artist}</div>
-                <div className={styles.recentFooter}>
-                  <span className={styles.recentScore}>{e.score.toFixed(1)}</span>
-                  <span>{formatDate(e.completed_at)}</span>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
-      </section>
+        <aside className={styles.sideCol}>
+          <TrendingBox
+            title="Trending Albums"
+            fetchItems={getTrendingAlbums}
+            keyOf={(a) => a.spotify_id}
+            renderRow={(a) => <TrendingAlbumRow album={a} />}
+          />
+          <TrendingBox
+            title="Trending Artists"
+            fetchItems={getTrendingArtists}
+            keyOf={(a) => a.artist_spotify_id}
+            renderRow={(a) => <TrendingArtistRow artist={a} />}
+          />
+        </aside>
+      </div>
     </main>
   );
 }

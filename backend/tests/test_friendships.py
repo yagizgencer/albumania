@@ -227,7 +227,34 @@ def test_user_search_excludes_self(client: TestClient) -> None:
 # Visibility integration with dashboard
 # ---------------------------------------------------------------------------
 
-def test_private_profile_visible_to_friend(client: TestClient) -> None:
+def test_friends_only_profile_visible_to_friend(client: TestClient) -> None:
+    alice = _seed_user("alice", visibility=ProfileVisibility.friends)
+    bob = _seed_user("bob")
+    _auth_as(alice)
+    fid = client.post("/friendships", json={"username": "bob"}).json()["id"]
+    _clear_auth()
+    _auth_as(bob)
+    client.post(f"/friendships/{fid}/accept")
+    # bob is now a friend → a friends-only dashboard should be visible (200)
+    r = client.get("/users/alice/dashboard")
+    assert r.status_code == 200
+    _clear_auth()
+
+
+def test_friends_only_profile_blocks_pending_friend(client: TestClient) -> None:
+    alice = _seed_user("alice", visibility=ProfileVisibility.friends)
+    bob = _seed_user("bob")
+    _auth_as(alice)
+    client.post("/friendships", json={"username": "bob"})
+    _clear_auth()
+    # bob has not accepted yet → not a friend
+    _auth_as(bob)
+    r = client.get("/users/alice/dashboard")
+    assert r.status_code == 403
+    _clear_auth()
+
+
+def test_private_profile_blocks_even_accepted_friend(client: TestClient) -> None:
     alice = _seed_user("alice", visibility=ProfileVisibility.private)
     bob = _seed_user("bob")
     _auth_as(alice)
@@ -235,20 +262,7 @@ def test_private_profile_visible_to_friend(client: TestClient) -> None:
     _clear_auth()
     _auth_as(bob)
     client.post(f"/friendships/{fid}/accept")
-    # bob is now a friend → dashboard should be visible (returns 200 with empty entries)
-    r = client.get("/users/alice/dashboard")
-    assert r.status_code == 200
-    _clear_auth()
-
-
-def test_private_profile_blocks_pending_friend(client: TestClient) -> None:
-    alice = _seed_user("alice", visibility=ProfileVisibility.private)
-    bob = _seed_user("bob")
-    _auth_as(alice)
-    client.post("/friendships", json={"username": "bob"})
-    _clear_auth()
-    # bob has not accepted yet
-    _auth_as(bob)
+    # private now means owner-only — even an accepted friend is blocked
     r = client.get("/users/alice/dashboard")
     assert r.status_code == 403
     _clear_auth()

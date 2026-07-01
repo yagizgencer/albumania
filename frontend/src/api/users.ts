@@ -1,6 +1,6 @@
 import { apiClient } from "./client";
 
-export type ProfileVisibility = "public" | "private";
+export type ProfileVisibility = "public" | "friends" | "private";
 
 export interface UserProfile {
   username: string;

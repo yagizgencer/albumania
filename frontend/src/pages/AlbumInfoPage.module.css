@@ -4,17 +4,20 @@
   margin: 0 auto;
 }
 
-.header {
-  display: grid;
-  grid-template-columns: 200px 1fr;
-  gap: 1.5rem;
-  align-items: center;
-  margin-bottom: 2rem;
+.card {
+  margin-bottom: 1.5rem;
   background: var(--surface);
   color: var(--text);
   padding: 1.5rem;
   border-radius: 12px;
   border: 2px solid var(--border);
+}
+
+.headerTop {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 1.5rem;
+  align-items: center;
 }
 
 .art {
@@ -129,26 +132,53 @@
   cursor: not-allowed;
 }
 
-.tracks {
-  background: var(--surface);
-  color: var(--text);
-  border: 2px solid var(--border);
-  border-radius: 12px;
-  padding: 1rem 1.25rem;
+.tracksBlock {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 2px solid var(--border);
 }
 
-.tracks h3 {
-  margin: 0 0 0.75rem;
+.tracksToggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0.25rem 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.tracksToggle:hover {
+  color: var(--text);
+  background: transparent;
+  transform: none;
+  box-shadow: none;
+}
+
+.chevron {
+  transition: transform 0.15s ease;
+  color: var(--text-muted);
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
 }
 
 .trackList {
   list-style: none;
-  margin: 0;
+  margin: 0.75rem 0 0;
   padding: 0;
   /* Long track lists scroll internally instead of growing the page (like the
      dashboard table). We currently fetch up to 50 tracks per album. */
   max-height: 600px;
   overflow-y: auto;
+  /* Keep the scrollbar clear of the track durations on the right. */
+  padding-right: 0.75rem;
 }
 
 .trackRow {
@@ -181,13 +211,13 @@
   font-size: 0.9rem;
 }
 
-.tracks a {
+.trackName a {
   color: inherit;
   text-decoration: none;
   border-bottom: 1px dotted var(--link-underline);
 }
 
-.tracks a:hover {
+.trackName a:hover {
   border-bottom-color: var(--link-underline-hover);
 }
 

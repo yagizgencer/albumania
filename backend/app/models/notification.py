@@ -12,6 +12,7 @@ class NotificationType(str, enum.Enum):
     friend_accept = "friend_accept"
     listen_invite = "listen_invite"
     friend_published = "friend_published"
+    comment_liked = "comment_liked"
 
 
 class Notification(Base):
@@ -45,6 +46,9 @@ class Notification(Base):
     )
     album_id: Mapped[int | None] = mapped_column(
         ForeignKey("albums.id"), nullable=True
+    )
+    comment_id: Mapped[int | None] = mapped_column(
+        ForeignKey("comments.id", ondelete="CASCADE"), nullable=True, index=True
     )
     read: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(

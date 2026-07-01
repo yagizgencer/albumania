@@ -82,6 +82,17 @@ class SpotifyClient:
             image_url=item["images"][0]["url"] if item["images"] else None,
         )
 
+    def get_artists(self, artist_ids: list[str]) -> dict[str, str | None]:
+        """Batch `artist_id -> image_url` lookup (Spotify's `artists` endpoint takes
+        up to 50 ids per call). Used to attach photos to trending artists."""
+        images: dict[str, str | None] = {}
+        for i in range(0, len(artist_ids), 50):
+            batch = artist_ids[i : i + 50]
+            for item in self._sp.artists(batch)["artists"]:
+                if item:
+                    images[item["id"]] = item["images"][0]["url"] if item["images"] else None
+        return images
+
     def get_artist_albums(self, artist_id: str) -> list[SpotifyAlbumResult]:
         """Full studio-album discography, de-duped by name (Spotify returns many
         editions: deluxe, remasters, regional variants, etc.)."""
@@ -97,17 +108,25 @@ class SpotifyClient:
         return results
 
     def get_album_tracks(self, spotify_id: str) -> list[SpotifyTrack]:
-        item = self._sp.album(spotify_id)
+        # The album object only embeds the first 50 tracks, so page through the
+        # dedicated endpoint to get every track for long albums.
         tracks = []
-        for track in item["tracks"]["items"]:
-            tracks.append(
-                SpotifyTrack(
-                    index=track["track_number"],
-                    name=track["name"],
-                    spotify_url=track["external_urls"].get("spotify"),
-                    duration_ms=track.get("duration_ms"),
+        offset = 0
+        while True:
+            page = self._sp.album_tracks(spotify_id, limit=50, offset=offset)
+            items = page["items"]
+            for track in items:
+                tracks.append(
+                    SpotifyTrack(
+                        index=track["track_number"],
+                        name=track["name"],
+                        spotify_url=track["external_urls"].get("spotify"),
+                        duration_ms=track.get("duration_ms"),
+                    )
                 )
-            )
+            if len(items) < 50 or not page.get("next"):
+                break
+            offset += 50
         return tracks
 
     def get_top5_popular_indices(self, spotify_id: str) -> list[int]:

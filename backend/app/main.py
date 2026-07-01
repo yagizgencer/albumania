@@ -9,7 +9,9 @@ from app.routers import (
     albums,
     artists,
     auth,
+    comments,
     friendships,
+    home,
     invites,
     notifications,
     ratings,
@@ -39,6 +41,8 @@ app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(albums.router)
 app.include_router(artists.router)
+app.include_router(comments.router)
+app.include_router(home.router)
 app.include_router(ratings.router)
 app.include_router(friendships.router)
 app.include_router(invites.router)

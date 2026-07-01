@@ -414,6 +414,17 @@
   margin-top: 0.25rem;
 }
 
+.editorHint {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.editorHint a {
+  color: var(--btn-primary-bg);
+  font-weight: 600;
+}
+
 .saveBtn {
   background: var(--btn-primary-bg);
   color: var(--btn-primary-fg);

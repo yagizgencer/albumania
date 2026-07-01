@@ -16,6 +16,8 @@ import { formatDuration } from "../utils/duration";
 import { Alert } from "../components/Alert";
 import { LoadingState } from "../components/Spinner";
 import { ScoreMeter } from "../components/ScoreMeter";
+import { CommentsSection } from "../components/CommentsSection";
+import { ChevronDownIcon } from "../components/Icons";
 import { formatDate } from "../lib/date";
 import { isRateable, RATEABLE_RULE_TEXT } from "../lib/albumRules";
 import styles from "./AlbumInfoPage.module.css";
@@ -38,6 +40,7 @@ export function AlbumInfoPage() {
   const [actionInfo, setActionInfo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [tracksOpen, setTracksOpen] = useState(false);
 
   useEffect(() => {
     if (!spotifyId) return;
@@ -120,7 +123,8 @@ export function AlbumInfoPage() {
 
   return (
     <main className={styles.page}>
-      <header className={styles.header}>
+      <section className={styles.card}>
+      <div className={styles.headerTop}>
         {album.album_art_url && (
           <a
             href={spotifyAlbumUrl}
@@ -162,14 +166,14 @@ export function AlbumInfoPage() {
           </p>
 
           <div className={styles.stats}>
-            <span className={styles.statItem}>
-              <span className={styles.statLabel}>Average</span>
-              {stats && stats.num_raters > 0 && stats.mean_score !== null ? (
+            {stats && stats.num_raters > 0 && stats.mean_score !== null ? (
+              <span className={styles.statItem}>
+                <span className={styles.statLabel}>Average</span>
                 <ScoreMeter score={stats.mean_score} count={stats.num_raters} />
-              ) : (
-                <span className={styles.statEmpty}>No ratings yet</span>
-              )}
-            </span>
+              </span>
+            ) : (
+              <span className={styles.statEmpty}>No ratings yet</span>
+            )}
             {isPublished && rating?.score != null && (
               <span className={styles.statItem}>
                 <span className={styles.statLabel}>Your score</span>
@@ -233,33 +237,49 @@ export function AlbumInfoPage() {
           {actionError && <Alert>{actionError}</Alert>}
           {actionInfo && <p className={styles.info}>{actionInfo}</p>}
         </div>
-      </header>
+      </div>
 
-      <section className={styles.tracks}>
-        <h3>Tracks</h3>
-        <ul className={styles.trackList}>
-          {album.tracks.map((t) => (
-            <li key={t.index} className={styles.trackRow}>
-              <span className={styles.trackNum}>{t.index}.</span>
-              <span className={styles.trackName}>
-                {t.spotify_url ? (
-                  <a href={t.spotify_url} target="_blank" rel="noreferrer">
-                    {t.name}
-                  </a>
-                ) : (
-                  t.name
-                )}
-                {isPublished && top5Rank.has(t.index) && (
-                  <span className={styles.top5} title={`Your #${top5Rank.get(t.index)} pick`}>
-                    #{top5Rank.get(t.index)}
-                  </span>
-                )}
-              </span>
-              <span className={styles.trackDuration}>{formatDuration(t.duration_ms)}</span>
-            </li>
-          ))}
-        </ul>
+      <div className={styles.tracksBlock}>
+        <button
+          type="button"
+          className={styles.tracksToggle}
+          onClick={() => setTracksOpen((o) => !o)}
+          aria-expanded={tracksOpen}
+        >
+          <span>Tracks ({album.tracks.length})</span>
+          <ChevronDownIcon
+            size={20}
+            className={`${styles.chevron} ${tracksOpen ? styles.chevronOpen : ""}`}
+          />
+        </button>
+        {tracksOpen && (
+          <ul className={styles.trackList}>
+            {album.tracks.map((t) => (
+              <li key={t.index} className={styles.trackRow}>
+                <span className={styles.trackNum}>{t.index}.</span>
+                <span className={styles.trackName}>
+                  {t.spotify_url ? (
+                    <a href={t.spotify_url} target="_blank" rel="noreferrer">
+                      {t.name}
+                    </a>
+                  ) : (
+                    t.name
+                  )}
+                  {isPublished && top5Rank.has(t.index) && (
+                    <span className={styles.top5} title={`Your #${top5Rank.get(t.index)} pick`}>
+                      #{top5Rank.get(t.index)}
+                    </span>
+                  )}
+                </span>
+                <span className={styles.trackDuration}>{formatDuration(t.duration_ms)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
       </section>
+
+      <CommentsSection spotifyId={album.spotify_id} />
 
       {inviteModalOpen && me && (
         <InviteModal

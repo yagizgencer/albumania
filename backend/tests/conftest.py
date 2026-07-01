@@ -29,6 +29,9 @@ class _StubSpotifyClient(SpotifyClient):
     def get_artist(self, artist_id):
         return None
 
+    def get_artists(self, artist_ids):
+        return {}
+
     def get_artist_albums(self, artist_id):
         return []
 

@@ -188,10 +188,17 @@ def get_user_dashboard(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
     is_owner = current_user.username == user.username
-    if user.profile_visibility == ProfileVisibility.private and not is_owner:
-        if not are_friends(db, current_user.username, user.username):
+    if not is_owner:
+        vis = user.profile_visibility
+        if vis == ProfileVisibility.private:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN, detail="Profile is private"
+            )
+        if vis == ProfileVisibility.friends and not are_friends(
+            db, current_user.username, user.username
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Profile is visible to friends only"
             )
 
     rows = db.execute(

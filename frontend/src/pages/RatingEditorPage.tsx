@@ -23,7 +23,9 @@ import {
   publishRating,
   type Rating,
 } from "../api/ratings";
+import { createComment, type Visibility } from "../api/comments";
 import { Alert } from "../components/Alert";
+import { CommentComposer } from "../components/CommentComposer";
 import { LoadingState } from "../components/Spinner";
 import styles from "./RatingEditorPage.module.css";
 
@@ -250,7 +252,10 @@ export function RatingEditorPage() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [confirmingRemove, setConfirmingRemove] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [commentText, setCommentText] = useState("");
+  const [commentVisibility, setCommentVisibility] = useState<Visibility>("public");
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -318,11 +323,22 @@ export function RatingEditorPage() {
   }
 
   async function handlePublish() {
-    if (!rating) return;
+    if (!rating || !album) return;
     setSaving(true); setError(null);
     try {
       await handleSave();
       const updated = await publishRating(rating.id);
+      // Optional: post the comment written in the publish box. Comments are
+      // decoupled from ratings, so a comment failure doesn't undo the publish.
+      const trimmed = commentText.trim();
+      if (trimmed) {
+        try {
+          await createComment(album.spotify_id, { text: trimmed, visibility: commentVisibility });
+          setCommentText("");
+        } catch {
+          setError("Rating published, but the comment could not be posted.");
+        }
+      }
       applyRating(updated);
     } catch (e: unknown) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -330,14 +346,13 @@ export function RatingEditorPage() {
     } finally { setSaving(false); }
   }
 
-  async function handleDelete() {
+  async function handleRemove() {
     if (!rating) return;
-    if (!confirm("Delete this rating? This cannot be undone.")) return;
     setSaving(true); setError(null);
     try {
       await deleteRating(rating.id);
       navigate("/");
-    } catch { setError("Delete failed."); setSaving(false); }
+    } catch { setError("Remove failed."); setSaving(false); setConfirmingRemove(false); }
   }
 
   function handleNoteChange(trackIndex: number, text: string) {
@@ -522,6 +537,19 @@ export function RatingEditorPage() {
             </DragOverlay>
           </DndContext>
 
+          {!isPublished && (
+            <div className={styles.section}>
+              <h2>Comment (optional)</h2>
+              <CommentComposer
+                value={commentText}
+                onChange={setCommentText}
+                visibility={commentVisibility}
+                onVisibilityChange={setCommentVisibility}
+                placeholder="Add a comment to publish with your rating…"
+              />
+            </div>
+          )}
+
           {/* Actions */}
           {error && <Alert>{error}</Alert>}
           <div className={styles.actions}>
@@ -544,9 +572,33 @@ export function RatingEditorPage() {
                 Publish
               </button>
             )}
-            <button className={`${styles.btn} ${styles.btnDanger}`} onClick={handleDelete} disabled={saving}>
-              Delete
-            </button>
+            {confirmingRemove ? (
+              <div className={styles.confirm}>
+                <span className={styles.confirmText}>Remove this rating?</span>
+                <button
+                  className={`${styles.btn} ${styles.btnRemoveConfirm}`}
+                  onClick={handleRemove}
+                  disabled={saving}
+                >
+                  {saving ? "Removing…" : "Yes, remove"}
+                </button>
+                <button
+                  className={`${styles.btn} ${styles.btnCancel}`}
+                  onClick={() => setConfirmingRemove(false)}
+                  disabled={saving}
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                className={`${styles.btn} ${styles.btnRemove}`}
+                onClick={() => setConfirmingRemove(true)}
+                disabled={saving}
+              >
+                Remove
+              </button>
+            )}
           </div>
         </>
       )}

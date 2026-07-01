@@ -5,7 +5,8 @@ export type NotificationType =
   | "friend_request"
   | "friend_accept"
   | "listen_invite"
-  | "friend_published";
+  | "friend_published"
+  | "comment_liked";
 
 export type NotificationScope = "bell" | "listen_invites" | "friend_requests";
 

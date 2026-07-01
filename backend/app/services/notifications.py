@@ -28,6 +28,7 @@ def create_notification(
     friendship_id: int | None = None,
     invite_id: int | None = None,
     album_id: int | None = None,
+    comment_id: int | None = None,
 ) -> Notification:
     """Insert a notification row. Caller commits."""
     n = Notification(
@@ -37,6 +38,7 @@ def create_notification(
         friendship_id=friendship_id,
         invite_id=invite_id,
         album_id=album_id,
+        comment_id=comment_id,
     )
     db.add(n)
     return n

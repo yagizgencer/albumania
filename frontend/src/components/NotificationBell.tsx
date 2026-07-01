@@ -7,7 +7,7 @@ import {
 } from "../api/notifications";
 import { useNotifications } from "../context/NotificationsContext";
 import { Avatar } from "./Avatar";
-import { BellIcon } from "./Icons";
+import { BellIcon, ThumbUpIcon } from "./Icons";
 import styles from "./NavBar.module.css";
 
 const LABELS: Record<NotificationType, (actor: string) => string> = {
@@ -15,6 +15,8 @@ const LABELS: Record<NotificationType, (actor: string) => string> = {
   friend_accept: (actor) => `${actor} accepted your friend request`,
   listen_invite: (actor) => `${actor} invited you to listen`,
   friend_published: (actor) => `${actor} finished rating an album you're both listening to`,
+  // Likes are anonymous — no actor is shown; the album meta line names the album.
+  comment_liked: () => "Someone liked your comment",
 };
 
 export function NotificationBell() {
@@ -111,11 +113,13 @@ function BellItem({
       className={`${styles.bellItem} ${item.read ? "" : styles.bellItemUnread}`}
       onClick={onNavigate}
     >
-      <Avatar
-        username={actor}
-        pictureUrl={item.actor_picture_url}
-        size={36}
-      />
+      {item.type === "comment_liked" ? (
+        <span className={styles.bellLikeIcon} aria-hidden>
+          <ThumbUpIcon size={20} />
+        </span>
+      ) : (
+        <Avatar username={actor} pictureUrl={item.actor_picture_url} size={36} />
+      )}
       <div className={styles.bellItemBody}>
         <div>{label}</div>
         {item.album && (
@@ -138,5 +142,7 @@ function linkFor(item: NotificationItem): string {
       return "/listen-later";
     case "friend_published":
       return item.album ? `/albums/${item.album.spotify_id}` : "/listen-later";
+    case "comment_liked":
+      return item.album ? `/albums/${item.album.spotify_id}` : "/";
   }
 }

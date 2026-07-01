@@ -1,0 +1,208 @@
+.item {
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--surface-muted);
+}
+
+.item:last-child {
+  border-bottom: none;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.4rem;
+}
+
+.author,
+.authorLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.authorLink:hover .authorName {
+  text-decoration: underline;
+}
+
+.anonAvatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  color: var(--text-subtle);
+}
+
+.authorName {
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.meta {
+  margin-left: auto;
+  font-size: 0.78rem;
+  color: var(--text-subtle);
+}
+
+.edited {
+  font-style: italic;
+}
+
+.text {
+  margin: 0.2rem 0 0.35rem;
+  overflow-wrap: anywhere;
+  line-height: 1.45;
+}
+
+/* Markdown rendering — keep block spacing tight. */
+.text :global(p) {
+  margin: 0 0 0.5rem;
+}
+
+.text :global(p:last-child) {
+  margin-bottom: 0;
+}
+
+.text :global(ul),
+.text :global(ol) {
+  margin: 0 0 0.5rem;
+  padding-left: 1.25rem;
+}
+
+.text :global(a) {
+  color: var(--btn-primary-bg);
+}
+
+.text :global(code) {
+  background: var(--surface-muted);
+  padding: 0.05rem 0.3rem;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+/* Collapsed to ~10 lines with a fade-free clamp; toggle reveals the rest. */
+.clamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 10;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.showMore {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  margin: 0 0 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.showMore:hover {
+  color: var(--text);
+  background: transparent;
+  transform: none;
+  box-shadow: none;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.reactions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.reactBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.25rem 0.6rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.count {
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.reactBtn:hover {
+  color: var(--text);
+  background: var(--surface-muted);
+  transform: none;
+  box-shadow: none;
+}
+
+.reactActive {
+  color: var(--btn-primary-fg);
+  background: var(--btn-primary-bg);
+  border-color: var(--btn-primary-bg);
+}
+
+.ownActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: auto;
+}
+
+.confirmText {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.ghostBtn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.ghostBtn:hover {
+  color: var(--text);
+  background: var(--surface-muted);
+  transform: none;
+  box-shadow: none;
+}
+
+.dangerBtn {
+  background: #dc2626;
+  border: 1px solid #dc2626;
+  border-radius: 6px;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.dangerBtn:hover {
+  background: #b91c1c;
+  transform: none;
+  box-shadow: none;
+}

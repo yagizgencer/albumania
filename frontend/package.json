@@ -17,9 +17,11 @@
     "@dnd-kit/utilities": "^3.2.2",
     "axios": "^1.7.7",
     "chart.js": "^4.5.1",
+    "emoji-picker-react": "^4.19.1",
     "react": "^18.3.1",
     "react-chartjs-2": "^5.3.1",
     "react-dom": "^18.3.1",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "^7.15.0",
     "roughjs": "^4.6.6",
     "vercel": "^54.2.0"

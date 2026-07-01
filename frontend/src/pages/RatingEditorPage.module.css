@@ -352,14 +352,58 @@
   background: var(--btn-success-bg-hover);
 }
 
-.btnDanger {
+/* Remove flow — mirrors the Listen Later confirmation. Scoped under .actions so
+   these beat the global button rule's box-shadow / hover-background. */
+.actions .btnRemove {
   background: transparent;
-  color: var(--btn-danger-bg);
-  border: 1px solid var(--btn-danger-bg);
+  color: var(--danger-text);
+  border: 1px solid var(--danger-text);
+  box-shadow: none;
 }
 
-.btnDanger:hover {
-  background: rgba(220, 38, 38, 0.1);
+.actions .btnRemove:hover {
+  background: rgba(214, 69, 63, 0.1);
+  transform: none;
+  box-shadow: none;
+}
+
+.confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.confirmText {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.actions .btnRemoveConfirm {
+  background: #dc2626;
+  color: #fff;
+  border: 1px solid #dc2626;
+  box-shadow: none;
+}
+
+.actions .btnRemoveConfirm:hover {
+  background: #b91c1c;
+  border-color: #b91c1c;
+  transform: none;
+  box-shadow: none;
+}
+
+.actions .btnCancel {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  box-shadow: none;
+}
+
+.actions .btnCancel:hover {
+  background: var(--surface-muted);
+  transform: none;
+  box-shadow: none;
 }
 
 .btn:disabled {

@@ -71,13 +71,31 @@ def get_or_import_album(
 ) -> AlbumOut:
     existing = db.query(Album).filter(Album.spotify_id == spotify_id).first()
     if existing:
+        changed = False
         # Lazily backfill artist_spotify_id for rows imported before that column
         # existed, so artist links/pages work for the whole catalog over time.
         if existing.artist_spotify_id is None:
             existing.artist_spotify_id = spotify.get_album(spotify_id).artist_spotify_id
-            if existing.artist_spotify_id is not None:
-                db.commit()
-                db.refresh(existing)
+            changed = changed or existing.artist_spotify_id is not None
+        # Backfill missing tracks for albums imported before we paged past the
+        # first 50 (Spotify's album object caps embedded tracks at 50).
+        if len(existing.tracks) < existing.total_songs:
+            have = {t.index for t in existing.tracks}
+            for t in spotify.get_album_tracks(spotify_id):
+                if t.index not in have:
+                    db.add(
+                        AlbumTrack(
+                            album_id=existing.id,
+                            index=t.index,
+                            name=t.name,
+                            spotify_url=t.spotify_url,
+                            duration_ms=t.duration_ms,
+                        )
+                    )
+                    changed = True
+        if changed:
+            db.commit()
+            db.refresh(existing)
         return _to_album_out(existing)
 
     album_data = spotify.get_album(spotify_id)
