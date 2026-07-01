@@ -136,6 +136,30 @@ def test_feed_paginates_with_before_cursor(client: TestClient) -> None:
     assert {i["id"] for i in first["items"]}.isdisjoint({i["id"] for i in second["items"]})
 
 
+def test_feed_filters_by_type(client: TestClient) -> None:
+    alice = _seed_user("alice")
+    _seed_user("bob")
+    a1 = _seed_album("a1")
+
+    _friend("alice", "bob", _at(1))
+    _rate("alice", a1, 8.0, _at(2))
+    _comment("alice", a1, "thoughts", _at(3))
+
+    _auth_as(alice)
+
+    # No filter → every category present.
+    all_types = {it["type"] for it in client.get("/home/feed").json()["items"]}
+    assert all_types == {"you_rated", "you_commented", "new_friend"}
+
+    # A single category narrows to just its events.
+    ratings = client.get("/home/feed", params={"types": ["ratings"]}).json()["items"]
+    assert {it["type"] for it in ratings} == {"you_rated"}
+
+    # Multiple categories union; the omitted one (friends) is excluded.
+    two = client.get("/home/feed", params={"types": ["ratings", "comments"]}).json()["items"]
+    assert {it["type"] for it in two} == {"you_rated", "you_commented"}
+
+
 def test_feed_requires_auth(client: TestClient) -> None:
     r = client.get("/home/feed")
     assert r.status_code in (401, 403)

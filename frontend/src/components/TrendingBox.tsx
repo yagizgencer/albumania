@@ -14,6 +14,9 @@ interface TrendingBoxProps<T> {
   keyOf: (item: T) => string;
   renderRow: (item: T) => ReactNode;
   defaultPeriod?: TrendingPeriod;
+  /** When set, the box fills its parent's height and scrolls its list within,
+      instead of using its own fixed max-height. Used in the sticky home rail. */
+  fill?: boolean;
 }
 
 export function TrendingBox<T>({
@@ -22,6 +25,7 @@ export function TrendingBox<T>({
   keyOf,
   renderRow,
   defaultPeriod = "all",
+  fill = false,
 }: TrendingBoxProps<T>) {
   const [period, setPeriod] = useState<TrendingPeriod>(defaultPeriod);
   const [items, setItems] = useState<T[] | null>(null);
@@ -40,7 +44,7 @@ export function TrendingBox<T>({
   }, [period, fetchItems]);
 
   return (
-    <section className={styles.section}>
+    <section className={`${styles.section} ${fill ? styles.fill : ""}`}>
       <div className={styles.header}>
         <h2 className={styles.title}>{title}</h2>
         <PeriodToggle value={period} onChange={setPeriod} />

@@ -16,7 +16,8 @@
 
 .title {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 1.2rem;
+  font-weight: 700;
 }
 
 /* Fits ~5 rows; the rest (up to 20) scroll inside so the box stays compact and
@@ -27,6 +28,22 @@
   max-height: 296px;
   overflow-y: auto;
   padding-right: 0.35rem;
+}
+
+/* `fill` variant: the box takes its share of a height-constrained parent (the
+   sticky home rail) and lets its list scroll within, rather than capping at a
+   fixed height. */
+.fill {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.fill .list {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
 }
 
 .row {

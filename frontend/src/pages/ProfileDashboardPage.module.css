@@ -222,10 +222,12 @@
 }
 
 /* Header padding lives only here (the .th class no longer sets padding) so header
-   spacing isn't doubled. Multi-line similarity headers in the friend view
-   baseline-align with the single-line ones. */
+   spacing isn't doubled. Header side padding matches the cells' (0.6rem) so each
+   label sits directly above its column's values; only the vertical padding
+   differs. Multi-line similarity headers in the friend view baseline-align with
+   the single-line ones. */
 .table th {
-  padding: 0.75rem 0.9rem;
+  padding: 0.75rem 0.6rem;
   vertical-align: bottom;
 }
 
@@ -302,8 +304,9 @@
   background: var(--surface-muted);
 }
 
-/* Numeric columns shrink to their content (width: 1%) so the Album column takes
-   the remaining width — this keeps every header sitting directly above its values. */
+/* Right-aligned numeric cells. With `table-layout: fixed` the numeric columns
+   are equal width, and th/td share side padding, so each value sits under its
+   right-aligned header label. */
 .numCell {
   text-align: right;
   font-variant-numeric: tabular-nums;

@@ -247,10 +247,12 @@ export function AlbumInfoPage() {
           aria-expanded={tracksOpen}
         >
           <span>Tracks ({album.tracks.length})</span>
-          <ChevronDownIcon
-            size={20}
-            className={`${styles.chevron} ${tracksOpen ? styles.chevronOpen : ""}`}
-          />
+          <span className={styles.chevronChip} aria-hidden>
+            <ChevronDownIcon
+              size={18}
+              className={`${styles.chevron} ${tracksOpen ? styles.chevronOpen : ""}`}
+            />
+          </span>
         </button>
         {tracksOpen && (
           <ul className={styles.trackList}>

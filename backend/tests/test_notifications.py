@@ -2,10 +2,12 @@
 counts power the three nav badges, and mark-seen only clears the scope it
 was asked to."""
 
+from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import select
 
 from app.core.deps import get_current_user
 from app.db.session import get_db
@@ -13,6 +15,7 @@ from app.main import app
 from app.models.album import Album, BaselineStat
 from app.models.notification import Notification, NotificationType
 from app.models.user import User
+from app.services.notifications import prune_read_notifications
 from app.services.spotify import SpotifyClient, get_spotify_client
 
 
@@ -240,6 +243,59 @@ def select_count_for(model):
     from sqlalchemy import select
 
     return select(model)
+
+
+def _add_notif(recipient: str, read: bool, when: datetime) -> int:
+    """Insert a bare notification directly (actor/friendship FKs are nullable)."""
+    db = _db()
+    n = Notification(
+        recipient_username=recipient,
+        type=NotificationType.friend_accept,
+        read=read,
+        created_at=when,
+    )
+    db.add(n)
+    db.commit()
+    db.refresh(n)
+    return n.id
+
+
+def test_prune_keeps_last_ten_read_and_all_unread(client: TestClient) -> None:
+    _seed_user("bob")
+    base = datetime(2025, 1, 1, tzinfo=timezone.utc)
+    read_ids = [_add_notif("bob", read=True, when=base + timedelta(minutes=i)) for i in range(15)]
+    _ = [_add_notif("bob", read=False, when=base + timedelta(minutes=100 + i)) for i in range(3)]
+
+    db = _db()
+    deleted = prune_read_notifications(db, "bob")
+    db.commit()
+    assert deleted == 5  # 15 read → drop the 5 oldest
+
+    rows = db.scalars(
+        select(Notification).where(Notification.recipient_username == "bob")
+    ).all()
+    read_rows = [n for n in rows if n.read]
+    unread_rows = [n for n in rows if not n.read]
+    assert len(unread_rows) == 3  # unread never touched
+    # Exactly the 10 newest read rows survive.
+    assert sorted(n.id for n in read_rows) == read_ids[5:]
+
+    # Idempotent: a second prune with nothing stale deletes nothing.
+    assert prune_read_notifications(db, "bob") == 0
+
+
+def test_mark_seen_prunes_old_read(client: TestClient) -> None:
+    bob = _seed_user("bob")
+    base = datetime(2025, 1, 1, tzinfo=timezone.utc)
+    for i in range(15):
+        _add_notif("bob", read=False, when=base + timedelta(minutes=i))
+
+    _auth_as(bob)
+    # Opening the bell marks all 15 read; retention then trims to the newest 10.
+    client.post("/notifications/mark-seen", json={"scope": "bell"})
+    rows = client.get("/notifications", params={"limit": 100}).json()
+    assert len(rows) == 10
+    _clear_auth()
 
 
 def test_notification_requires_auth(client: TestClient) -> None:

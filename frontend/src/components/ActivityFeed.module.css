@@ -1,3 +1,43 @@
+/* Category filter: a row of independent toggle pills above the feed. */
+.filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.85rem;
+}
+
+.chip {
+  background: var(--surface-muted);
+  color: var(--text-muted);
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  padding: 0.3rem 0.85rem;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: none;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+
+.chip:hover {
+  color: var(--text);
+  background: var(--surface-muted);
+  transform: none;
+  box-shadow: none;
+}
+
+.chipOn {
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+  border-color: var(--btn-primary-bg);
+}
+
+.chipOn:hover {
+  color: var(--btn-primary-fg);
+  background: var(--btn-primary-bg-hover);
+}
+
 .feed {
   display: flex;
   flex-direction: column;

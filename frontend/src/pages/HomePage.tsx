@@ -89,12 +89,14 @@ function LoggedInHome({ displayName }: { displayName: string }) {
             fetchItems={getTrendingAlbums}
             keyOf={(a) => a.spotify_id}
             renderRow={(a) => <TrendingAlbumRow album={a} />}
+            fill
           />
           <TrendingBox
             title="Trending Artists"
             fetchItems={getTrendingArtists}
             keyOf={(a) => a.artist_spotify_id}
             renderRow={(a) => <TrendingArtistRow artist={a} />}
+            fill
           />
         </aside>
       </div>

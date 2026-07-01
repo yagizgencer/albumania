@@ -53,7 +53,8 @@ describe("ActivityFeed", () => {
     fireEvent.click(screen.getByRole("button", { name: /load older activity/i }));
 
     await waitFor(() => {
-      expect(getFeed).toHaveBeenCalledWith("2025-01-06T00:00:00Z");
+      // All categories selected → no `types` narrowing.
+      expect(getFeed).toHaveBeenCalledWith("2025-01-06T00:00:00Z", undefined, undefined);
       expect(screen.getByText(/are now friends/i)).toBeInTheDocument();
     });
   });
@@ -62,5 +63,29 @@ describe("ActivityFeed", () => {
     vi.mocked(getFeed).mockResolvedValue({ items: [], next_before: null });
     renderFeed();
     expect(await screen.findByText(/no activity yet/i)).toBeInTheDocument();
+  });
+
+  it("refetches with a narrowed type list when a category is toggled off", async () => {
+    vi.mocked(getFeed).mockResolvedValue({ items: ITEMS, next_before: null });
+    renderFeed();
+    await screen.findByText(/you rated/i);
+
+    fireEvent.click(screen.getByRole("button", { name: "Friends" }));
+
+    await waitFor(() => {
+      expect(getFeed).toHaveBeenLastCalledWith(null, undefined, ["ratings", "comments"]);
+    });
+  });
+
+  it("prompts to pick a type when every category is deselected", async () => {
+    vi.mocked(getFeed).mockResolvedValue({ items: ITEMS, next_before: null });
+    renderFeed();
+    await screen.findByText(/you rated/i);
+
+    fireEvent.click(screen.getByRole("button", { name: "Ratings" }));
+    fireEvent.click(screen.getByRole("button", { name: "Comments" }));
+    fireEvent.click(screen.getByRole("button", { name: "Friends" }));
+
+    expect(await screen.findByText(/pick at least one activity type/i)).toBeInTheDocument();
   });
 });

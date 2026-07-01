@@ -13,10 +13,14 @@ from __future__ import annotations
 
 from typing import Literal
 
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session
 
 from app.models.notification import Notification, NotificationType
+
+# How many already-read notifications we retain per user. Unread rows are always
+# kept; older read rows are pruned so the table doesn't grow without bound.
+READ_RETENTION = 10
 
 
 def create_notification(
@@ -91,4 +95,30 @@ def mark_seen(db: Session, username: str, scope: Scope) -> int:
     elif scope != "bell":
         raise ValueError(f"Unknown notification scope: {scope!r}")
     result = db.execute(stmt)
+    # Marking rows read is the only way rows enter the "read" set, so this is the
+    # natural moment to trim it back down.
+    prune_read_notifications(db, username)
     return result.rowcount or 0
+
+
+def prune_read_notifications(
+    db: Session, username: str, keep: int = READ_RETENTION
+) -> int:
+    """Delete a user's oldest read notifications, keeping only the `keep` most
+    recent. Unread rows are never touched. Returns the number deleted. Caller
+    commits."""
+    read_ids = list(
+        db.scalars(
+            select(Notification.id)
+            .where(
+                Notification.recipient_username == username,
+                Notification.read.is_(True),
+            )
+            .order_by(Notification.created_at.desc())
+        )
+    )
+    stale = read_ids[keep:]
+    if not stale:
+        return 0
+    db.execute(delete(Notification).where(Notification.id.in_(stale)))
+    return len(stale)

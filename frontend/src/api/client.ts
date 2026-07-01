@@ -5,6 +5,9 @@ const baseURL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 export const apiClient = axios.create({
   baseURL,
   withCredentials: true, // sends the httpOnly refresh cookie
+  // Serialize array params as repeated keys (`types=a&types=b`) rather than the
+  // default `types[]=a` — that's the shape FastAPI's `list[...]` params expect.
+  paramsSerializer: { indexes: null },
 });
 
 let _accessToken: string | null = null;

@@ -138,31 +138,51 @@
   border-top: 2px solid var(--border);
 }
 
+/* A clear, clickable header bar so it reads as expandable (not just text). */
 .tracksToggle {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.75rem;
   width: 100%;
-  background: transparent;
-  border: none;
+  background: var(--surface-muted);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
   box-shadow: none;
-  padding: 0.25rem 0;
+  padding: 0.6rem 0.85rem;
   font-size: 1.05rem;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text);
   cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
 }
 
 .tracksToggle:hover {
   color: var(--text);
-  background: transparent;
+  background: var(--paper);
+  border-color: var(--border);
   transform: none;
   box-shadow: none;
 }
 
+/* The chevron sits in a little pastel pill — the primary "expand me" cue,
+   matching the app's sketch-button look. */
+.chevronChip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: var(--btn-primary-bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
 .chevron {
-  transition: transform 0.15s ease;
-  color: var(--text-muted);
+  transition: transform 0.18s ease;
+  color: inherit;
 }
 
 .chevronOpen {

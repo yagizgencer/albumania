@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import { Link } from "react-router-dom";
-import { getFeed, type FeedItem } from "../api/home";
+import { getFeed, type FeedCategory, type FeedItem } from "../api/home";
 import { formatDate } from "../lib/date";
 import { Avatar } from "./Avatar";
 import { ScoreMeter } from "./ScoreMeter";
@@ -9,16 +9,40 @@ import { Alert } from "./Alert";
 import { LoadingState } from "./Spinner";
 import styles from "./ActivityFeed.module.css";
 
+const CATEGORIES: { value: FeedCategory; label: string }[] = [
+  { value: "ratings", label: "Ratings" },
+  { value: "comments", label: "Comments" },
+  { value: "friends", label: "Friends" },
+];
+
 export function ActivityFeed() {
   const [items, setItems] = useState<FeedItem[] | null>(null);
   const [nextBefore, setNextBefore] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Which categories are shown. All on by default; toggling refetches.
+  const [selected, setSelected] = useState<Set<FeedCategory>>(
+    () => new Set(CATEGORIES.map((c) => c.value)),
+  );
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
+  const noneSelected = selected.size === 0;
+  // `types` for the API: only sent when a strict subset is active — all-selected
+  // omits it so the backend returns every category. `selected` is a stable
+  // reference that changes only on toggle, so callbacks keying on it stay stable.
+  const typesFor = (s: Set<FeedCategory>): FeedCategory[] | undefined =>
+    s.size === CATEGORIES.length ? undefined : [...s];
+
   useEffect(() => {
+    if (selected.size === 0) {
+      setItems([]);
+      setNextBefore(null);
+      return;
+    }
     let cancelled = false;
-    getFeed()
+    setItems(null);
+    setError(null);
+    getFeed(null, undefined, typesFor(selected))
       .then((page) => {
         if (cancelled) return;
         setItems(page.items);
@@ -28,13 +52,22 @@ export function ActivityFeed() {
     return () => {
       cancelled = true;
     };
+  }, [selected]);
+
+  const toggleCategory = useCallback((value: FeedCategory) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(value)) next.delete(value);
+      else next.add(value);
+      return next;
+    });
   }, []);
 
   const loadMore = useCallback(async () => {
     if (!nextBefore || loadingMore) return;
     setLoadingMore(true);
     try {
-      const page = await getFeed(nextBefore);
+      const page = await getFeed(nextBefore, undefined, typesFor(selected));
       setItems((prev) => [...(prev ?? []), ...page.items]);
       setNextBefore(page.next_before);
     } catch {
@@ -42,7 +75,7 @@ export function ActivityFeed() {
     } finally {
       setLoadingMore(false);
     }
-  }, [nextBefore, loadingMore]);
+  }, [nextBefore, loadingMore, selected]);
 
   // Twitter-style: auto-load the next page when the sentinel scrolls into view.
   useEffect(() => {
@@ -55,6 +88,57 @@ export function ActivityFeed() {
     return () => obs.disconnect();
   }, [nextBefore, loadMore]);
 
+  return (
+    <>
+      <div className={styles.filter} role="group" aria-label="Filter activity by type">
+        {CATEGORIES.map((c) => {
+          const on = selected.has(c.value);
+          return (
+            <button
+              key={c.value}
+              type="button"
+              className={`${styles.chip} ${on ? styles.chipOn : ""}`}
+              aria-pressed={on}
+              onClick={() => toggleCategory(c.value)}
+            >
+              {c.label}
+            </button>
+          );
+        })}
+      </div>
+      <FeedBody
+        items={items}
+        error={error}
+        nextBefore={nextBefore}
+        loadingMore={loadingMore}
+        loadMore={loadMore}
+        sentinelRef={sentinelRef}
+        noneSelected={noneSelected}
+      />
+    </>
+  );
+}
+
+function FeedBody({
+  items,
+  error,
+  nextBefore,
+  loadingMore,
+  loadMore,
+  sentinelRef,
+  noneSelected,
+}: {
+  items: FeedItem[] | null;
+  error: string | null;
+  nextBefore: string | null;
+  loadingMore: boolean;
+  loadMore: () => void;
+  sentinelRef: RefObject<HTMLDivElement | null>;
+  noneSelected: boolean;
+}) {
+  if (noneSelected) {
+    return <div className={styles.empty}>Pick at least one activity type above.</div>;
+  }
   if (error && !items) return <Alert>{error}</Alert>;
   if (items === null) return <LoadingState />;
   if (items.length === 0) {

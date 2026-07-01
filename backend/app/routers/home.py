@@ -68,6 +68,9 @@ def _feed_album(album: Album) -> FeedAlbum:
     )
 
 
+FeedCategory = Literal["ratings", "comments", "friends"]
+
+
 @router.get("/home/feed", response_model=FeedPage)
 def get_feed(
     user: CurrentUser,
@@ -75,92 +78,102 @@ def get_feed(
     storage: StorageDep,
     before: Annotated[datetime | None, Query()] = None,
     limit: Annotated[int, Query(ge=1, le=50)] = 20,
+    types: Annotated[list[FeedCategory] | None, Query()] = None,
 ) -> FeedPage:
     """Merged reverse-chronological timeline of the viewer's and their friends'
-    final events (ratings, comments, new friendships). Paginated by `before`."""
+    final events (ratings, comments, new friendships). Paginated by `before`.
+
+    `types` narrows the feed to a subset of activity categories; omitting it (or
+    passing none) returns every category."""
     cutoff = before or datetime.now(timezone.utc)
     friends = _accepted_friends(db, user.username)
     feed_users = [user.username, *friends]
+
+    def wants(category: FeedCategory) -> bool:
+        return not types or category in types
 
     # Each source contributes at most `limit` rows below the cursor; the merged
     # top `limit` is then the globally newest page.
     candidates: list[dict] = []
 
-    for rating, album in db.execute(
-        select(Rating, Album)
-        .join(Album, Album.id == Rating.album_id)
-        .where(
-            Rating.status == RatingStatus.published,
-            Rating.completed_at.is_not(None),
-            Rating.completed_at < cutoff,
-            Rating.username.in_(feed_users),
-        )
-        .order_by(Rating.completed_at.desc())
-        .limit(limit)
-    ):
-        mine = rating.username == user.username
-        candidates.append(
-            {
-                "id": f"rating-{rating.id}",
-                "type": "you_rated" if mine else "friend_rated",
-                "ts": rating.completed_at,
-                "actor": rating.username,
-                "album": album,
-                "score": rating.score,
-                "excerpt": None,
-            }
-        )
+    if wants("ratings"):
+        for rating, album in db.execute(
+            select(Rating, Album)
+            .join(Album, Album.id == Rating.album_id)
+            .where(
+                Rating.status == RatingStatus.published,
+                Rating.completed_at.is_not(None),
+                Rating.completed_at < cutoff,
+                Rating.username.in_(feed_users),
+            )
+            .order_by(Rating.completed_at.desc())
+            .limit(limit)
+        ):
+            mine = rating.username == user.username
+            candidates.append(
+                {
+                    "id": f"rating-{rating.id}",
+                    "type": "you_rated" if mine else "friend_rated",
+                    "ts": rating.completed_at,
+                    "actor": rating.username,
+                    "album": album,
+                    "score": rating.score,
+                    "excerpt": None,
+                }
+            )
 
-    for comment, album in db.execute(
-        select(Comment, Album)
-        .join(Album, Album.id == Comment.album_id)
-        .where(Comment.created_at < cutoff, Comment.username.in_(feed_users))
-        .order_by(Comment.created_at.desc())
-        .limit(limit)
-    ):
-        mine = comment.username == user.username
-        # A friend's comment only surfaces when its identity is visible to us —
-        # friends see public + friends-only, never private. (Own always shows.)
-        if not mine and comment.visibility == CommentVisibility.private:
-            continue
-        candidates.append(
-            {
-                "id": f"comment-{comment.id}",
-                "type": "you_commented" if mine else "friend_commented",
-                "ts": comment.created_at,
-                "actor": comment.username,
-                "album": album,
-                "score": None,
-                "excerpt": _excerpt(comment.text),
-            }
-        )
+    if wants("comments"):
+        for comment, album in db.execute(
+            select(Comment, Album)
+            .join(Album, Album.id == Comment.album_id)
+            .where(Comment.created_at < cutoff, Comment.username.in_(feed_users))
+            .order_by(Comment.created_at.desc())
+            .limit(limit)
+        ):
+            mine = comment.username == user.username
+            # A friend's comment only surfaces when its identity is visible to us —
+            # friends see public + friends-only, never private. (Own always shows.)
+            if not mine and comment.visibility == CommentVisibility.private:
+                continue
+            candidates.append(
+                {
+                    "id": f"comment-{comment.id}",
+                    "type": "you_commented" if mine else "friend_commented",
+                    "ts": comment.created_at,
+                    "actor": comment.username,
+                    "album": album,
+                    "score": None,
+                    "excerpt": _excerpt(comment.text),
+                }
+            )
 
-    for f in db.execute(
-        select(Friendship)
-        .where(
-            or_(
-                Friendship.user_a_username == user.username,
-                Friendship.user_b_username == user.username,
-            ),
-            Friendship.status == FriendshipStatus.accepted,
-            Friendship.accepted_at.is_not(None),
-            Friendship.accepted_at < cutoff,
-        )
-        .order_by(Friendship.accepted_at.desc())
-        .limit(limit)
-    ).scalars():
-        other = f.user_b_username if f.user_a_username == user.username else f.user_a_username
-        candidates.append(
-            {
-                "id": f"friend-{f.id}",
-                "type": "new_friend",
-                "ts": f.accepted_at,
-                "actor": other,
-                "album": None,
-                "score": None,
-                "excerpt": None,
-            }
-        )
+    if wants("friends"):
+        for f in db.execute(
+            select(Friendship)
+            .where(
+                or_(
+                    Friendship.user_a_username == user.username,
+                    Friendship.user_b_username == user.username,
+                ),
+                Friendship.status == FriendshipStatus.accepted,
+                Friendship.accepted_at.is_not(None),
+                Friendship.accepted_at < cutoff,
+            )
+            .order_by(Friendship.accepted_at.desc())
+            .limit(limit)
+        ).scalars():
+            other = f.user_b_username if f.user_a_username == user.username else f.user_a_username
+            candidates.append(
+                {
+                    "id": f"friend-{f.id}",
+                    "type": "new_friend",
+                    "ts": f.accepted_at,
+                    "actor": other,
+                    "album": None,
+                    "score": None,
+                    "excerpt": None,
+                }
+            )
 
     candidates.sort(key=lambda c: c["ts"], reverse=True)
     page = candidates[:limit]

@@ -7,6 +7,9 @@ export type FeedType =
   | "friend_commented"
   | "new_friend";
 
+/** Filterable activity categories — each maps to one or two raw FeedTypes. */
+export type FeedCategory = "ratings" | "comments" | "friends";
+
 export type TrendingPeriod = "week" | "month" | "year" | "all";
 
 export interface FeedActor {
@@ -57,9 +60,15 @@ export interface TrendingArtist {
   rating_count: number;
 }
 
-export async function getFeed(before?: string | null, limit = 20): Promise<FeedPage> {
-  const params: Record<string, string | number> = { limit };
+export async function getFeed(
+  before?: string | null,
+  limit = 20,
+  types?: FeedCategory[],
+): Promise<FeedPage> {
+  const params: Record<string, string | number | string[]> = { limit };
   if (before) params.before = before;
+  // Only send `types` when narrowing to a subset; omit it to get every category.
+  if (types && types.length > 0) params.types = types;
   const { data } = await apiClient.get<FeedPage>("/home/feed", { params });
   return data;
 }
