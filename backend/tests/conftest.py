@@ -47,6 +47,20 @@ def _stub_spotify():
     app.dependency_overrides.pop(get_spotify_client, None)
 
 
+@pytest.fixture(autouse=True)
+def _stub_email(monkeypatch):
+    # Never send real email in tests. The register / resend / change-password
+    # endpoints call send_email, which hits the Resend API whenever a real
+    # RESEND_API_KEY is present in .env — running the suite would burn the
+    # account's daily quota. Patch it to a no-op (mirrors the Spotify stub).
+    # send_verification_email / send_password_changed_email call send_email by
+    # name within app.services.email, so patching it there intercepts all of them.
+    monkeypatch.setattr(
+        "app.services.email.send_email",
+        lambda to, subject, html: None,
+    )
+
+
 @pytest.fixture()
 def storage():
     s = InMemoryStorage()
