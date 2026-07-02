@@ -300,6 +300,79 @@
   margin: 0.6rem 0 0;
 }
 
+/* "See a friend's ratings" — searchable dropdown of friends who rated this album. */
+.friendRatings {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.friendRatingsLabel {
+  letter-spacing: 0.02em;
+}
+
+.combobox {
+  position: relative;
+  display: inline-block;
+}
+
+.friendRatingsInput {
+  background: var(--surface);
+  color: var(--text);
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  padding: 0.35rem 0.55rem;
+  font: inherit;
+  min-width: 12rem;
+}
+
+.comboList {
+  position: absolute;
+  z-index: 20;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  list-style: none;
+  margin: 0;
+  padding: 0.25rem 0;
+  background: var(--surface);
+  color: var(--text);
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+  max-height: 16rem;
+  overflow-y: auto;
+}
+
+.comboItem {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  padding: 0.4rem 0.7rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.comboItem:hover {
+  background: var(--surface-muted);
+}
+
+.comboUser {
+  color: var(--text-subtle);
+  font-size: 0.8rem;
+}
+
+.comboEmpty {
+  padding: 0.5rem 0.7rem;
+  color: var(--text-subtle);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
 .modalBackdrop {
   position: fixed;
   inset: 0;

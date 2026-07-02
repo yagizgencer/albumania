@@ -1,16 +1,30 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { getAlbum, type Album } from "../api/albums";
 import { getDashboard, type DashboardEntry } from "../api/dashboard";
 import { formatDuration } from "../utils/duration";
 import { Alert } from "../components/Alert";
 import { LoadingState } from "../components/Spinner";
 import { formatDate } from "../lib/date";
+import { setDashboardCompare, type DashboardBackState } from "../lib/dashboardCompare";
 import styles from "./AlbumDetailPage.module.css";
 
 export function AlbumDetailPage() {
   const { username, spotifyId } = useParams<{ username: string; spotifyId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  // When we arrive from an album page, `backTo` tells us which dashboard to
+  // return to (and which comparison to restore). Otherwise, go back in history.
+  const backTo = (location.state as { backTo?: DashboardBackState } | null)?.backTo ?? null;
+
+  function goBackToDashboard() {
+    if (backTo) {
+      setDashboardCompare(backTo.profile, backTo.compareFriendshipId);
+      navigate(`/profile/${backTo.profile}`);
+    } else {
+      navigate(-1);
+    }
+  }
   const [album, setAlbum] = useState<Album | null>(null);
   const [entry, setEntry] = useState<DashboardEntry | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -51,7 +65,7 @@ export function AlbumDetailPage() {
     <main className={styles.page}>
       <button
         type="button"
-        onClick={() => navigate(-1)}
+        onClick={goBackToDashboard}
         className={styles.backLink}
       >
         ← Back to dashboard

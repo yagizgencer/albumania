@@ -16,6 +16,7 @@ import {
   type UserProfile,
 } from "../api/users";
 import { usePersistentState } from "../lib/usePersistentState";
+import { compareStorageKey } from "../lib/dashboardCompare";
 import { formatDate } from "../lib/date";
 import { Avatar } from "../components/Avatar";
 import { ProfileDashboard } from "./ProfileDashboardPage";
@@ -43,7 +44,7 @@ export function ProfilePage() {
   // friendshipId we're comparing against, or null = solo dashboard vs Spotify.
   // Persisted per profile so returning from an album re-opens the same view.
   const [compareFriendshipId, setCompareFriendshipId] = usePersistentState<number | null>(
-    `dash:compare:${username ?? ""}`,
+    compareStorageKey(username ?? ""),
     null
   );
 

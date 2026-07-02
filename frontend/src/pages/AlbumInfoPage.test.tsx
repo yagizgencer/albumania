@@ -1,12 +1,16 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AlbumInfoPage } from "./AlbumInfoPage";
-import { getAlbum, getAlbumStats } from "../api/albums";
+import { getAlbum, getAlbumFriendRatings, getAlbumStats } from "../api/albums";
 import { deleteRating, getMyRatingForAlbum } from "../api/ratings";
 
-vi.mock("../api/albums", () => ({ getAlbum: vi.fn(), getAlbumStats: vi.fn() }));
+vi.mock("../api/albums", () => ({
+  getAlbum: vi.fn(),
+  getAlbumStats: vi.fn(),
+  getAlbumFriendRatings: vi.fn(),
+}));
 vi.mock("../api/ratings", () => ({
   getMyRatingForAlbum: vi.fn(),
   createRating: vi.fn(),
@@ -47,11 +51,27 @@ const PUBLISHED_RATING = {
   notes: [],
 };
 
+// Renders wherever a friend pick navigates so we can assert the path + state.
+function LocationProbe() {
+  const location = useLocation();
+  return (
+    <div>
+      <span data-testid="path">{location.pathname}</span>
+      <span data-testid="state">{JSON.stringify(location.state)}</span>
+    </div>
+  );
+}
+
 function renderPage() {
   return render(
     <MemoryRouter initialEntries={["/albums/alb1"]}>
       <Routes>
         <Route path="/albums/:spotifyId" element={<AlbumInfoPage />} />
+        <Route
+          path="/friendships/:friendshipId/albums/:spotifyId"
+          element={<LocationProbe />}
+        />
+        <Route path="/users/:username/albums/:spotifyId" element={<LocationProbe />} />
       </Routes>
     </MemoryRouter>
   );
@@ -63,6 +83,7 @@ describe("AlbumInfoPage", () => {
     vi.mocked(getAlbum).mockResolvedValue(ALBUM);
     vi.mocked(getAlbumStats).mockResolvedValue({ mean_score: 7.8, num_raters: 98 });
     vi.mocked(getMyRatingForAlbum).mockResolvedValue(PUBLISHED_RATING);
+    vi.mocked(getAlbumFriendRatings).mockResolvedValue([]);
   });
 
   it("shows Spotify links, the artist-page button, stats and our score", async () => {
@@ -160,5 +181,51 @@ describe("AlbumInfoPage", () => {
     await screen.findByRole("link", { name: "Test Album" });
 
     expect(screen.queryByRole("button", { name: /remove rating/i })).not.toBeInTheDocument();
+  });
+
+  // -------------------------------------------------------------------------
+  // "See a friend's ratings" picker
+  // -------------------------------------------------------------------------
+
+  const BOB_RATING = {
+    username: "bob",
+    display_name: "Bob",
+    profile_picture_url: null,
+    friendship_id: 42,
+  };
+
+  it("hides the friend picker when no friends have rated the album", async () => {
+    renderPage();
+    await screen.findByRole("link", { name: "Test Album" });
+    expect(screen.queryByText(/see a friend's ratings/i)).not.toBeInTheDocument();
+  });
+
+  it("opens the pair comparison when you've rated the album and pick a friend", async () => {
+    vi.mocked(getAlbumFriendRatings).mockResolvedValue([BOB_RATING]);
+    renderPage();
+    await screen.findByRole("link", { name: "Test Album" });
+
+    fireEvent.focus(screen.getByPlaceholderText(/search friends/i));
+    fireEvent.click(screen.getByRole("option", { name: /bob/i }));
+
+    expect(screen.getByTestId("path")).toHaveTextContent("/friendships/42/albums/alb1");
+    expect(screen.getByTestId("state")).toHaveTextContent(
+      JSON.stringify({ backTo: { profile: "bob", compareFriendshipId: 42 } })
+    );
+  });
+
+  it("opens the friend-vs-Spotify view when you haven't rated the album", async () => {
+    vi.mocked(getMyRatingForAlbum).mockRejectedValue(new Error("no rating"));
+    vi.mocked(getAlbumFriendRatings).mockResolvedValue([BOB_RATING]);
+    renderPage();
+    await screen.findByRole("link", { name: "Test Album" });
+
+    fireEvent.focus(screen.getByPlaceholderText(/search friends/i));
+    fireEvent.click(screen.getByRole("option", { name: /bob/i }));
+
+    expect(screen.getByTestId("path")).toHaveTextContent("/users/bob/albums/alb1");
+    expect(screen.getByTestId("state")).toHaveTextContent(
+      JSON.stringify({ backTo: { profile: "bob", compareFriendshipId: null } })
+    );
   });
 });

@@ -7,6 +7,7 @@ from app.core.deps import get_current_user
 from app.db.session import get_db
 from app.main import app
 from app.models.album import Album, AlbumTrack
+from app.models.friendship import Friendship, FriendshipStatus
 from app.models.rating import Rating, RatingStatus
 from app.models.user import User
 from app.services.spotify import SpotifyAlbumResult, SpotifyClient, SpotifyTrack, get_spotify_client
@@ -183,4 +184,66 @@ def test_album_stats_empty_when_no_ratings(authed_client: TestClient) -> None:
 
 def test_album_stats_requires_auth(client: TestClient) -> None:
     r = client.get("/albums/abc123/stats")
+    assert r.status_code in (401, 403)
+
+
+# ---------------------------------------------------------------------------
+# GET /{spotify_id}/friend-ratings — accepted friends who published this album
+# ---------------------------------------------------------------------------
+
+def _seed_album_with_friend_ratings() -> Album:
+    """One album where, from `tester`'s perspective:
+
+    - alice & bob are accepted friends with published ratings → included.
+    - carol has a published rating but isn't a friend → excluded.
+    - dave is a friend but only has a draft → excluded.
+    """
+    db = next(app.dependency_overrides[get_db]())
+    for username in ("tester", "alice", "bob", "carol", "dave"):
+        db.add(User(username=username, email=f"{username}@x.com", password_hash="x", display_name=username.capitalize()))
+    album = Album(
+        spotify_id="abc123",
+        title="Test Album",
+        artist="Test Artist",
+        artist_spotify_id="artist123",
+        release_date="2024-01-01",
+        total_songs=10,
+    )
+    db.add(album)
+    db.flush()
+
+    for other in ("alice", "bob", "dave"):
+        a, b = ("tester", other) if "tester" < other else (other, "tester")
+        db.add(Friendship(user_a_username=a, user_b_username=b, status=FriendshipStatus.accepted, requested_by="tester"))
+
+    db.add(Rating(username="alice", album_id=album.id, score=8.0, status=RatingStatus.published))
+    db.add(Rating(username="bob", album_id=album.id, score=6.0, status=RatingStatus.published))
+    db.add(Rating(username="carol", album_id=album.id, score=9.0, status=RatingStatus.published))
+    db.add(Rating(username="dave", album_id=album.id, score=5.0, status=RatingStatus.draft))
+    db.commit()
+    db.refresh(album)
+    return album
+
+
+def test_friend_ratings_lists_only_published_friends(authed_client: TestClient) -> None:
+    _seed_album_with_friend_ratings()
+    r = authed_client.get("/albums/abc123/friend-ratings")
+    assert r.status_code == 200
+    data = r.json()
+    # carol (not a friend) and dave (draft only) are excluded.
+    assert {d["username"] for d in data} == {"alice", "bob"}
+    for entry in data:
+        assert isinstance(entry["friendship_id"], int)
+        assert entry["profile_picture_url"] is None
+        assert entry["display_name"] == entry["username"].capitalize()
+
+
+def test_friend_ratings_empty_when_album_not_imported(authed_client: TestClient) -> None:
+    r = authed_client.get("/albums/never-imported/friend-ratings")
+    assert r.status_code == 200
+    assert r.json() == []
+
+
+def test_friend_ratings_requires_auth(client: TestClient) -> None:
+    r = client.get("/albums/abc123/friend-ratings")
     assert r.status_code in (401, 403)

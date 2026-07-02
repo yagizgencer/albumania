@@ -1,6 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { getAlbum, getAlbumStats, type Album, type AlbumStats } from "../api/albums";
+import {
+  getAlbum,
+  getAlbumFriendRatings,
+  getAlbumStats,
+  type Album,
+  type AlbumFriendRating,
+  type AlbumStats,
+} from "../api/albums";
 import {
   createInvite,
   type ListenInvite,
@@ -21,6 +28,7 @@ import { CommentsSection } from "../components/CommentsSection";
 import { ChevronDownIcon } from "../components/Icons";
 import { formatDate } from "../lib/date";
 import { isRateable, RATEABLE_RULE_TEXT } from "../lib/albumRules";
+import type { DashboardBackState } from "../lib/dashboardCompare";
 import styles from "./AlbumInfoPage.module.css";
 
 interface FriendForInvite {
@@ -35,6 +43,7 @@ export function AlbumInfoPage() {
   const [album, setAlbum] = useState<Album | null>(null);
   const [rating, setRating] = useState<Rating | null>(null);
   const [stats, setStats] = useState<AlbumStats | null>(null);
+  const [friendRatings, setFriendRatings] = useState<AlbumFriendRating[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -60,6 +69,11 @@ export function AlbumInfoPage() {
           setStats(await getAlbumStats(spotifyId));
         } catch {
           setStats(null);
+        }
+        try {
+          setFriendRatings(await getAlbumFriendRatings(spotifyId));
+        } catch {
+          setFriendRatings([]);
         }
       })
       .catch(() => setError("Could not load album."))
@@ -133,6 +147,22 @@ export function AlbumInfoPage() {
     } finally {
       setBusy(false);
     }
+  }
+
+  // Jump to a friend's ratings for this album. If we've already published our
+  // own rating, open the pair comparison; otherwise show the friend vs Spotify.
+  // Either way, "Back to dashboard" on that page returns to the friend's
+  // dashboard with the matching comparison pre-selected.
+  function handlePickFriend(friend: AlbumFriendRating) {
+    if (!album) return;
+    const backTo: DashboardBackState = {
+      profile: friend.username,
+      compareFriendshipId: isPublished ? friend.friendship_id : null,
+    };
+    const target = isPublished
+      ? `/friendships/${friend.friendship_id}/albums/${album.spotify_id}`
+      : `/users/${friend.username}/albums/${album.spotify_id}`;
+    navigate(target, { state: { backTo } });
   }
 
   if (loading) return <main className={styles.page}><LoadingState /></main>;
@@ -283,6 +313,9 @@ export function AlbumInfoPage() {
               </button>
             )}
           </div>
+          {friendRatings.length > 0 && (
+            <FriendRatingsPicker friends={friendRatings} onPick={handlePickFriend} />
+          )}
           {!rateable && <p className={styles.ruleNote}>{RATEABLE_RULE_TEXT}</p>}
           {actionError && <Alert>{actionError}</Alert>}
           {actionInfo && <p className={styles.info}>{actionInfo}</p>}
@@ -345,6 +378,98 @@ export function AlbumInfoPage() {
         />
       )}
     </main>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// FriendRatingsPicker — searchable dropdown of friends who rated this album
+// ---------------------------------------------------------------------------
+
+function FriendRatingsPicker({
+  friends,
+  onPick,
+}: {
+  friends: AlbumFriendRating[];
+  onPick: (friend: AlbumFriendRating) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDoc(e: MouseEvent) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return friends;
+    return friends.filter(
+      (f) =>
+        f.username.toLowerCase().includes(q) ||
+        f.display_name.toLowerCase().includes(q)
+    );
+  }, [friends, query]);
+
+  return (
+    <div className={styles.friendRatings} ref={wrapRef}>
+      <span className={styles.friendRatingsLabel}>See a friend's ratings</span>
+      <div className={styles.combobox}>
+        <input
+          className={styles.friendRatingsInput}
+          type="text"
+          role="combobox"
+          aria-expanded={open}
+          aria-controls="album-friend-ratings-list"
+          placeholder="Search friends…"
+          value={query}
+          onFocus={() => setOpen(true)}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setOpen(true);
+          }}
+        />
+        {open && (
+          <ul
+            id="album-friend-ratings-list"
+            role="listbox"
+            className={styles.comboList}
+          >
+            {filtered.length === 0 ? (
+              <li className={styles.comboEmpty}>No matches</li>
+            ) : (
+              filtered.map((f) => (
+                <li
+                  key={f.friendship_id}
+                  role="option"
+                  aria-selected={false}
+                  className={styles.comboItem}
+                  onClick={() => {
+                    onPick(f);
+                    setOpen(false);
+                    setQuery("");
+                  }}
+                >
+                  {f.display_name}
+                  <span className={styles.comboUser}>@{f.username}</span>
+                </li>
+              ))
+            )}
+          </ul>
+        )}
+      </div>
+    </div>
   );
 }
 

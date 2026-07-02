@@ -53,3 +53,19 @@ export async function getAlbumStats(spotifyId: string): Promise<AlbumStats> {
   const { data } = await apiClient.get<AlbumStats>(`/albums/${spotifyId}/stats`);
   return data;
 }
+
+export interface AlbumFriendRating {
+  username: string;
+  display_name: string;
+  profile_picture_url: string | null;
+  friendship_id: number;
+}
+
+export async function getAlbumFriendRatings(
+  spotifyId: string
+): Promise<AlbumFriendRating[]> {
+  const { data } = await apiClient.get<AlbumFriendRating[]>(
+    `/albums/${spotifyId}/friend-ratings`
+  );
+  return data;
+}

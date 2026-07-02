@@ -1,16 +1,25 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
 from app.db.session import get_db
 from app.models.album import Album, AlbumTrack
+from app.models.friendship import Friendship, FriendshipStatus
 from app.models.rating import Rating, RatingStatus
 from app.models.user import User
-from app.schemas.album import AlbumOut, AlbumSearchResult, AlbumStats, TrackOut
+from app.schemas.album import (
+    AlbumFriendRating,
+    AlbumOut,
+    AlbumSearchResult,
+    AlbumStats,
+    TrackOut,
+)
+from app.services.avatars import picture_url
 from app.services.spotify import SpotifyClient, get_spotify_client
+from app.services.storage import Storage, get_storage
 
 router = APIRouter(prefix="/albums", tags=["albums"])
 
@@ -60,6 +69,59 @@ def get_album_stats(
         mean_score=round(mean, 2) if mean is not None else None,
         num_raters=count,
     )
+
+
+@router.get("/{spotify_id}/friend-ratings", response_model=list[AlbumFriendRating])
+def get_album_friend_ratings(
+    spotify_id: str,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+    storage: Annotated[Storage, Depends(get_storage)],
+) -> list[AlbumFriendRating]:
+    """The current user's accepted friends who have published a rating for this album.
+
+    Powers the album page's "see a friend's ratings" picker — each entry carries
+    the friendship id so the frontend can open the pair dashboard directly.
+    """
+    album = db.query(Album).filter(Album.spotify_id == spotify_id).first()
+    if album is None:
+        return []  # Album not imported yet → no ratings can exist.
+
+    me = current_user.username
+    friendships = db.scalars(
+        select(Friendship).where(
+            Friendship.status == FriendshipStatus.accepted,
+            or_(Friendship.user_a_username == me, Friendship.user_b_username == me),
+        )
+    ).all()
+    # friend username → the friendship id linking us, so the picker can navigate.
+    friendship_by_friend = {
+        (f.user_b_username if f.user_a_username == me else f.user_a_username): f.id
+        for f in friendships
+    }
+    if not friendship_by_friend:
+        return []
+
+    rows = db.execute(
+        select(User.username, User.display_name, User.profile_picture_key)
+        .join(Rating, Rating.username == User.username)
+        .where(
+            Rating.album_id == album.id,
+            Rating.status == RatingStatus.published,
+            User.username.in_(friendship_by_friend.keys()),
+        )
+        .order_by(User.display_name.asc())
+    ).all()
+
+    return [
+        AlbumFriendRating(
+            username=username,
+            display_name=display_name,
+            profile_picture_url=picture_url(storage, key),
+            friendship_id=friendship_by_friend[username],
+        )
+        for username, display_name, key in rows
+    ]
 
 
 @router.get("/{spotify_id}", response_model=AlbumOut)

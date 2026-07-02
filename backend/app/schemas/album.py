@@ -16,6 +16,19 @@ class AlbumStats(BaseModel):
     num_raters: int
 
 
+class AlbumFriendRating(BaseModel):
+    """A friend of the current user who has published a rating for an album.
+
+    `friendship_id` lets the frontend jump straight to the pair dashboard /
+    comparison views without a second lookup.
+    """
+
+    username: str
+    display_name: str
+    profile_picture_url: str | None
+    friendship_id: int
+
+
 class TrackOut(BaseModel):
     index: int
     name: str
