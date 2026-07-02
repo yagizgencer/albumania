@@ -71,7 +71,7 @@ export function NotificationBell() {
         aria-expanded={open}
       >
         <span className={styles.itemIcon}>
-          <BellIcon size={26} />
+          <BellIcon size={30} />
           {summary.bell > 0 && (
             <span className={styles.badge}>
               {summary.bell > 99 ? "99+" : summary.bell}

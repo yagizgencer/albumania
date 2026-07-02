@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { register as registerRequest } from "../api/auth";
 import { useAuth } from "../context/AuthContext";
 import { getErrorMessage } from "../lib/apiError";
+import { usernameError, emailError } from "../lib/validation";
 import { Alert } from "../components/Alert";
 import { PasswordInput } from "../components/PasswordInput";
 
@@ -17,9 +18,21 @@ export function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // Live per-field hints (mirror the backend rules) — shown as the user types.
+  const usernameHint = usernameError(username);
+  const emailHint = emailError(email);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (usernameError(username) || username.length === 0) {
+      setError("Please enter a valid username.");
+      return;
+    }
+    if (emailError(email) || email.length === 0) {
+      setError("Please enter a valid email address.");
+      return;
+    }
     if (password.length < 8) {
       setError("Password must be at least 8 characters.");
       return;
@@ -46,7 +59,21 @@ export function RegisterPage() {
       <form onSubmit={handleSubmit}>
         <label>
           Username
-          <input value={username} onChange={(e) => setUsername(e.target.value)} required />
+          <input
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            aria-invalid={usernameHint != null}
+            minLength={5}
+            maxLength={20}
+            required
+          />
+          {usernameHint ? (
+            <span className="error">{usernameHint}</span>
+          ) : (
+            <small style={{ color: "var(--text-subtle)" }}>
+              5–20 characters: letters, numbers, . and _
+            </small>
+          )}
         </label>
         <label>
           Display name
@@ -54,7 +81,14 @@ export function RegisterPage() {
         </label>
         <label>
           Email
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            aria-invalid={emailHint != null}
+            required
+          />
+          {emailHint && <span className="error">{emailHint}</span>}
         </label>
         <label>
           Password

@@ -44,3 +44,14 @@ export async function changePassword(
     new_password: newPassword,
   });
 }
+
+export async function forgotPassword(email: string): Promise<void> {
+  await apiClient.post("/auth/forgot-password", { email });
+}
+
+export async function resetPassword(token: string, newPassword: string): Promise<void> {
+  await apiClient.post("/auth/reset-password", {
+    token,
+    new_password: newPassword,
+  });
+}

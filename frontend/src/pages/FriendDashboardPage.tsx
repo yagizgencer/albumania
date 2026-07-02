@@ -62,7 +62,12 @@ export function FriendDashboard({ friendshipId }: { friendshipId: number }) {
       .then(setData)
       .catch((err) => {
         if (err?.response?.status === 403) {
-          setError("You don't have access to this friend dashboard.");
+          const detail: string = err?.response?.data?.detail ?? "";
+          setError(
+            detail.toLowerCase().includes("private")
+              ? "This profile is now private, so you can't see this comparison."
+              : "You don't have access to this friend dashboard."
+          );
         } else if (err?.response?.status === 404) {
           setError("Friendship not found.");
         } else {

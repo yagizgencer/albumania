@@ -198,6 +198,29 @@ def test_list_my_friendships_buckets(client: TestClient) -> None:
     _clear_auth()
 
 
+def test_friendship_list_includes_visibility(client: TestClient) -> None:
+    alice = _seed_user("alice")
+    bob = _seed_user("bob", visibility=ProfileVisibility.private)
+    _auth_as(alice)
+    fid = client.post("/friendships", json={"username": "bob"}).json()["id"]
+    _clear_auth()
+    _auth_as(bob)
+    client.post(f"/friendships/{fid}/accept")
+    _clear_auth()
+
+    _auth_as(alice)
+    accepted = client.get("/friendships/me").json()["accepted"]
+    assert len(accepted) == 1
+    row = accepted[0]
+    vis = {
+        row["user_a_username"]: row["user_a_visibility"],
+        row["user_b_username"]: row["user_b_visibility"],
+    }
+    assert vis["bob"] == "private"
+    assert vis["alice"] == "public"
+    _clear_auth()
+
+
 # ---------------------------------------------------------------------------
 # User search
 # ---------------------------------------------------------------------------
@@ -220,6 +243,19 @@ def test_user_search_excludes_self(client: TestClient) -> None:
     r = client.get("/users/search", params={"q": "ali"})
     assert r.status_code == 200
     assert r.json() == []
+    _clear_auth()
+
+
+def test_user_search_includes_visibility(client: TestClient) -> None:
+    alice = _seed_user("alice")
+    _seed_user("bob", visibility=ProfileVisibility.private)
+    _auth_as(alice)
+
+    r = client.get("/users/search", params={"q": "bob"})
+    assert r.status_code == 200
+    result = r.json()[0]
+    assert result["username"] == "bob"
+    assert result["profile_visibility"] == "private"
     _clear_auth()
 
 

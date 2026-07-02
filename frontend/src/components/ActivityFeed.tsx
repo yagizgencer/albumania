@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type RefObject } from "react"
 import { Link } from "react-router-dom";
 import { getFeed, type FeedCategory, type FeedItem } from "../api/home";
 import { formatDate } from "../lib/date";
+import { profilePath } from "../lib/paths";
 import { Avatar } from "./Avatar";
 import { ScoreMeter } from "./ScoreMeter";
 import { CommentIcon, PeopleIcon, StarIcon } from "./Icons";
@@ -180,7 +181,7 @@ function AlbumLink({ album }: { album: NonNullable<FeedItem["album"]> }) {
 
 function ActorLink({ actor }: { actor: FeedItem["actor"] }) {
   return (
-    <Link to={`/profile/${actor.username}`} className={styles.link}>
+    <Link to={profilePath(actor.username)} className={styles.link}>
       {actor.display_name}
     </Link>
   );

@@ -6,17 +6,30 @@ interface IconProps {
   className?: string;
 }
 
+// Nav icons use a hand-drawn outline style (rounded stroke, no fill) to match
+// the sketchbook logo. `strokeWidth` scales down as the icon grows so big icons
+// don't look heavy.
+function sketchStroke(size: number): number {
+  return size >= 28 ? 1.9 : 2.1;
+}
+
 export function HomeIcon({ size = 24, className }: IconProps) {
   return (
     <svg
       width={size}
       height={size}
       viewBox="0 0 24 24"
-      fill="currentColor"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={sketchStroke(size)}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       className={className}
       aria-hidden
     >
-      <path d="M12 3.172 2.5 11.586V21h7v-6h5v6h7v-9.414L12 3.172z" />
+      <path d="M3.5 11.3 12 4.2l8.5 7.1" />
+      <path d="M5.3 10v8.4c0 .5.4.9.9.9h11.6c.5 0 .9-.4.9-.9V10" />
+      <path d="M9.7 19.3v-4.2c0-.6.5-1.1 1.1-1.1h2.4c.6 0 1.1.5 1.1 1.1v4.2" />
     </svg>
   );
 }
@@ -36,17 +49,43 @@ export function SettingsIcon({ size = 24, className }: IconProps) {
   );
 }
 
+export function SearchIcon({ size = 24, className }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      className={className}
+      aria-hidden
+    >
+      <circle cx="11" cy="11" r="7" />
+      <line x1="16.5" y1="16.5" x2="21" y2="21" />
+    </svg>
+  );
+}
+
 export function PeopleIcon({ size = 24, className }: IconProps) {
   return (
     <svg
       width={size}
       height={size}
       viewBox="0 0 24 24"
-      fill="currentColor"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={sketchStroke(size)}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       className={className}
       aria-hidden
     >
-      <path d="M8 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm9 1a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM1 20c.5-4 4-6 7-6s6.5 2 7 6H1zm14-5c2.5.2 5 1.6 5.5 5H16c-.1-1.8-.6-3.5-1-5z" />
+      <circle cx="9" cy="8" r="3.2" />
+      <path d="M3.5 19.5c0-3.3 2.5-5.5 5.5-5.5s5.5 2.2 5.5 5.5" />
+      <path d="M16 5.4a2.9 2.9 0 0 1 .3 5.7" />
+      <path d="M17 14.2c2.3.4 3.8 2.3 3.8 5.3" />
     </svg>
   );
 }
@@ -57,11 +96,17 @@ export function HeadphonesIcon({ size = 24, className }: IconProps) {
       width={size}
       height={size}
       viewBox="0 0 24 24"
-      fill="currentColor"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={sketchStroke(size)}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       className={className}
       aria-hidden
     >
-      <path d="M12 3a9 9 0 0 0-9 9v6a2 2 0 0 0 2 2h3v-8H5v-0a7 7 0 1 1 14 0v0h-3v8h3a2 2 0 0 0 2-2v-6a9 9 0 0 0-9-9z" />
+      <path d="M4.5 14v-2a7.5 7.5 0 0 1 15 0v2" />
+      <path d="M4.5 14.5c0-.8.6-1.4 1.4-1.4h.7c.5 0 .9.4.9.9v4c0 .5-.4.9-.9.9h-.7c-.8 0-1.4-.6-1.4-1.4z" />
+      <path d="M19.5 14.5c0-.8-.6-1.4-1.4-1.4h-.7c-.5 0-.9.4-.9.9v4c0 .5.4.9.9.9h.7c.8 0 1.4-.6 1.4-1.4z" />
     </svg>
   );
 }
@@ -72,11 +117,17 @@ export function BellIcon({ size = 24, className }: IconProps) {
       width={size}
       height={size}
       viewBox="0 0 24 24"
-      fill="currentColor"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={sketchStroke(size)}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       className={className}
       aria-hidden
     >
-      <path d="M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22zM19 17l-1.6-1.6V11a5.5 5.5 0 0 0-4.4-5.4V5a1 1 0 0 0-2 0v.6A5.5 5.5 0 0 0 6.6 11v4.4L5 17v1h14v-1z" />
+      <path d="M6.3 16.5c-.5 0-.8-.6-.5-1l1-1.4V11a5.2 5.2 0 0 1 10.4 0v3.1l1 1.4c.3.4 0 1-.5 1z" />
+      <path d="M10 19.3a2.2 2.2 0 0 0 4 0" />
+      <path d="M12 5.8V4.3" />
     </svg>
   );
 }

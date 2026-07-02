@@ -11,7 +11,7 @@ from app.models.album import Album
 from app.models.comment import Comment, CommentVisibility
 from app.models.friendship import Friendship, FriendshipStatus
 from app.models.rating import Rating, RatingStatus
-from app.models.user import User
+from app.models.user import ProfileVisibility, User
 from app.schemas.home import (
     FeedActor,
     FeedAlbum,
@@ -89,6 +89,21 @@ def get_feed(
     friends = _accepted_friends(db, user.username)
     feed_users = [user.username, *friends]
 
+    # A private friend hides their *ratings* (which are what a private profile
+    # protects), but their public comments and the "we became friends" event are
+    # not private, so those still surface. Only ratings get filtered by this set.
+    private_friends: set[str] = set()
+    if friends:
+        private_friends = set(
+            db.scalars(
+                select(User.username).where(
+                    User.username.in_(friends),
+                    User.profile_visibility == ProfileVisibility.private,
+                )
+            ).all()
+        )
+    rating_users = [u for u in feed_users if u not in private_friends]
+
     def wants(category: FeedCategory) -> bool:
         return not types or category in types
 
@@ -104,7 +119,7 @@ def get_feed(
                 Rating.status == RatingStatus.published,
                 Rating.completed_at.is_not(None),
                 Rating.completed_at < cutoff,
-                Rating.username.in_(feed_users),
+                Rating.username.in_(rating_users),
             )
             .order_by(Rating.completed_at.desc())
             .limit(limit)
@@ -163,6 +178,8 @@ def get_feed(
             .limit(limit)
         ).scalars():
             other = f.user_b_username if f.user_a_username == user.username else f.user_a_username
+            # A new-friendship event isn't private info (both parties know), so
+            # it shows even if the friend later set their profile to private.
             candidates.append(
                 {
                     "id": f"friend-{f.id}",

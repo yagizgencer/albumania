@@ -11,6 +11,7 @@ This is a **learning project**. The goal is to learn FastAPI and React deeply by
 - **Every phase ends by writing `docs/phases/NN-<slug>.md`** listing each file touched with a 1-line summary. Do not skip this — it is part of the phase.
 - **Don't introduce a new library without naming the alternative considered and why** (in the phase notes or PR description).
 - **No background workers, Redis, Celery, websockets, or microservices** until a phase truly requires it. As of [PLAN.md](PLAN.md), none of the planned phases require these.
+- **Never build standalone HTML previews or headless-browser screenshots to verify UI.** The user tests visuals themselves in their running app. Verify with `pnpm test`/`tsc`/`build` and by reading the code; describe the change and let the user look.
 
 ## Style
 

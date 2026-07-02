@@ -1,7 +1,7 @@
 .page {
-  padding: 1.5rem;
-  max-width: 1000px;
-  margin: 0 auto;
+  padding: 0 var(--page-pad);
+  max-width: var(--page-max);
+  margin: 2rem auto;
 }
 
 .card {
@@ -100,35 +100,48 @@
   flex-wrap: wrap;
 }
 
+/* Buttons follow the shared sketch look: 2px inked border, --radius, offset
+   shadow, and the hand-placed hover/active nudge (matches the global button). */
 .btn {
   padding: 0.55rem 1.1rem;
-  border-radius: 6px;
-  border: none;
+  border-radius: var(--radius);
+  border: 2px solid var(--border);
+  box-shadow: var(--shadow-soft);
   cursor: pointer;
-  font-weight: 600;
-  font-size: 0.95rem;
+  font-weight: 700;
+  font-size: var(--text-md);
+  transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.12s ease;
+}
+.btn:hover:not(:disabled) {
+  transform: translate(-1px, -1px);
+  box-shadow: var(--shadow-pop);
+}
+.btn:active:not(:disabled) {
+  transform: translate(1px, 1px);
+  box-shadow: none;
 }
 
 .btnPrimary {
   background: var(--btn-primary-bg);
   color: var(--btn-primary-fg);
 }
-.btnPrimary:hover {
+.btnPrimary:hover:not(:disabled) {
   background: var(--btn-primary-bg-hover);
 }
 
 .btnSecondary {
   background: var(--btn-secondary-bg);
   color: var(--btn-secondary-fg);
-  border: 1px solid var(--btn-secondary-border);
 }
-.btnSecondary:hover {
+.btnSecondary:hover:not(:disabled) {
   background: var(--btn-secondary-bg-hover);
 }
 
 .btnDisabled {
   background: var(--btn-disabled-bg);
   color: var(--btn-disabled-fg);
+  border-color: var(--border-soft);
+  box-shadow: none;
   cursor: not-allowed;
 }
 
@@ -136,9 +149,9 @@
 .btnRemove {
   background: transparent;
   color: var(--danger-text);
-  border: 1px solid var(--danger-text);
+  border-color: var(--danger-text);
 }
-.btnRemove:hover {
+.btnRemove:hover:not(:disabled) {
   background: rgba(214, 69, 63, 0.1);
 }
 
@@ -155,21 +168,18 @@
 }
 
 .btnRemoveConfirm {
-  background: #dc2626;
-  color: #fff;
-  border: 1px solid #dc2626;
+  background: var(--btn-danger-bg);
+  color: var(--btn-danger-fg);
 }
-.btnRemoveConfirm:hover {
-  background: #b91c1c;
-  border-color: #b91c1c;
+.btnRemoveConfirm:hover:not(:disabled) {
+  background: var(--btn-danger-bg-hover);
 }
 
 .btnCancel {
   background: transparent;
   color: var(--text);
-  border: 1px solid var(--border);
 }
-.btnCancel:hover {
+.btnCancel:hover:not(:disabled) {
   background: var(--surface-muted);
 }
 

@@ -14,6 +14,7 @@ import { deleteRating } from "../api/ratings";
 import { Avatar } from "../components/Avatar";
 import { Alert } from "../components/Alert";
 import { LoadingState } from "../components/Spinner";
+import { profilePath } from "../lib/paths";
 import styles from "./ListenLaterPage.module.css";
 
 export function ListenLaterPage() {
@@ -155,7 +156,7 @@ function SidebarInvite({
       <div className={styles.sideFooter}>
         <span className={styles.sideBlurb}>
           <Avatar username={other} pictureUrl={otherPic} size={18} />
-          <Link to={`/profile/${other}`}>{blurb}</Link>
+          <Link to={profilePath(other)}>{blurb}</Link>
         </span>
         <span className={styles.sideActions}>
           {variant === "incoming" ? (

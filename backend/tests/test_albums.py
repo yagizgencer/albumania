@@ -238,6 +238,21 @@ def test_friend_ratings_lists_only_published_friends(authed_client: TestClient) 
         assert entry["display_name"] == entry["username"].capitalize()
 
 
+def test_friend_ratings_excludes_private_friend(authed_client: TestClient) -> None:
+    from app.models.user import ProfileVisibility
+
+    _seed_album_with_friend_ratings()
+    db = next(app.dependency_overrides[get_db]())
+    alice = db.query(User).filter(User.username == "alice").one()
+    alice.profile_visibility = ProfileVisibility.private
+    db.commit()
+
+    r = authed_client.get("/albums/abc123/friend-ratings")
+    assert r.status_code == 200
+    # alice went private → only bob remains.
+    assert {d["username"] for d in r.json()} == {"bob"}
+
+
 def test_friend_ratings_empty_when_album_not_imported(authed_client: TestClient) -> None:
     r = authed_client.get("/albums/never-imported/friend-ratings")
     assert r.status_code == 200

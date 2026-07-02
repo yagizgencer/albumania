@@ -8,6 +8,7 @@ from app.core.deps import get_current_user
 from app.core.security import (
     create_access_token,
     create_email_token,
+    create_password_reset_token,
     create_refresh_token,
     decode_token,
     hash_password,
@@ -18,12 +19,18 @@ from app.db.session import get_db
 from app.models.user import User
 from app.schemas.auth import (
     ChangePasswordRequest,
+    ForgotPasswordRequest,
     LoginRequest,
+    ResetPasswordRequest,
     TokenResponse,
     VerifyEmailRequest,
 )
 from app.schemas.user import UserCreate
-from app.services.email import send_password_changed_email, send_verification_email
+from app.services.email import (
+    send_password_changed_email,
+    send_password_reset_email,
+    send_verification_email,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -149,6 +156,45 @@ def resend_verification(
     if current_user.email_verified:
         return
     send_verification_email(current_user, create_email_token(current_user.username))
+
+
+@router.post("/forgot-password", status_code=status.HTTP_202_ACCEPTED)
+def forgot_password(
+    body: ForgotPasswordRequest,
+    db: Annotated[Session, Depends(get_db)],
+) -> dict[str, str]:
+    """Email a password-reset link. Always returns the same response whether or
+    not the address is registered, so this can't be used to discover accounts."""
+    email = body.email.strip().lower()
+    user = db.scalar(select(User).where(User.email == email))
+    if user is not None:
+        send_password_reset_email(user, create_password_reset_token(user.username))
+    return {"detail": "If that email is registered, we've sent a reset link."}
+
+
+@router.post("/reset-password", status_code=status.HTTP_204_NO_CONTENT)
+def reset_password(
+    body: ResetPasswordRequest,
+    db: Annotated[Session, Depends(get_db)],
+) -> None:
+    try:
+        payload = decode_token(body.token)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired link"
+        )
+    if payload.get("type") != "password_reset":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid reset token"
+        )
+
+    user = db.scalar(select(User).where(User.username == payload["sub"]))
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    user.password_hash = hash_password(body.new_password)
+    db.commit()
+    send_password_changed_email(user)
 
 
 @router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)

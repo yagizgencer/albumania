@@ -13,7 +13,7 @@ from app.models.album import Album, BaselineStat
 from app.models.friendship import FriendDashboardEntry, Friendship, FriendshipStatus
 from app.models.invite import ListenInvite
 from app.models.rating import Rating, RatingStatus
-from app.models.user import User
+from app.models.user import ProfileVisibility, User
 from app.schemas.dashboard import DashboardAlbum
 from app.schemas.friend_dashboard import FriendDashboardEntryOut, FriendDashboardResponse
 from app.schemas.friendship import (
@@ -34,14 +34,19 @@ router = APIRouter(prefix="/friendships", tags=["friendships"])
 
 
 def _hydrate_friendship(
-    friendship: Friendship, urls: dict[str, str | None]
+    friendship: Friendship,
+    urls: dict[str, str | None],
+    visibilities: dict[str, ProfileVisibility] | None = None,
 ) -> FriendshipResponse:
+    vis = visibilities or {}
     return FriendshipResponse(
         id=friendship.id,
         user_a_username=friendship.user_a_username,
         user_b_username=friendship.user_b_username,
         user_a_picture_url=urls.get(friendship.user_a_username),
         user_b_picture_url=urls.get(friendship.user_b_username),
+        user_a_visibility=vis.get(friendship.user_a_username),
+        user_b_visibility=vis.get(friendship.user_b_username),
         status=friendship.status,
         requested_by=friendship.requested_by,
         requested_by_picture_url=urls.get(friendship.requested_by),
@@ -199,12 +204,19 @@ def list_my_friendships(
     for f in rows:
         usernames.update({f.user_a_username, f.user_b_username})
     urls = picture_url_map(db, storage, usernames)
+    visibilities: dict[str, ProfileVisibility] = dict(
+        db.execute(
+            select(User.username, User.profile_visibility).where(
+                User.username.in_(usernames)
+            )
+        ).all()
+    ) if usernames else {}
 
     incoming: list[FriendshipResponse] = []
     outgoing: list[FriendshipResponse] = []
     accepted: list[FriendshipResponse] = []
     for f in rows:
-        resp = _hydrate_friendship(f, urls)
+        resp = _hydrate_friendship(f, urls, visibilities)
         if f.status == FriendshipStatus.accepted:
             accepted.append(resp)
         elif f.requested_by == me:
@@ -225,6 +237,20 @@ def get_friend_dashboard(
     if friendship.status != FriendshipStatus.accepted:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Friendship is not accepted"
+        )
+
+    # The other user in this pair may have made their profile private after we
+    # became friends — a private profile hides ratings from everyone, so the
+    # comparison must not expose their scores/top-tracks.
+    other_username = (
+        friendship.user_b_username
+        if friendship.user_a_username == current_user.username
+        else friendship.user_a_username
+    )
+    other = db.scalar(select(User).where(User.username == other_username))
+    if other is not None and other.profile_visibility == ProfileVisibility.private:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Profile is private"
         )
 
     rows = db.execute(

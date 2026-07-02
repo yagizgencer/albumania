@@ -20,7 +20,9 @@ export interface UserUpdate {
 }
 
 export async function getUser(username: string): Promise<UserProfile> {
-  const { data } = await apiClient.get<UserProfile>(`/users/${username}`);
+  // Encode: usernames may contain "#", spaces, etc. that would otherwise break
+  // the request path (axios does not encode these in the URL itself).
+  const { data } = await apiClient.get<UserProfile>(`/users/${encodeURIComponent(username)}`);
   return data;
 }
 

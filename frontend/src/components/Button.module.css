@@ -1,0 +1,88 @@
+/* Shared button styling — one source of truth for the four intents + two sizes.
+   Built on the design tokens so every button matches the sketch look: pastel
+   fill, 2px inked border, offset shadow, and the hand-placed hover/active nudge. */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  font-family: inherit;
+  font-weight: 700;
+  line-height: 1.1;
+  text-decoration: none;
+  cursor: pointer;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.12s ease;
+}
+
+.btn:hover:not(:disabled):not([aria-disabled="true"]) {
+  transform: translate(-1px, -1px);
+  box-shadow: var(--shadow-pop);
+}
+
+.btn:active:not(:disabled):not([aria-disabled="true"]) {
+  transform: translate(1px, 1px);
+  box-shadow: none;
+}
+
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  background: var(--btn-disabled-bg);
+  color: var(--btn-disabled-fg);
+  border-color: var(--border-soft);
+  box-shadow: none;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Sizes */
+.md {
+  padding: 0.55rem 1.1rem;
+  font-size: var(--text-md);
+}
+
+.sm {
+  padding: 0.35rem 0.8rem;
+  font-size: var(--text-sm);
+  border-radius: 10px;
+}
+
+/* Intents */
+.primary {
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+}
+.primary:hover:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--btn-primary-bg-hover);
+}
+
+.secondary {
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-fg);
+}
+.secondary:hover:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--btn-secondary-bg-hover);
+}
+
+.danger {
+  background: var(--btn-danger-bg);
+  color: var(--btn-danger-fg);
+}
+.danger:hover:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--btn-danger-bg-hover);
+}
+
+.success {
+  background: var(--btn-success-bg);
+  color: var(--btn-success-fg);
+}
+.success:hover:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--btn-success-bg-hover);
+}
+
+.block {
+  width: 100%;
+}

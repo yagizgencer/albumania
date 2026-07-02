@@ -27,7 +27,7 @@ export interface DashboardResponse {
 
 export async function getDashboard(username: string): Promise<DashboardResponse> {
   const { data } = await apiClient.get<DashboardResponse>(
-    `/users/${username}/dashboard`,
+    `/users/${encodeURIComponent(username)}/dashboard`,
     { params: { compare_to: "spotify" } }
   );
   return data;

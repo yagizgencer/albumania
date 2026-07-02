@@ -6,6 +6,7 @@ import { Avatar } from "./Avatar";
 import { NotificationBell } from "./NotificationBell";
 import { TopSearch } from "./TopSearch";
 import { HeadphonesIcon, HomeIcon, PeopleIcon } from "./Icons";
+import { profilePath } from "../lib/paths";
 import styles from "./NavBar.module.css";
 
 export function NavBar() {
@@ -23,12 +24,12 @@ export function NavBar() {
           className={styles.brandLogo}
           aria-hidden
         />
-        <span>Albumania</span>
+        <span className={styles.brandText}>Albumania</span>
       </NavLink>
 
       <div className={styles.center}>
         <NavItem to="/" label="Home">
-          <HomeIcon size={26} />
+          <HomeIcon size={30} />
         </NavItem>
 
         <TopSearch />
@@ -41,7 +42,7 @@ export function NavBar() {
             if (summary.listen_invites > 0) void markSeen("listen_invites");
           }}
         >
-          <HeadphonesIcon size={26} />
+          <HeadphonesIcon size={30} />
         </NavItem>
       </div>
 
@@ -56,7 +57,7 @@ export function NavBar() {
             if (summary.friend_requests > 0) void markSeen("friend_requests");
           }}
         >
-          <PeopleIcon size={26} />
+          <PeopleIcon size={30} />
         </NavItem>
 
         <ProfileMenu
@@ -132,7 +133,7 @@ function ProfileMenu({
             type="button"
             role="menuitem"
             className={styles.menuItem}
-            onClick={() => go(`/profile/${username}`)}
+            onClick={() => go(profilePath(username))}
           >
             Profile
           </button>

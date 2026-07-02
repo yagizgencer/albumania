@@ -7,6 +7,8 @@ import { AuthProvider } from "./context/AuthContext";
 import { NotificationsProvider } from "./context/NotificationsContext";
 import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
+import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
+import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import { AlbumDetailPage } from "./pages/AlbumDetailPage";
 import { AlbumInfoPage } from "./pages/AlbumInfoPage";
 import { ArtistPage } from "./pages/ArtistPage";
@@ -29,6 +31,8 @@ export default function App() {
           <ErrorBoundary>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/verify-email" element={<VerifyEmailPage />} />
             <Route path="/" element={<HomePage />} />

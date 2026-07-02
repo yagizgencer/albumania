@@ -47,6 +47,18 @@ def create_email_token(username: str) -> str:
     )
 
 
+def create_password_reset_token(username: str) -> str:
+    """Short-lived signed token emailed for a password reset. Stateless like the
+    email token; kept short (1 hour) since it grants a password change."""
+    settings = get_settings()
+    expire = datetime.now(timezone.utc) + timedelta(hours=1)
+    return jwt.encode(
+        {"sub": username, "exp": expire, "type": "password_reset"},
+        settings.jwt_secret,
+        algorithm="HS256",
+    )
+
+
 def decode_token(token: str) -> dict:
     settings = get_settings()
     try:

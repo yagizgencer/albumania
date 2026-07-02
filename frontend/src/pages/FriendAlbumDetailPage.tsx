@@ -11,6 +11,7 @@ import { Alert } from "../components/Alert";
 import { LoadingState } from "../components/Spinner";
 import { formatDate } from "../lib/date";
 import { setDashboardCompare, type DashboardBackState } from "../lib/dashboardCompare";
+import { profilePath } from "../lib/paths";
 import styles from "./AlbumDetailPage.module.css";
 
 export function FriendAlbumDetailPage() {
@@ -27,7 +28,7 @@ export function FriendAlbumDetailPage() {
   function goBackToDashboard() {
     if (backTo) {
       setDashboardCompare(backTo.profile, backTo.compareFriendshipId);
-      navigate(`/profile/${backTo.profile}`);
+      navigate(profilePath(backTo.profile));
     } else {
       navigate(-1);
     }

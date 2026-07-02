@@ -1,10 +1,12 @@
 .nav {
   display: flex;
-  align-items: stretch;
+  align-items: center;
   justify-content: space-between;
+  gap: 1rem;
+  height: var(--nav-height);
   background: var(--surface);
   border-bottom: 2px solid var(--border);
-  padding: 0 1rem;
+  padding: 0 clamp(0.75rem, 2vw, 1.5rem);
   position: sticky;
   top: 0;
   z-index: 20;
@@ -13,33 +15,37 @@
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.5rem;
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: 1.85rem;
+  font-size: 1.75rem;
+  line-height: 1;
   color: var(--text);
   text-decoration: none;
   letter-spacing: 0.02em;
-  padding: 0 0.75rem;
+  flex-shrink: 0;
 }
 
 .brandLogo {
-  width: 80px;
-  height: 80px;
+  width: 66px;
+  height: 66px;
   display: block;
   flex-shrink: 0;
 }
 
-.brand span {
-  margin-top: 0.6rem;
+/* Hide the wordmark on narrow screens — the octopus logo still identifies it. */
+@media (max-width: 720px) {
+  .brandText {
+    display: none;
+  }
 }
 
 .center {
   display: flex;
   flex: 1;
-  align-items: stretch;
+  align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: clamp(0.25rem, 1.5vw, 1rem);
   min-width: 0;
 }
 
@@ -49,14 +55,13 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.15rem;
-  padding: 0.55rem 0.85rem 0.45rem;
-  min-width: 64px;
+  gap: 0.2rem;
+  padding: 0.4rem 0.7rem;
+  height: var(--nav-height);
+  box-sizing: border-box;
   color: var(--text-muted);
   background: transparent;
   border: none;
-  border-top: 2px solid transparent;
-  border-bottom: 2px solid transparent;
   /* The global button rule adds a box-shadow; clear it so the bell <button>
      looks identical to the Friends/Home <a> items. */
   box-shadow: none;
@@ -65,18 +70,43 @@
   font: inherit;
 }
 
+/* Active underline: drawn as an absolute bar so it doesn't affect the item's
+   centered content (keeping icons vertically aligned with the profile avatar).
+   Sits a few px above the nav's bottom edge. */
+.item::after {
+  content: "";
+  position: absolute;
+  left: 0.6rem;
+  right: 0.6rem;
+  bottom: 5px;
+  height: 3px;
+  border-radius: 3px;
+  background: transparent;
+}
+
 .item:hover {
   color: var(--text);
 }
 
 .itemActive {
-  color: var(--text);
-  border-bottom-color: var(--text);
+  color: var(--accent);
+}
+
+.itemActive::after {
+  background: var(--accent);
 }
 
 .itemLabel {
   font-size: 0.72rem;
   line-height: 1;
+  white-space: nowrap;
+}
+
+/* On phones the search takes priority; drop the text labels to icons only. */
+@media (max-width: 560px) {
+  .itemLabel {
+    display: none;
+  }
 }
 
 .itemIcon {

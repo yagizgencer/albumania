@@ -71,6 +71,15 @@ def _auth_as(user: User) -> None:
     app.dependency_overrides[get_current_user] = lambda: user
 
 
+def _set_private(username: str) -> None:
+    from app.models.user import ProfileVisibility
+
+    db = _db()
+    u = db.query(User).filter(User.username == username).one()
+    u.profile_visibility = ProfileVisibility.private
+    db.commit()
+
+
 # ---------------------------------------------------------------------------
 # Feed
 # ---------------------------------------------------------------------------
@@ -116,6 +125,33 @@ def test_feed_merges_orders_and_respects_visibility(client: TestClient) -> None:
     assert friend_comment["album"]["spotify_id"] == "a1"
     you_rated = next(it for it in items if it["type"] == "you_rated")
     assert you_rated["score"] == 8.0
+
+
+def test_feed_hides_private_friend_ratings_but_keeps_public_activity(
+    client: TestClient,
+) -> None:
+    alice = _seed_user("alice")
+    _seed_user("bob")
+    a1 = _seed_album("a1")
+
+    _friend("alice", "bob", _at(1))
+    _rate("bob", a1, 6.0, _at(3))  # rating → hidden once bob is private
+    _comment("bob", a1, "bob public", _at(4))  # public comment → still shown
+    _comment("bob", a1, "bob secret", _at(5), CommentVisibility.private)  # hidden
+    _set_private("bob")
+
+    _auth_as(alice)
+    items = client.get("/home/feed").json()["items"]
+    by_type = {it["type"] for it in items}
+
+    # bob's public comment and the new-friend event still appear...
+    assert "friend_commented" in by_type
+    assert "new_friend" in by_type
+    excerpts = [it.get("excerpt") for it in items]
+    assert "bob public" in excerpts
+    # ...but his rating and private comment do not.
+    assert "friend_rated" not in by_type
+    assert "bob secret" not in excerpts
 
 
 def test_feed_paginates_with_before_cursor(client: TestClient) -> None:

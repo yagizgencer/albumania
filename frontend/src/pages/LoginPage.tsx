@@ -56,6 +56,7 @@ export function LoginPage() {
           {submitting ? "Logging in…" : "Log in"}
         </button>
       </form>
+      <p><Link to="/forgot-password">Forgot your password?</Link></p>
       <p>No account? <Link to="/register">Create one</Link></p>
     </main>
   );

@@ -8,6 +8,7 @@ import {
   type Comment,
 } from "../api/comments";
 import { formatDate } from "../lib/date";
+import { profilePath } from "../lib/paths";
 import { Avatar } from "./Avatar";
 import { CommentComposer } from "./CommentComposer";
 import { ThumbDownIcon, ThumbUpIcon, UserIcon } from "./Icons";
@@ -70,7 +71,7 @@ export function CommentItem({ comment, onUpdated, onDeleted }: CommentItemProps)
     <article className={styles.item}>
       <div className={styles.header}>
         {comment.author ? (
-          <Link to={`/profile/${comment.author.username}`} className={styles.authorLink}>
+          <Link to={profilePath(comment.author.username)} className={styles.authorLink}>
             <Avatar
               username={comment.author.username}
               pictureUrl={comment.author.picture_url}

@@ -13,7 +13,7 @@ from app.db.session import get_db
 from app.models.album import Album
 from app.models.invite import ListenInvite, ListenInviteStatus
 from app.models.rating import Rating, RatingStatus
-from app.models.user import User
+from app.models.user import ProfileVisibility, User
 from app.schemas.album import AlbumOut, TrackOut
 from app.schemas.invite import (
     ListenInviteCreate,
@@ -336,11 +336,17 @@ def get_listen_later(
     }
     published_pairs: set[tuple[str, int]] = set()
     if other_users:
+        # Skip private users: the "they published" flag would otherwise reveal
+        # that a private friend has rated a shared album. (Friends-only is fine —
+        # a Listen Later invite already implies an accepted friendship.)
         for r in db.scalars(
-            select(Rating).where(
+            select(Rating)
+            .join(User, User.username == Rating.username)
+            .where(
                 Rating.status == RatingStatus.published,
                 Rating.username.in_(other_users),
                 Rating.album_id.in_(entry_album_ids),
+                User.profile_visibility != ProfileVisibility.private,
             )
         ):
             published_pairs.add((r.username, r.album_id))

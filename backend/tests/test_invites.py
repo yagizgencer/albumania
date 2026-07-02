@@ -295,6 +295,43 @@ def test_invite_collapses_solo_draft_into_with_friends(client: TestClient) -> No
     _clear_auth()
 
 
+def test_they_published_hidden_for_private_friend(client: TestClient) -> None:
+    from app.models.user import ProfileVisibility
+
+    alice = _seed_user("alice")
+    bob = _seed_user("bob")
+    a1 = _seed_album()
+    _send_and_accept_friendship(client, alice, bob)
+
+    # alice keeps a draft (so the album shows in her Listen Later) and invites
+    # bob; then bob publishes it (can't be invited after publishing, so order matters).
+    _auth_as(alice)
+    client.post("/ratings", json={"album_id": a1})
+    client.post("/invites", json={"username": "bob", "album_id": a1})
+    _clear_auth()
+    _auth_as(bob)
+    _publish(client, a1)
+    _clear_auth()
+
+    # With bob public, alice sees they_published = True.
+    _auth_as(alice)
+    parts = client.get("/listen-later").json()[0]["participants"]
+    assert parts[0]["they_published"] is True
+    _clear_auth()
+
+    # bob goes private → the flag must hide that he rated the shared album.
+    db = _db()
+    db.query(User).filter(User.username == "bob").one().profile_visibility = (
+        ProfileVisibility.private
+    )
+    db.commit()
+
+    _auth_as(alice)
+    parts = client.get("/listen-later").json()[0]["participants"]
+    assert parts[0]["they_published"] is False
+    _clear_auth()
+
+
 def test_listen_later_supports_multiple_participants(client: TestClient) -> None:
     alice = _seed_user("alice")
     bob = _seed_user("bob")

@@ -8,6 +8,8 @@ export interface Friendship {
   user_b_username: string;
   user_a_picture_url: string | null;
   user_b_picture_url: string | null;
+  user_a_visibility: ProfileVisibility | null;
+  user_b_visibility: ProfileVisibility | null;
   status: FriendshipStatus;
   requested_by: string;
   requested_by_picture_url: string | null;
@@ -21,10 +23,13 @@ export interface FriendshipList {
   accepted: Friendship[];
 }
 
+export type ProfileVisibility = "public" | "friends" | "private";
+
 export interface UserSearchResult {
   username: string;
   display_name: string;
   profile_picture_url: string | null;
+  profile_visibility: ProfileVisibility;
 }
 
 export async function listFriendships(): Promise<FriendshipList> {

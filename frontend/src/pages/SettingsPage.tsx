@@ -4,6 +4,7 @@ import { changePassword, resendVerification } from "../api/auth";
 import { updateMe, type ProfileVisibility, type UserProfile } from "../api/users";
 import { useAuth } from "../context/AuthContext";
 import { getErrorMessage } from "../lib/apiError";
+import { profilePath } from "../lib/paths";
 import { Alert } from "../components/Alert";
 import { LoadingState } from "../components/Spinner";
 import { PasswordInput } from "../components/PasswordInput";
@@ -59,7 +60,7 @@ export function SettingsPage() {
       </div>
 
       <p className={styles.backLink}>
-        <Link to={`/profile/${profile.username}`}>Back to profile</Link>
+        <Link to={profilePath(profile.username)}>Back to profile</Link>
       </p>
     </main>
   );

@@ -71,6 +71,7 @@ def search_users(
             username=u.username,
             display_name=u.display_name,
             profile_picture_url=picture_url(storage, u.profile_picture_key),
+            profile_visibility=u.profile_visibility,
         )
         for u in rows
     ]

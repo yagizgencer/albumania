@@ -1,7 +1,7 @@
 .page {
-  padding: 1.5rem;
-  max-width: 1000px;
-  margin: 0 auto;
+  padding: 0 var(--page-pad);
+  max-width: var(--page-max);
+  margin: 2rem auto;
 }
 
 .header {

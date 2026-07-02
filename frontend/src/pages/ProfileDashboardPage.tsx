@@ -19,7 +19,16 @@ interface SortState {
 }
 type Mode = "similarity" | "rating";
 
-export function ProfileDashboard({ username }: { username: string }) {
+export function ProfileDashboard({
+  username,
+  onAccessBlocked,
+}: {
+  username: string;
+  /** Called when the dashboard can't be shown because the profile is private
+   *  (403) so the parent can render a nicer explanation instead of a bare
+   *  alert. Passing "private" | "friends-only" | null (cleared on success). */
+  onAccessBlocked?: (reason: "private" | "friends-only" | null) => void;
+}) {
   const navigate = useNavigate();
   const [entries, setEntries] = useState<DashboardEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -38,16 +47,33 @@ export function ProfileDashboard({ username }: { username: string }) {
     setError(null);
     setEntries(null);
     getDashboard(username)
-      .then((data) => setEntries(data.entries))
+      .then((data) => {
+        setEntries(data.entries);
+        onAccessBlocked?.(null);
+      })
       .catch((err) => {
         if (err?.response?.status === 403) {
-          setError("This profile is private.");
+          // The backend distinguishes fully-private from friends-only via the
+          // detail message; fall back to "private" if it's absent.
+          const detail: string = err?.response?.data?.detail ?? "";
+          const reason = detail.toLowerCase().includes("friend")
+            ? "friends-only"
+            : "private";
+          onAccessBlocked?.(reason);
+          setError(
+            reason === "friends-only"
+              ? "This profile is visible to friends only."
+              : "This profile is private."
+          );
         } else if (err?.response?.status === 404) {
           setError("User not found.");
         } else {
           setError("Could not load dashboard.");
         }
       });
+    // onAccessBlocked is a stable callback from the parent; re-running only on
+    // username change is intended.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [username]);
 
   const filtered = useMemo(() => {
@@ -119,7 +145,9 @@ export function ProfileDashboard({ username }: { username: string }) {
     [sorted, mode]
   );
 
-  if (error) return <Alert>{error}</Alert>;
+  // When the profile is private/friends-only the parent renders a dedicated
+  // explanation card, so stay silent here to avoid a duplicate message.
+  if (error) return onAccessBlocked ? null : <Alert>{error}</Alert>;
   if (!entries) return <LoadingState />;
 
   return (

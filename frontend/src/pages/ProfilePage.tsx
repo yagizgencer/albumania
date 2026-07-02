@@ -23,7 +23,12 @@ import { ProfileDashboard } from "./ProfileDashboardPage";
 import { FriendDashboard } from "./FriendDashboardPage";
 import { Alert } from "../components/Alert";
 import { LoadingState } from "../components/Spinner";
+import { PageContainer } from "../components/PageContainer";
+import { Button } from "../components/Button";
+import { Card } from "../components/Card";
 import styles from "./ProfilePage.module.css";
+
+type AccessBlock = "private" | "friends-only" | null;
 
 type FriendState =
   | { kind: "self" }
@@ -41,6 +46,9 @@ export function ProfilePage() {
   const [friendships, setFriendships] = useState<Friendship[] | null>(null);
   const [editing, setEditing] = useState(false);
   const [avatarOpen, setAvatarOpen] = useState(false);
+  // Set when the solo dashboard is hidden because this profile is private /
+  // friends-only, so we can show a clear card instead of an empty section.
+  const [accessBlock, setAccessBlock] = useState<AccessBlock>(null);
   // friendshipId we're comparing against, or null = solo dashboard vs Spotify.
   // Persisted per profile so returning from an album re-opens the same view.
   const [compareFriendshipId, setCompareFriendshipId] = usePersistentState<number | null>(
@@ -73,6 +81,7 @@ export function ProfilePage() {
     setProfile(null);
     setError(null);
     setEditing(false);
+    setAccessBlock(null);
     // compareFriendshipId is keyed by username via usePersistentState, so it
     // restores per profile and resets naturally when viewing a different user.
     void reloadProfile();
@@ -100,18 +109,35 @@ export function ProfilePage() {
     if (!me || friendships === null) return [];
     return friendships
       .filter((f) => f.status === "accepted")
-      .map((f) => ({
-        friendshipId: f.id,
-        username: f.user_a_username === me ? f.user_b_username : f.user_a_username,
-      }))
+      .map((f) => {
+        const isA = f.user_a_username === me;
+        return {
+          friendshipId: f.id,
+          username: isA ? f.user_b_username : f.user_a_username,
+          isPrivate: (isA ? f.user_b_visibility : f.user_a_visibility) === "private",
+        };
+      })
       .sort((a, b) => a.username.localeCompare(b.username));
   }, [friendships, me]);
 
-  if (error) return <main className={styles.page}><Alert>{error}</Alert></main>;
-  if (!profile) return <main className={styles.page}><LoadingState /></main>;
+  if (error)
+    return (
+      <PageContainer width="wide">
+        <Alert>{error}</Alert>
+      </PageContainer>
+    );
+  if (!profile)
+    return (
+      <PageContainer width="wide">
+        <LoadingState />
+      </PageContainer>
+    );
+
+  const viewerCanSeeDashboard =
+    isOwner || friendState?.kind === "friends" || profile.profile_visibility === "public";
 
   return (
-    <main className={styles.page}>
+    <PageContainer width="wide">
       <section className={styles.card}>
         <button
           type="button"
@@ -139,7 +165,21 @@ export function ProfilePage() {
             />
           ) : (
             <>
-              <h1 className={styles.displayName}>{profile.display_name}</h1>
+              <div className={styles.nameRow}>
+                <h1 className={styles.displayName}>{profile.display_name}</h1>
+                {!viewerCanSeeDashboard && (
+                  <span
+                    className={styles.privacyPill}
+                    title={
+                      profile.profile_visibility === "friends"
+                        ? "Visible to friends only"
+                        : "Private profile"
+                    }
+                  >
+                    🔒 {profile.profile_visibility === "friends" ? "Friends only" : "Private"}
+                  </span>
+                )}
+              </div>
               <p className={styles.username}>{profile.username}</p>
               {profile.description ? (
                 <p className={styles.description}>{profile.description}</p>
@@ -158,9 +198,9 @@ export function ProfilePage() {
         </div>
         <div className={styles.headerActions}>
           {isOwner && !editing && (
-            <button className={styles.editBtn} onClick={() => setEditing(true)}>
+            <Button intent="secondary" size="sm" onClick={() => setEditing(true)}>
               Edit
-            </button>
+            </Button>
           )}
           {friendState && (
             <FriendshipButton
@@ -183,8 +223,9 @@ export function ProfilePage() {
             />
           )}
           {!isOwner && friendState?.kind === "friends" && (
-            <button
-              className={styles.compareToggleBtn}
+            <Button
+              intent="secondary"
+              size="sm"
               onClick={() =>
                 setCompareFriendshipId((prev) =>
                   prev === friendState.friendship.id ? null : friendState.friendship.id
@@ -194,13 +235,25 @@ export function ProfilePage() {
               {compareFriendshipId === friendState.friendship.id
                 ? "Hide comparison"
                 : "Compare with you"}
-            </button>
+            </Button>
           )}
         </div>
         {compareFriendshipId !== null ? (
           <FriendDashboard friendshipId={compareFriendshipId} />
         ) : (
-          <ProfileDashboard username={profile.username} />
+          <>
+            {accessBlock && (
+              <PrivateNotice
+                reason={accessBlock}
+                friendState={friendState}
+                displayName={profile.display_name}
+              />
+            )}
+            <ProfileDashboard
+              username={profile.username}
+              onAccessBlocked={setAccessBlock}
+            />
+          </>
         )}
       </section>
 
@@ -215,7 +268,50 @@ export function ProfilePage() {
           }}
         />
       )}
-    </main>
+    </PageContainer>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// PrivateNotice — shown in place of the dashboard when the viewer can't see it
+// ---------------------------------------------------------------------------
+
+function PrivateNotice({
+  reason,
+  friendState,
+  displayName,
+}: {
+  reason: "private" | "friends-only";
+  friendState: FriendState | null;
+  displayName: string;
+}) {
+  const canAddFriend = friendState?.kind === "none";
+  const requestSent = friendState?.kind === "pending_sent";
+
+  const heading =
+    reason === "friends-only" ? "Friends-only profile" : "This profile is private";
+
+  let hint: string;
+  if (reason === "friends-only") {
+    hint = requestSent
+      ? `Your friend request is pending. Once ${displayName} accepts, you'll see their dashboard.`
+      : canAddFriend
+        ? `Add ${displayName} as a friend to see their listening dashboard.`
+        : `${displayName} shares their dashboard with friends only.`;
+  } else {
+    hint = `${displayName} keeps their listening dashboard private.`;
+  }
+
+  return (
+    <Card className={styles.privateNotice}>
+      <span className={styles.privateNoticeIcon} aria-hidden>
+        🔒
+      </span>
+      <div>
+        <h3 className={styles.privateNoticeTitle}>{heading}</h3>
+        <p className={styles.privateNoticeHint}>{hint}</p>
+      </div>
+    </Card>
   );
 }
 
@@ -361,50 +457,54 @@ function FriendshipButton({
 
   if (state.kind === "none") {
     return (
-      <button
-        className={styles.friendBtn}
+      <Button
+        intent="primary"
+        size="sm"
         onClick={() => run(() => sendFriendRequest(targetUsername))}
         disabled={busy}
         title="Send friend request"
       >
-        <span className={styles.friendIcon} aria-hidden>👤</span>
+        <span aria-hidden>👤</span>
         Add friend
-      </button>
+      </Button>
     );
   }
 
   if (state.kind === "pending_sent") {
     return (
-      <button
-        className={`${styles.friendBtn} ${styles.friendBtnPending}`}
+      <Button
+        intent="secondary"
+        size="sm"
         onClick={() => run(() => deleteFriendship(state.friendship.id))}
         disabled={busy}
         title="Cancel friend request"
       >
-        <span className={styles.friendIcon} aria-hidden>⌛</span>
+        <span aria-hidden>⌛</span>
         Request sent
-      </button>
+      </Button>
     );
   }
 
   if (state.kind === "pending_received") {
     return (
-      <button
-        className={`${styles.friendBtn} ${styles.friendBtnAccept}`}
+      <Button
+        intent="success"
+        size="sm"
         onClick={() => run(() => acceptFriendship(state.friendship.id))}
         disabled={busy}
         title="Accept friend request"
       >
-        <span className={styles.friendIcon} aria-hidden>＋</span>
+        <span aria-hidden>＋</span>
         Accept request
-      </button>
+      </Button>
     );
   }
 
   // friends
   return (
-    <button
-      className={`${styles.friendBtn} ${styles.friendBtnFriends}`}
+    <Button
+      intent="success"
+      size="sm"
       onClick={() => {
         if (!confirm(`Unfriend ${targetUsername}?`)) return;
         void run(() => deleteFriendship(state.friendship.id));
@@ -412,9 +512,9 @@ function FriendshipButton({
       disabled={busy}
       title="Unfriend"
     >
-      <span className={styles.friendIcon} aria-hidden>✓</span>
+      <span aria-hidden>✓</span>
       Friends
-    </button>
+    </Button>
   );
 }
 
@@ -480,17 +580,12 @@ function ProfileEditor({
       </p>
       {err && <p className="error">{err}</p>}
       <div className={styles.editorActions}>
-        <button type="submit" className={styles.saveBtn} disabled={saving}>
+        <Button type="submit" intent="primary" size="sm" disabled={saving}>
           {saving ? "Saving…" : "Save"}
-        </button>
-        <button
-          type="button"
-          className={styles.cancelBtn}
-          onClick={onCancel}
-          disabled={saving}
-        >
+        </Button>
+        <Button type="button" intent="secondary" size="sm" onClick={onCancel} disabled={saving}>
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
   );
@@ -503,6 +598,7 @@ function ProfileEditor({
 interface FriendOption {
   friendshipId: number;
   username: string;
+  isPrivate: boolean;
 }
 
 function FriendCombobox({
@@ -609,6 +705,15 @@ function FriendCombobox({
                   onClick={() => choose(f.friendshipId)}
                 >
                   {f.username}
+                  {f.isPrivate && (
+                    <span
+                      className={styles.comboLock}
+                      title="This profile is private — you can't see their dashboard"
+                      aria-label="private"
+                    >
+                      🔒
+                    </span>
+                  )}
                 </li>
               ))
             )}
