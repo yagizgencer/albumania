@@ -10,7 +10,10 @@ import {
 } from "../api/albums";
 import {
   createInvite,
+  getListenLater,
+  listMyInvites,
   type ListenInvite,
+  type ListenLaterParticipant,
 } from "../api/invites";
 import {
   createRating,
@@ -44,6 +47,11 @@ export function AlbumInfoPage() {
   const [rating, setRating] = useState<Rating | null>(null);
   const [stats, setStats] = useState<AlbumStats | null>(null);
   const [friendRatings, setFriendRatings] = useState<AlbumFriendRating[]>([]);
+  // Usernames I've already sent a (still-pending) invite to for this album.
+  const [pendingInvitees, setPendingInvitees] = useState<Set<string>>(new Set());
+  // Accepted/committed participants for this album (drives "active invite" below
+  // and pre-marks friends in the invite modal).
+  const [participants, setParticipants] = useState<ListenLaterParticipant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -75,13 +83,48 @@ export function AlbumInfoPage() {
         } catch {
           setFriendRatings([]);
         }
+        await loadInviteState(a.id);
       })
       .catch(() => setError("Could not load album."))
       .finally(() => setLoading(false));
   }, [spotifyId]);
 
+  // Pull invite state for this album from the two existing endpoints:
+  //  - listMyInvites → my still-pending outgoing invites (these don't appear in
+  //    Listen Later until the receiver accepts).
+  //  - getListenLater → this album's accepted participants (committed shared
+  //    listen, either direction).
+  async function loadInviteState(albumId: number) {
+    try {
+      const invites = await listMyInvites();
+      setPendingInvitees(
+        new Set(
+          invites.outgoing
+            .filter((i) => i.album_id === albumId && i.status === "pending")
+            .map((i) => i.receiver_username)
+        )
+      );
+    } catch {
+      setPendingInvitees(new Set());
+    }
+    try {
+      const entry = (await getListenLater()).find((e) => e.album.id === albumId);
+      setParticipants(entry?.participants ?? []);
+    } catch {
+      setParticipants([]);
+    }
+  }
+
   const isPublished = rating?.status === "published";
   const isDraft = rating?.status === "draft";
+
+  // "Active invite" = I've committed to this as a shared listen: I sent an invite
+  // that's still pending, or an invite in either direction was accepted. In that
+  // case the album is already in my Listen Later, so we offer "Continue Rating"
+  // instead of a fresh "Listen Later".
+  const hasActiveInvite =
+    pendingInvitees.size > 0 ||
+    participants.some((p) => p.invite_status === "accepted");
 
   // The viewer's top-5 ranking: track index → position (1 = favourite), only
   // relevant once published.
@@ -276,7 +319,9 @@ export function AlbumInfoPage() {
                 </button>
               </div>
             )}
-            {isDraft && (
+            {/* Draft, or an active invite (which already puts this in Listen
+                Later): offer to continue rating — never a fresh "Listen Later". */}
+            {(isDraft || (!rating && hasActiveInvite)) && (
               <button
                 className={`${styles.btn} ${styles.btnPrimary}`}
                 onClick={handleContinueRating}
@@ -285,7 +330,7 @@ export function AlbumInfoPage() {
                 Continue Rating
               </button>
             )}
-            {!rating && (
+            {!rating && !hasActiveInvite && (
               <>
                 <button
                   className={`${styles.btn} ${styles.btnSecondary}`}
@@ -370,10 +415,14 @@ export function AlbumInfoPage() {
         <InviteModal
           albumId={album.id}
           me={me}
+          alreadyInvited={pendingInvitees}
+          alreadyRated={new Set(friendRatings.map((f) => f.username))}
           onClose={() => setInviteModalOpen(false)}
           onSent={(friend: FriendForInvite) => {
             setActionInfo(`Invite sent to ${friend.username}.`);
-            setInviteModalOpen(false);
+            // Keep the modal open so the friend shows as "Invited"; refresh the
+            // page's invite state so the action buttons update too.
+            void loadInviteState(album.id);
           }}
         />
       )}
@@ -480,11 +529,17 @@ function FriendRatingsPicker({
 function InviteModal({
   albumId,
   me,
+  alreadyInvited,
+  alreadyRated,
   onClose,
   onSent,
 }: {
   albumId: number;
   me: string;
+  // Friends who already have a pending invite for this album (grey out: "Invited").
+  alreadyInvited: Set<string>;
+  // Friends who already published a rating for this album (grey out: "Rated").
+  alreadyRated: Set<string>;
   onClose: () => void;
   onSent: (friend: FriendForInvite) => void;
 }) {
@@ -545,19 +600,37 @@ function InviteModal({
         ) : (
           <ul className={styles.friendList}>
             {friendUsernames.map((username) => {
-              const isSent = sentSet.has(username);
+              const isSent = sentSet.has(username) || alreadyInvited.has(username);
+              const hasRated = alreadyRated.has(username);
               const err = errors[username];
+              // Distinct, grayed-out labels: a friend who already rated can't be
+              // invited; one already invited shows "Invited".
+              const label = hasRated
+                ? "Rated"
+                : isSent
+                ? "Invited"
+                : sending === username
+                ? "Sending…"
+                : "Invite";
               return (
                 <li key={username} className={styles.friendItem}>
                   <div>
                     <div>{username}</div>
+                    {hasRated && (
+                      <small className={styles.friendNote}>
+                        Already rated this album
+                      </small>
+                    )}
+                    {!hasRated && isSent && (
+                      <small className={styles.friendNote}>Invite already sent</small>
+                    )}
                     {err && <small className={styles.error}>{err}</small>}
                   </div>
                   <button
                     onClick={() => handleSend(username)}
-                    disabled={isSent || sending === username}
+                    disabled={hasRated || isSent || sending === username}
                   >
-                    {isSent ? "Sent" : sending === username ? "Sending…" : "Invite"}
+                    {label}
                   </button>
                 </li>
               );

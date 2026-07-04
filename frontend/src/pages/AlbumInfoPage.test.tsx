@@ -5,6 +5,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AlbumInfoPage } from "./AlbumInfoPage";
 import { getAlbum, getAlbumFriendRatings, getAlbumStats } from "../api/albums";
 import { deleteRating, getMyRatingForAlbum } from "../api/ratings";
+import { getListenLater, listMyInvites } from "../api/invites";
+import { listFriendships } from "../api/friendships";
 
 vi.mock("../api/albums", () => ({
   getAlbum: vi.fn(),
@@ -16,7 +18,11 @@ vi.mock("../api/ratings", () => ({
   createRating: vi.fn(),
   deleteRating: vi.fn(),
 }));
-vi.mock("../api/invites", () => ({ createInvite: vi.fn() }));
+vi.mock("../api/invites", () => ({
+  createInvite: vi.fn(),
+  listMyInvites: vi.fn().mockResolvedValue({ incoming: [], outgoing: [] }),
+  getListenLater: vi.fn().mockResolvedValue([]),
+}));
 vi.mock("../api/friendships", () => ({ listFriendships: vi.fn().mockResolvedValue({ accepted: [] }) }));
 vi.mock("../context/AuthContext", () => ({ useAuth: () => ({ username: "me" }) }));
 // The comments section has its own tests; stub it here to isolate the page.
@@ -181,6 +187,88 @@ describe("AlbumInfoPage", () => {
     await screen.findByRole("link", { name: "Test Album" });
 
     expect(screen.queryByRole("button", { name: /remove rating/i })).not.toBeInTheDocument();
+  });
+
+  it("offers Listen Later + Start Rating when unrated and no invite exists", async () => {
+    vi.mocked(getMyRatingForAlbum).mockRejectedValue(new Error("no rating"));
+    renderPage();
+    await screen.findByRole("link", { name: "Test Album" });
+
+    expect(screen.getByRole("button", { name: /listen later/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /start rating/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /continue rating/i })).not.toBeInTheDocument();
+  });
+
+  it("replaces Listen Later with Continue Rating when an accepted invite exists", async () => {
+    vi.mocked(getMyRatingForAlbum).mockRejectedValue(new Error("no rating"));
+    // No draft rating, but an invite for this album was accepted → it's already a
+    // committed shared listen, so we continue rating rather than "Listen Later".
+    vi.mocked(getListenLater).mockResolvedValue([
+      {
+        album: ALBUM,
+        rating: null,
+        participants: [
+          {
+            username: "bob",
+            picture_url: null,
+            direction: "incoming",
+            invite_status: "accepted",
+            they_published: false,
+          },
+        ],
+      },
+    ]);
+    renderPage();
+    await screen.findByRole("link", { name: "Test Album" });
+
+    expect(await screen.findByRole("button", { name: /continue rating/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /listen later/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /start rating/i })).not.toBeInTheDocument();
+  });
+
+  it("marks a friend as Invited (disabled) when a pending invite already exists", async () => {
+    vi.mocked(getMyRatingForAlbum).mockRejectedValue(new Error("no rating"));
+    vi.mocked(listMyInvites).mockResolvedValue({
+      incoming: [],
+      outgoing: [
+        {
+          id: 5,
+          sender_username: "me",
+          receiver_username: "bob",
+          sender_picture_url: null,
+          receiver_picture_url: null,
+          album_id: 1,
+          status: "pending",
+          created_at: "",
+          responded_at: null,
+          album: ALBUM,
+        },
+      ],
+    });
+    vi.mocked(listFriendships).mockResolvedValue({
+      accepted: [
+        {
+          id: 1,
+          user_a_username: "me",
+          user_b_username: "bob",
+          user_a_picture_url: null,
+          user_b_picture_url: null,
+          user_a_visibility: "public",
+          user_b_visibility: "public",
+          status: "accepted",
+          requested_by: "me",
+          requested_by_picture_url: null,
+          created_at: "",
+          accepted_at: "",
+        },
+      ],
+    });
+    renderPage();
+    await screen.findByRole("link", { name: "Test Album" });
+
+    fireEvent.click(screen.getByRole("button", { name: /invite a friend/i }));
+    const invitedBtn = await screen.findByRole("button", { name: /^invited$/i });
+    expect(invitedBtn).toBeDisabled();
   });
 
   // -------------------------------------------------------------------------

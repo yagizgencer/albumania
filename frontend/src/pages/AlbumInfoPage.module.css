@@ -456,6 +456,14 @@
   cursor: not-allowed;
 }
 
+/* Small muted reason under a greyed-out friend (e.g. "Already rated"). */
+.friendNote {
+  display: block;
+  color: var(--text-subtle);
+  font-size: 0.8rem;
+  margin-top: 0.1rem;
+}
+
 .modalFooter {
   display: flex;
   justify-content: flex-end;
