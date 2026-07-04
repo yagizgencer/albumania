@@ -238,6 +238,63 @@ def test_friendship_cancel_cascade_deletes_notification(client: TestClient) -> N
     assert leftover == [] or all(n.type != NotificationType.friend_request for n in leftover)
 
 
+def test_declining_friend_request_keeps_notification(client: TestClient) -> None:
+    alice = _seed_user("alice")
+    bob = _seed_user("bob")
+    _auth_as(alice)
+    fid = client.post("/friendships", json={"username": "bob"}).json()["id"]
+    _clear_auth()
+
+    # bob declines the request.
+    _auth_as(bob)
+    assert client.post(f"/friendships/{fid}/decline").status_code == 204
+    rows = client.get("/notifications").json()
+    _clear_auth()
+
+    # The friend_request notification survives (detached + marked read).
+    fr = [r for r in rows if r["type"] == NotificationType.friend_request.value]
+    assert len(fr) == 1
+    assert fr[0]["read"] is True
+
+    db = _db()
+    n = db.scalar(
+        select(Notification).where(
+            Notification.recipient_username == "bob",
+            Notification.type == NotificationType.friend_request,
+        )
+    )
+    assert n is not None and n.friendship_id is None
+
+
+def test_declining_listen_invite_keeps_notification(client: TestClient) -> None:
+    alice = _seed_user("alice")
+    bob = _seed_user("bob")
+    a1 = _seed_album()
+    _send_and_accept_friendship(client, alice, bob)
+
+    _auth_as(alice)
+    iid = client.post("/invites", json={"username": "bob", "album_id": a1}).json()["id"]
+    _clear_auth()
+
+    _auth_as(bob)
+    assert client.post(f"/invites/{iid}/decline").status_code == 204
+    rows = client.get("/notifications").json()
+    _clear_auth()
+
+    inv = [r for r in rows if r["type"] == NotificationType.listen_invite.value]
+    assert len(inv) == 1
+    assert inv[0]["read"] is True
+
+    db = _db()
+    n = db.scalar(
+        select(Notification).where(
+            Notification.recipient_username == "bob",
+            Notification.type == NotificationType.listen_invite,
+        )
+    )
+    assert n is not None and n.invite_id is None
+
+
 def select_count_for(model):
     """tiny helper so the assert above reads cleanly."""
     from sqlalchemy import select

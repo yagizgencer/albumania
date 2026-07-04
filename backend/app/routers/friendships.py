@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.models.notification import Notification
 
-from app.core.deps import get_current_user, get_verified_user
+from app.core.deps import get_current_user, require_verified_email
 from app.db.session import get_db
 from app.models.album import Album, BaselineStat
 from app.models.friendship import FriendDashboardEntry, Friendship, FriendshipStatus
@@ -25,7 +25,7 @@ from app.models.notification import NotificationType
 from app.services.avatars import picture_url_map
 from app.services.friend_dashboard import rebuild_for_pair
 from app.services.friendship import get_friendship, ordered_pair
-from app.services.notifications import create_notification
+from app.services.notifications import create_notification, resolve_notifications
 from app.services.similarity import compute_ranking_loss, compute_similarity_score
 from app.services.spotify import SpotifyClient, get_spotify_client
 from app.services.storage import Storage, get_storage
@@ -58,7 +58,7 @@ def _hydrate_friendship(
 @router.post("", response_model=FriendshipResponse, status_code=status.HTTP_201_CREATED)
 def create_friendship(
     body: FriendshipCreate,
-    current_user: Annotated[User, Depends(get_verified_user)],
+    current_user: Annotated[User, Depends(require_verified_email("send friend requests"))],
     db: Annotated[Session, Depends(get_db)],
     storage: Annotated[Storage, Depends(get_storage)],
 ) -> FriendshipResponse:
@@ -158,6 +158,9 @@ def decline_friendship(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot decline your own request"
         )
+    # Keep the "friend request" notification as read history rather than letting
+    # the cascade delete it when we remove the friendship.
+    resolve_notifications(db, friendship_id=friendship.id)
     db.delete(friendship)
     db.commit()
 

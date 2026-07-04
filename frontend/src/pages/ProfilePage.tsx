@@ -109,6 +109,25 @@ export function ProfilePage() {
     return { kind: "pending_received", friendship: match };
   }, [profile, me, friendships]);
 
+  // Reconcile a restored comparison against reality. `compareFriendshipId` is
+  // persisted per profile in sessionStorage, so it can hold a stale id — e.g.
+  // after unfriending and re-friending (a new friendship row, new id), or if the
+  // pair is no longer friends. A stale id makes FriendDashboard 404 with
+  // "Friendship not found"; instead, drop back to the solo dashboard (which a
+  // public profile shows fine regardless of friendship).
+  useEffect(() => {
+    if (friendState === null) return; // friendships not loaded yet
+    if (compareFriendshipId === null) return;
+    const validId =
+      friendState.kind === "friends" ? friendState.friendship.id : null;
+    if (compareFriendshipId !== validId) {
+      setCompareFriendshipId(null);
+    }
+    // setCompareFriendshipId is stable (usePersistentState); depend on the id and
+    // the reconciled friend state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [friendState, compareFriendshipId]);
+
   // Accepted friendships, with the "other" username for each, sorted by name.
   const myFriends = useMemo(() => {
     if (!me || friendships === null) return [];
@@ -253,7 +272,9 @@ export function ProfilePage() {
             </Button>
           )}
         </div>
-        {compareFriendshipId !== null ? (
+        {compareFriendshipId !== null &&
+        friendState?.kind === "friends" &&
+        friendState.friendship.id === compareFriendshipId ? (
           <FriendDashboard friendshipId={compareFriendshipId} />
         ) : (
           <>

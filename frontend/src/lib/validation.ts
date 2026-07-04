@@ -8,10 +8,10 @@ const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 /** Returns an error message for an in-progress username, or null when valid. */
 export function usernameError(value: string): string | null {
   if (value.length === 0) return null; // don't nag before they type
-  if (value.length < 5) return "Must be at least 5 characters.";
-  if (value.length > 20) return "Must be at most 20 characters.";
+  if (value.length < 5) return "A bit short — use at least 5 characters.";
+  if (value.length > 20) return "A bit long — keep it under 20 characters.";
   if (!USERNAME_RE.test(value)) {
-    return "Only letters, numbers, periods (.) and underscores (_) — no spaces or symbols.";
+    return "Use only letters, numbers, dots, and underscores.";
   }
   return null;
 }

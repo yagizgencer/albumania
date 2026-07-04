@@ -48,6 +48,29 @@ def create_notification(
     return n
 
 
+def resolve_notifications(
+    db: Session,
+    *,
+    friendship_id: int | None = None,
+    invite_id: int | None = None,
+) -> None:
+    """Detach a friendship/invite's notifications and mark them read, so they
+    survive when the row is deleted (e.g. on decline). Without this, the
+    ON DELETE CASCADE would wipe the recipient's history of the request/invite.
+    Nulling the FK keeps the row (which still renders from type + actor + album);
+    marking it read drains the badge. Caller commits."""
+    if friendship_id is None and invite_id is None:
+        return
+    stmt = update(Notification).values(read=True)
+    if friendship_id is not None:
+        stmt = stmt.where(Notification.friendship_id == friendship_id).values(
+            friendship_id=None
+        )
+    else:
+        stmt = stmt.where(Notification.invite_id == invite_id).values(invite_id=None)
+    db.execute(stmt)
+
+
 def summary_counts(db: Session, username: str) -> dict[str, int]:
     """Counts powering the three nav badges. Each is unread-count filtered
     to the relevant type(s)."""

@@ -30,14 +30,18 @@ def get_current_user(
     return user
 
 
-def get_verified_user(
-    user: Annotated[User, Depends(get_current_user)],
-) -> User:
-    """Like get_current_user, but blocks users who haven't confirmed their email.
-    Used to gate social actions (sending friend requests / listen invites)."""
-    if not user.email_verified:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Verify your email to do this",
-        )
-    return user
+def require_verified_email(action: str):
+    """Build a dependency that blocks users who haven't confirmed their email,
+    with an action-specific message (e.g. "send friend requests"). Used to gate
+    social actions. The message reads: "You should verify your email to <action>."
+    """
+
+    def dependency(user: Annotated[User, Depends(get_current_user)]) -> User:
+        if not user.email_verified:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"You should verify your email to {action}.",
+            )
+        return user
+
+    return dependency

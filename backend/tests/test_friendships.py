@@ -49,6 +49,28 @@ def test_send_friend_request_happy_path(client: TestClient) -> None:
     _clear_auth()
 
 
+def test_unverified_cannot_send_request_with_action_message(client: TestClient) -> None:
+    db = next(app.dependency_overrides[get_db]())
+    alice = User(
+        username="alice",
+        email="alice@x.com",
+        password_hash="x",
+        display_name="Alice",
+        profile_visibility=ProfileVisibility.public,
+        email_verified=False,
+    )
+    db.add(alice)
+    db.commit()
+    db.refresh(alice)
+    _seed_user("bob")
+    _auth_as(alice)
+
+    r = client.post("/friendships", json={"username": "bob"})
+    assert r.status_code == 403
+    assert r.json()["detail"] == "You should verify your email to send friend requests."
+    _clear_auth()
+
+
 def test_cannot_friend_self(client: TestClient) -> None:
     alice = _seed_user("alice")
     _auth_as(alice)

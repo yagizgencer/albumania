@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session, selectinload
 from app.models.notification import Notification
 
 from app.core.album_rules import require_rateable
-from app.core.deps import get_current_user, get_verified_user
+from app.core.deps import get_current_user, require_verified_email
 from app.db.session import get_db
 from app.models.album import Album
 from app.models.invite import ListenInvite, ListenInviteStatus
@@ -26,13 +26,13 @@ from app.schemas.invite import (
 from app.models.notification import NotificationType
 from app.services.avatars import picture_url_map
 from app.services.friendship import are_friends
-from app.services.notifications import create_notification
+from app.services.notifications import create_notification, resolve_notifications
 from app.services.storage import Storage, get_storage
 
 router = APIRouter(prefix="/invites", tags=["invites"])
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
-VerifiedUser = Annotated[User, Depends(get_verified_user)]
+VerifiedUser = Annotated[User, Depends(require_verified_email("send listen invites"))]
 DB = Annotated[Session, Depends(get_db)]
 StorageDep = Annotated[Storage, Depends(get_storage)]
 
@@ -199,6 +199,9 @@ def decline_invite(invite_id: int, user: CurrentUser, db: DB) -> None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invite is not pending"
         )
+    # Keep the "listen invite" notification as read history rather than letting
+    # the cascade delete it when we remove the invite.
+    resolve_notifications(db, invite_id=invite.id)
     db.delete(invite)
     db.commit()
 

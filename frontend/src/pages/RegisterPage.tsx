@@ -67,13 +67,7 @@ export function RegisterPage() {
             maxLength={20}
             required
           />
-          {usernameHint ? (
-            <span className="error">{usernameHint}</span>
-          ) : (
-            <small style={{ color: "var(--text-subtle)" }}>
-              5–20 characters: letters, numbers, . and _
-            </small>
-          )}
+          {usernameHint && <span className="error">{usernameHint}</span>}
         </label>
         <label>
           Display name

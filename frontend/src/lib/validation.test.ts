@@ -14,7 +14,7 @@ describe("usernameError", () => {
 
   it("rejects too short / too long", () => {
     expect(usernameError("abc")).toMatch(/at least 5/);
-    expect(usernameError("a".repeat(21))).toMatch(/at most 20/);
+    expect(usernameError("a".repeat(21))).toMatch(/under 20/);
   });
 
   it("rejects spaces and symbols", () => {
