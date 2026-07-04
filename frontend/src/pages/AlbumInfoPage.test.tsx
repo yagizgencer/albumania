@@ -90,6 +90,11 @@ describe("AlbumInfoPage", () => {
     vi.mocked(getAlbumStats).mockResolvedValue({ mean_score: 7.8, num_raters: 98 });
     vi.mocked(getMyRatingForAlbum).mockResolvedValue(PUBLISHED_RATING);
     vi.mocked(getAlbumFriendRatings).mockResolvedValue([]);
+    // Reset invite state to "none" each test — clearAllMocks keeps per-test
+    // mockResolvedValue overrides, which would otherwise leak between tests.
+    vi.mocked(listMyInvites).mockResolvedValue({ incoming: [], outgoing: [] });
+    vi.mocked(getListenLater).mockResolvedValue([]);
+    vi.mocked(listFriendships).mockResolvedValue({ accepted: [] });
   });
 
   it("shows Spotify links, the artist-page button, stats and our score", async () => {
@@ -269,6 +274,81 @@ describe("AlbumInfoPage", () => {
     fireEvent.click(screen.getByRole("button", { name: /invite a friend/i }));
     const invitedBtn = await screen.findByRole("button", { name: /^invited$/i });
     expect(invitedBtn).toBeDisabled();
+  });
+
+  it("keeps Listen Later when I sent an invite that is still pending", async () => {
+    vi.mocked(getMyRatingForAlbum).mockRejectedValue(new Error("no rating"));
+    // Pending outgoing invite → still shows in listMyInvites, not yet accepted.
+    vi.mocked(listMyInvites).mockResolvedValue({
+      incoming: [],
+      outgoing: [
+        {
+          id: 5,
+          sender_username: "me",
+          receiver_username: "bob",
+          sender_picture_url: null,
+          receiver_picture_url: null,
+          album_id: 1,
+          status: "pending",
+          created_at: "",
+          responded_at: null,
+          album: ALBUM,
+        },
+      ],
+    });
+    renderPage();
+    await screen.findByRole("link", { name: "Test Album" });
+
+    // A merely-pending invite does not commit me — I still get "Listen Later".
+    expect(await screen.findByRole("button", { name: /listen later/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /continue rating/i })).not.toBeInTheDocument();
+  });
+
+  it("marks a friend as 'Invited you' (disabled) when they invited me first", async () => {
+    vi.mocked(getMyRatingForAlbum).mockRejectedValue(new Error("no rating"));
+    // Incoming pending invite from bob for this album.
+    vi.mocked(listMyInvites).mockResolvedValue({
+      incoming: [
+        {
+          id: 7,
+          sender_username: "bob",
+          receiver_username: "me",
+          sender_picture_url: null,
+          receiver_picture_url: null,
+          album_id: 1,
+          status: "pending",
+          created_at: "",
+          responded_at: null,
+          album: ALBUM,
+        },
+      ],
+      outgoing: [],
+    });
+    vi.mocked(listFriendships).mockResolvedValue({
+      accepted: [
+        {
+          id: 1,
+          user_a_username: "me",
+          user_b_username: "bob",
+          user_a_picture_url: null,
+          user_b_picture_url: null,
+          user_a_visibility: "public",
+          user_b_visibility: "public",
+          status: "accepted",
+          requested_by: "me",
+          requested_by_picture_url: null,
+          created_at: "",
+          accepted_at: "",
+        },
+      ],
+    });
+    renderPage();
+    await screen.findByRole("link", { name: "Test Album" });
+
+    fireEvent.click(screen.getByRole("button", { name: /invite a friend/i }));
+    const btn = await screen.findByRole("button", { name: /invited you/i });
+    expect(btn).toBeDisabled();
+    expect(screen.getByText(/bob already invited you/i)).toBeInTheDocument();
   });
 
   // -------------------------------------------------------------------------
