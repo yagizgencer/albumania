@@ -91,6 +91,15 @@
   background: var(--surface-muted);
 }
 
+/* Non-actionable state for a search result (e.g. "Requested", "Friends"). */
+.resultStatus {
+  flex-shrink: 0;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--text-subtle);
+  white-space: nowrap;
+}
+
 /* ---- Tabs (segmented pill) ---- */
 
 .tabs {

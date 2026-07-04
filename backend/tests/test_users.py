@@ -80,3 +80,16 @@ def test_patch_me_rejects_blank_display_name(client: TestClient) -> None:
     r = client.patch("/users/me", json={"display_name": ""})
     assert r.status_code == 422
     _clear_auth()
+
+
+def test_patch_me_description_length_limit(client: TestClient) -> None:
+    alice = _seed_user("alice")
+    _auth_as(alice)
+    # 1000 chars is the cap and is accepted.
+    r = client.patch("/users/me", json={"description": "x" * 1000})
+    assert r.status_code == 200
+    assert r.json()["description"] == "x" * 1000
+    # 1001 chars is rejected.
+    r = client.patch("/users/me", json={"description": "x" * 1001})
+    assert r.status_code == 422
+    _clear_auth()

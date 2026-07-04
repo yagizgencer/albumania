@@ -17,6 +17,7 @@ import { Alert } from "../components/Alert";
 import { LoadingState } from "../components/Spinner";
 import { PageContainer } from "../components/PageContainer";
 import { Button } from "../components/Button";
+import { ConfirmButton } from "../components/ConfirmButton";
 import { Card } from "../components/Card";
 import { SearchIcon } from "../components/Icons";
 import { getErrorMessage } from "../lib/apiError";
@@ -116,8 +117,9 @@ export function FriendsPage() {
   async function onSend(target: string) {
     try {
       await sendFriendRequest(target);
+      // Keep the user in the results — refreshing the friendship list makes the
+      // row re-derive to "Requested" (see searchState) instead of vanishing.
       await refresh();
-      setResults((prev) => prev.filter((u) => u.username !== target));
     } catch (err: unknown) {
       setSearchError(getErrorMessage(err, "Failed to send request"));
     }
@@ -136,6 +138,22 @@ export function FriendsPage() {
   async function onRemove(id: number) {
     await deleteFriendship(id);
     await refresh();
+  }
+
+  // Friendship state for a searched user, derived from the already-loaded lists
+  // (no extra API call). Drives which action a search-result row shows.
+  type SearchState =
+    | { kind: "none" }
+    | { kind: "requested" } // I sent them a request
+    | { kind: "incoming"; id: number } // they sent me a request
+    | { kind: "friends" };
+  function searchState(target: string): SearchState {
+    if (!data) return { kind: "none" };
+    if (data.accepted.some((f) => otherUsername(f) === target)) return { kind: "friends" };
+    const incoming = data.incoming.find((f) => f.requested_by === target);
+    if (incoming) return { kind: "incoming", id: incoming.id };
+    if (data.outgoing.some((f) => otherUsername(f) === target)) return { kind: "requested" };
+    return { kind: "none" };
   }
 
   function otherUsername(f: Friendship): string {
@@ -205,9 +223,29 @@ export function FriendsPage() {
                     </span>
                   )}
                 </span>
-                <Button size="sm" onClick={() => onSend(u.username)}>
-                  Add
-                </Button>
+                {(() => {
+                  const s = searchState(u.username);
+                  if (s.kind === "friends")
+                    return <span className={styles.resultStatus}>Friends</span>;
+                  if (s.kind === "requested")
+                    return <span className={styles.resultStatus}>Requested</span>;
+                  if (s.kind === "incoming")
+                    return (
+                      <div className={styles.rowActions}>
+                        <Button intent="success" size="sm" onClick={() => onAccept(s.id)}>
+                          Accept
+                        </Button>
+                        <Button intent="secondary" size="sm" onClick={() => onDecline(s.id)}>
+                          Decline
+                        </Button>
+                      </div>
+                    );
+                  return (
+                    <Button size="sm" onClick={() => onSend(u.username)}>
+                      Add
+                    </Button>
+                  );
+                })()}
               </div>
             ))}
           </div>
@@ -243,9 +281,13 @@ export function FriendsPage() {
               username={otherUsername(f)}
               pictureUrl={otherPictureUrl(f)}
               actions={
-                <Button intent="danger" size="sm" onClick={() => onRemove(f.id)}>
-                  Unfriend
-                </Button>
+                <ConfirmButton
+                  label="Unfriend"
+                  prompt={`Unfriend ${otherUsername(f)}?`}
+                  confirmLabel="Yes, unfriend"
+                  onConfirm={() => onRemove(f.id)}
+                  title="Unfriend"
+                />
               }
             />
           )}

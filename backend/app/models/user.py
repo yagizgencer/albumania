@@ -22,7 +22,7 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     email_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     display_name: Mapped[str] = mapped_column(String(100), nullable=False)
-    description: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    description: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     profile_picture_key: Mapped[str | None] = mapped_column(String(255), nullable=True)
     profile_visibility: Mapped[ProfileVisibility] = mapped_column(
         Enum(ProfileVisibility), nullable=False, default=ProfileVisibility.public

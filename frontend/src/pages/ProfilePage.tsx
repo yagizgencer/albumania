@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
   acceptFriendship,
+  declineFriendship,
   deleteFriendship,
   listFriendships,
   sendFriendRequest,
@@ -11,10 +12,13 @@ import {
 import {
   deleteAvatar,
   getUser,
+  MAX_BIO_LEN,
   updateMe,
   uploadAvatar,
   type UserProfile,
 } from "../api/users";
+import Markdown from "react-markdown";
+import { CommentComposer } from "../components/CommentComposer";
 import { usePersistentState } from "../lib/usePersistentState";
 import { compareStorageKey } from "../lib/dashboardCompare";
 import { formatDate } from "../lib/date";
@@ -25,6 +29,7 @@ import { Alert } from "../components/Alert";
 import { LoadingState } from "../components/Spinner";
 import { PageContainer } from "../components/PageContainer";
 import { Button } from "../components/Button";
+import { ConfirmButton } from "../components/ConfirmButton";
 import { Card } from "../components/Card";
 import styles from "./ProfilePage.module.css";
 
@@ -182,7 +187,17 @@ export function ProfilePage() {
               </div>
               <p className={styles.username}>{profile.username}</p>
               {profile.description ? (
-                <p className={styles.description}>{profile.description}</p>
+                <div className={styles.description}>
+                  <Markdown
+                    components={{
+                      a: ({ node, ...props }) => (
+                        <a {...props} target="_blank" rel="noreferrer" />
+                      ),
+                    }}
+                  >
+                    {profile.description}
+                  </Markdown>
+                </div>
               ) : (
                 isOwner && (
                   <p className={styles.descriptionPlaceholder}>
@@ -487,34 +502,45 @@ function FriendshipButton({
 
   if (state.kind === "pending_received") {
     return (
-      <Button
-        intent="success"
-        size="sm"
-        onClick={() => run(() => acceptFriendship(state.friendship.id))}
-        disabled={busy}
-        title="Accept friend request"
-      >
-        <span aria-hidden>＋</span>
-        Accept request
-      </Button>
+      <div className={styles.friendActions}>
+        <Button
+          intent="success"
+          size="sm"
+          onClick={() => run(() => acceptFriendship(state.friendship.id))}
+          disabled={busy}
+          title="Accept friend request"
+        >
+          <span aria-hidden>＋</span>
+          Accept
+        </Button>
+        <Button
+          intent="secondary"
+          size="sm"
+          onClick={() => run(() => declineFriendship(state.friendship.id))}
+          disabled={busy}
+          title="Decline friend request"
+        >
+          Decline
+        </Button>
+      </div>
     );
   }
 
-  // friends
+  // friends — guard the unfriend with an in-site confirm (no browser alert).
   return (
-    <Button
+    <ConfirmButton
+      label={
+        <>
+          <span aria-hidden>✓</span> Friends
+        </>
+      }
+      prompt={`Unfriend ${targetUsername}?`}
+      confirmLabel="Yes, unfriend"
+      onConfirm={() => run(() => deleteFriendship(state.friendship.id))}
       intent="success"
-      size="sm"
-      onClick={() => {
-        if (!confirm(`Unfriend ${targetUsername}?`)) return;
-        void run(() => deleteFriendship(state.friendship.id));
-      }}
       disabled={busy}
       title="Unfriend"
-    >
-      <span aria-hidden>✓</span>
-      Friends
-    </Button>
+    />
   );
 }
 
@@ -566,11 +592,11 @@ function ProfileEditor({
       </label>
       <label>
         Bio
-        <textarea
+        <CommentComposer
           value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          maxLength={500}
-          rows={3}
+          onChange={setDescription}
+          maxLength={MAX_BIO_LEN}
+          showVisibility={false}
           placeholder="A short description that appears on your profile."
         />
       </label>

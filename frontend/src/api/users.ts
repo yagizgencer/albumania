@@ -2,6 +2,10 @@ import { apiClient } from "./client";
 
 export type ProfileVisibility = "public" | "friends" | "private";
 
+// Bio character cap. Mirrors the backend rule (app/schemas/user.py); the backend
+// is the real gate.
+export const MAX_BIO_LEN = 1000;
+
 export interface UserProfile {
   username: string;
   email: string;

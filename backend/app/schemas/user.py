@@ -55,5 +55,5 @@ class UserResponse(BaseModel):
 
 class UserUpdate(BaseModel):
     display_name: str | None = Field(default=None, min_length=1, max_length=100)
-    description: str | None = Field(default=None, max_length=500)
+    description: str | None = Field(default=None, max_length=1000)
     profile_visibility: ProfileVisibility | None = None

@@ -163,8 +163,16 @@
 .description {
   margin: 0.4rem 0 0.6rem;
   color: var(--text);
-  white-space: pre-wrap;
   word-wrap: break-word;
+}
+
+/* react-markdown renders paragraphs/lists; keep them compact in the header. */
+.description > :first-child {
+  margin-top: 0;
+}
+
+.description > :last-child {
+  margin-bottom: 0;
 }
 
 .descriptionPlaceholder {
@@ -185,6 +193,12 @@
   flex-direction: column;
   gap: 0.5rem;
   align-items: flex-end;
+}
+
+/* Accept + Decline sit side by side under the header actions column. */
+.friendActions {
+  display: flex;
+  gap: 0.4rem;
 }
 
 .sectionTitle {

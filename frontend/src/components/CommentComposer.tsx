@@ -22,6 +22,11 @@ interface CommentComposerProps {
 
   placeholder?: string;
   busy?: boolean;
+  // Character cap. Defaults to comment length; the bio field passes a smaller one.
+  maxLength?: number;
+  // Whether to show the visibility dropdown. Off for fields (e.g. the bio) that
+  // aren't per-visibility.
+  showVisibility?: boolean;
 }
 
 const VISIBILITY_OPTIONS: { value: Visibility; label: string }[] = [
@@ -42,6 +47,8 @@ export function CommentComposer({
   onCancel,
   placeholder = "Share your thoughts on this album…",
   busy = false,
+  maxLength = MAX_COMMENT_LEN,
+  showVisibility = true,
 }: CommentComposerProps) {
   const controlled = onChange !== undefined;
   const [innerText, setInnerText] = useState(initialText);
@@ -53,7 +60,7 @@ export function CommentComposer({
   const text = controlled ? value ?? "" : innerText;
   const visibility = controlled ? visibilityProp ?? "public" : innerVisibility;
   const setText = (t: string) =>
-    controlled ? onChange!(t.slice(0, MAX_COMMENT_LEN)) : setInnerText(t.slice(0, MAX_COMMENT_LEN));
+    controlled ? onChange!(t.slice(0, maxLength)) : setInnerText(t.slice(0, maxLength));
   const setVisibility = (v: Visibility) =>
     controlled ? onVisibilityChange?.(v) : setInnerVisibility(v);
 
@@ -159,7 +166,7 @@ export function CommentComposer({
         className={styles.textarea}
         value={text}
         placeholder={placeholder}
-        maxLength={MAX_COMMENT_LEN}
+        maxLength={maxLength}
         onChange={(e) => setText(e.target.value)}
         rows={3}
         aria-label="Comment text"
@@ -167,26 +174,28 @@ export function CommentComposer({
       </div>
 
       <div className={styles.footer}>
-        <label className={styles.visibility}>
-          <span className={styles.visibilityLabel}>Visibility:</span>
-          <select
-            value={visibility}
-            onChange={(e) => setVisibility(e.target.value as Visibility)}
-            aria-label="Comment visibility"
-          >
-            {VISIBILITY_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        {showVisibility && (
+          <label className={styles.visibility}>
+            <span className={styles.visibilityLabel}>Visibility:</span>
+            <select
+              value={visibility}
+              onChange={(e) => setVisibility(e.target.value as Visibility)}
+              aria-label="Comment visibility"
+            >
+              {VISIBILITY_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
 
         <span
-          className={`${styles.counter} ${text.length >= MAX_COMMENT_LEN ? styles.counterMax : ""}`}
+          className={`${styles.counter} ${text.length >= maxLength ? styles.counterMax : ""}`}
           aria-live="polite"
         >
-          {text.length.toLocaleString()} / {MAX_COMMENT_LEN.toLocaleString()}
+          {text.length.toLocaleString()} / {maxLength.toLocaleString()}
         </span>
 
         {!controlled && (
