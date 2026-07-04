@@ -6,3 +6,9 @@
 export function profilePath(username: string): string {
   return `/profile/${encodeURIComponent(username)}`;
 }
+
+/** Per-album comparison detail between the current user and `username` (the
+ *  non-friend equivalent of /friendships/{id}/albums/{spotifyId}). */
+export function comparePath(username: string, spotifyId: string): string {
+  return `/users/${encodeURIComponent(username)}/compare/${spotifyId}`;
+}

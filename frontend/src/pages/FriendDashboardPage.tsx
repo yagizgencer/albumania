@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  getFriendDashboard,
+  fetchComparison,
+  type ComparisonSource,
   type FriendDashboardEntry,
   type FriendDashboardResponse,
 } from "../api/friendDashboard";
+import { comparePath } from "../lib/paths";
 import { chartPalette } from "../lib/chartTheme";
 import { usePersistentState } from "../lib/usePersistentState";
 import { formatDate } from "../lib/date";
@@ -40,14 +42,24 @@ const B_COLOR = chartPalette.coral;
 const PAIR_COLOR = chartPalette.sky;
 const MEAN_COLOR = chartPalette.ink;
 
-export function FriendDashboard({ friendshipId }: { friendshipId: number }) {
+export function FriendDashboard({ source }: { source: ComparisonSource }) {
   const navigate = useNavigate();
 
   const [data, setData] = useState<FriendDashboardResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Persisted per friendship so opening an album and coming back keeps the view.
-  const ns = `dash:pair:${friendshipId}`;
+  // Persisted per source so opening an album and coming back keeps the view.
+  const sourceKey =
+    source.kind === "friendship" ? `f${source.friendshipId}` : `u${source.username}`;
+  const ns = `dash:pair:${sourceKey}`;
+
+  // Per-album detail link differs by source: a friendship has a pair route; a
+  // user comparison uses the username-based compare route.
+  function albumDetailPath(spotifyId: string): string {
+    return data?.friendship_id != null
+      ? `/friendships/${data.friendship_id}/albums/${spotifyId}`
+      : comparePath(source.kind === "user" ? source.username : "", spotifyId);
+  }
   const [sort, setSort] = usePersistentState<SortState | null>(`${ns}:sort`, null);
   const [artistFilter, setArtistFilter] = usePersistentState(`${ns}:filter`, "");
   const [fromDate, setFromDate] = usePersistentState(`${ns}:from`, "");
@@ -58,7 +70,7 @@ export function FriendDashboard({ friendshipId }: { friendshipId: number }) {
   useEffect(() => {
     setError(null);
     setData(null);
-    getFriendDashboard(friendshipId)
+    fetchComparison(source)
       .then(setData)
       .catch((err) => {
         if (err?.response?.status === 403) {
@@ -66,15 +78,17 @@ export function FriendDashboard({ friendshipId }: { friendshipId: number }) {
           setError(
             detail.toLowerCase().includes("private")
               ? "This profile is now private, so you can't see this comparison."
-              : "You don't have access to this friend dashboard."
+              : "You don't have access to this comparison."
           );
         } else if (err?.response?.status === 404) {
-          setError("Friendship not found.");
+          setError("Comparison not found.");
         } else {
           setError("Could not load dashboard.");
         }
       });
-  }, [friendshipId]);
+    // sourceKey is a stable string derived from source; re-fetch when it changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sourceKey]);
 
   const entries: FriendDashboardEntry[] = data?.entries ?? [];
 
@@ -258,9 +272,7 @@ export function FriendDashboard({ friendshipId }: { friendshipId: number }) {
           <DashboardChart
             labels={chartData.labels}
             datasets={chartData.datasets}
-            onPointClick={(i) =>
-              navigate(`/friendships/${data.friendship_id}/albums/${sorted[i].album.spotify_id}`)
-            }
+            onPointClick={(i) => navigate(albumDetailPath(sorted[i].album.spotify_id))}
             beginAtZero={mode === "ratings"}
             view={view}
             sortKey={sort}
@@ -291,9 +303,7 @@ export function FriendDashboard({ friendshipId }: { friendshipId: number }) {
                 <tr
                   key={e.album.id}
                   className={styles.row}
-                  onClick={() =>
-                    navigate(`/friendships/${data.friendship_id}/albums/${e.album.spotify_id}`)
-                  }
+                  onClick={() => navigate(albumDetailPath(e.album.spotify_id))}
                 >
                   <td>
                     <DashboardAlbumCell album={e.album} />

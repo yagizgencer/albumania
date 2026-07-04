@@ -16,10 +16,26 @@ export interface FriendDashboardEntry {
 }
 
 export interface FriendDashboardResponse {
-  friendship_id: number;
+  // null for an ad-hoc comparison between two non-friends (computed live).
+  friendship_id: number | null;
   user_a_username: string;
   user_b_username: string;
   entries: FriendDashboardEntry[];
+}
+
+/** Where a pair comparison's data comes from: a friendship (precomputed) or an
+ *  arbitrary viewable user (computed live). Drives the fetch, the persisted-state
+ *  namespace, and the per-album detail link. */
+export type ComparisonSource =
+  | { kind: "friendship"; friendshipId: number }
+  | { kind: "user"; username: string };
+
+export function fetchComparison(
+  source: ComparisonSource
+): Promise<FriendDashboardResponse> {
+  return source.kind === "friendship"
+    ? getFriendDashboard(source.friendshipId)
+    : getUserComparison(source.username);
 }
 
 export async function getFriendDashboard(
@@ -27,6 +43,17 @@ export async function getFriendDashboard(
 ): Promise<FriendDashboardResponse> {
   const { data } = await apiClient.get<FriendDashboardResponse>(
     `/friendships/${friendshipId}/dashboard`
+  );
+  return data;
+}
+
+/** Live pair comparison with any viewable (non-friend) user. Same shape as the
+ *  friend dashboard, but computed on the fly server-side (friendship_id === null). */
+export async function getUserComparison(
+  username: string
+): Promise<FriendDashboardResponse> {
+  const { data } = await apiClient.get<FriendDashboardResponse>(
+    `/users/${encodeURIComponent(username)}/comparison`
   );
   return data;
 }

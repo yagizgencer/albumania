@@ -20,7 +20,7 @@ export function AlbumDetailPage() {
 
   function goBackToDashboard() {
     if (backTo) {
-      setDashboardCompare(backTo.profile, backTo.compareFriendshipId);
+      setDashboardCompare(backTo.profile, backTo.compareSource);
       navigate(profilePath(backTo.profile));
     } else {
       navigate(-1);

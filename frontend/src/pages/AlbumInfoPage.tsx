@@ -208,7 +208,9 @@ export function AlbumInfoPage() {
     if (!album) return;
     const backTo: DashboardBackState = {
       profile: friend.username,
-      compareFriendshipId: isPublished ? friend.friendship_id : null,
+      compareSource: isPublished
+        ? { kind: "friendship", friendshipId: friend.friendship_id }
+        : null,
     };
     const target = isPublished
       ? `/friendships/${friend.friendship_id}/albums/${album.spotify_id}`

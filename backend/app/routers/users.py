@@ -21,6 +21,7 @@ from app.models.album import Album, BaselineStat
 from app.models.rating import Rating, RatingStatus
 from app.models.user import ProfileVisibility, User
 from app.schemas.dashboard import DashboardAlbum, DashboardEntry, DashboardResponse
+from app.schemas.friend_dashboard import FriendDashboardEntryOut, FriendDashboardResponse
 from app.schemas.friendship import UserSearchResult
 from app.schemas.user import UserResponse, UserUpdate
 from app.services.avatars import picture_url
@@ -176,6 +177,26 @@ def get_user(
     return _user_response(user, storage)
 
 
+def require_can_view_profile(db: Session, *, viewer: User, target: User) -> None:
+    """Raise 403 if `viewer` may not see `target`'s ratings/dashboard. The owner
+    always may; a public profile is visible to everyone; a friends-only profile
+    only to accepted friends; a private profile to no one else. Shared by the solo
+    dashboard and the pair-comparison endpoint so the rules (and messages) match."""
+    if viewer.username == target.username:
+        return
+    vis = target.profile_visibility
+    if vis == ProfileVisibility.private:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Profile is private"
+        )
+    if vis == ProfileVisibility.friends and not are_friends(
+        db, viewer.username, target.username
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Profile is visible to friends only"
+        )
+
+
 @router.get("/{username}/dashboard", response_model=DashboardResponse)
 def get_user_dashboard(
     username: str,
@@ -188,19 +209,7 @@ def get_user_dashboard(
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
-    is_owner = current_user.username == user.username
-    if not is_owner:
-        vis = user.profile_visibility
-        if vis == ProfileVisibility.private:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="Profile is private"
-            )
-        if vis == ProfileVisibility.friends and not are_friends(
-            db, current_user.username, user.username
-        ):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="Profile is visible to friends only"
-            )
+    require_can_view_profile(db, viewer=current_user, target=user)
 
     rows = db.execute(
         select(Rating, Album)
@@ -243,6 +252,99 @@ def _similarity_against_spotify(
     if not user_top5 or not spotify_top5:
         return None
     loss = compute_ranking_loss(user_top5, spotify_top5)
+    stat = db.scalar(select(BaselineStat).where(BaselineStat.k == k))
+    if stat is None:
+        return None
+    return compute_similarity_score(loss, stat.mean, stat.std)
+
+
+@router.get("/{username}/comparison", response_model=FriendDashboardResponse)
+def get_user_comparison(
+    username: str,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+    spotify: Annotated[SpotifyClient, Depends(get_spotify_client)],
+) -> FriendDashboardResponse:
+    """Live pair comparison between the current user (A) and any *viewable* user
+    (B) — no friendship required. Same shape as the friend dashboard, computed on
+    the fly from the intersection of both users' published ratings (nothing is
+    persisted). Access follows the same visibility rules as the solo dashboard."""
+    target = db.scalar(select(User).where(User.username == username))
+    if target is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    if target.username == current_user.username:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot compare with yourself"
+        )
+    require_can_view_profile(db, viewer=current_user, target=target)
+
+    a, b = current_user.username, target.username
+    a_ratings = {
+        r.album_id: r
+        for r in db.scalars(
+            select(Rating).where(Rating.username == a, Rating.status == RatingStatus.published)
+        )
+    }
+    b_ratings = {
+        r.album_id: r
+        for r in db.scalars(
+            select(Rating).where(Rating.username == b, Rating.status == RatingStatus.published)
+        )
+    }
+    mutual_album_ids = set(a_ratings) & set(b_ratings)
+
+    entries: list[FriendDashboardEntryOut] = []
+    for album_id in mutual_album_ids:
+        ra = a_ratings[album_id]
+        rb = b_ratings[album_id]
+        album = db.get(Album, album_id)
+        if album is None or ra.completed_at is None or rb.completed_at is None:
+            continue
+
+        if album.spotify_top5_indices is None:
+            album.spotify_top5_indices = spotify.get_top5_popular_indices(album.spotify_id)
+            db.add(album)
+            db.commit()
+
+        a_top = ra.top_track_indices or []
+        b_top = rb.top_track_indices or []
+        spotify_top = album.spotify_top5_indices or []
+
+        entries.append(
+            FriendDashboardEntryOut(
+                album=DashboardAlbum.model_validate(album),
+                mutual_date=max(ra.completed_at, rb.completed_at),
+                similarity_users=_pair_similarity(db, a_top, b_top, album.total_songs),
+                similarity_a_vs_spotify=_similarity_against_spotify(
+                    user_top5=a_top, spotify_top5=spotify_top, k=album.total_songs, db=db
+                ),
+                similarity_b_vs_spotify=_similarity_against_spotify(
+                    user_top5=b_top, spotify_top5=spotify_top, k=album.total_songs, db=db
+                ),
+                spotify_top5_indices=spotify_top,
+                user_a_top_track_indices=a_top,
+                user_b_top_track_indices=b_top,
+                mean_score=(ra.score + rb.score) / 2,
+                user_a_score=ra.score,
+                user_b_score=rb.score,
+            )
+        )
+
+    entries.sort(key=lambda e: e.mutual_date)
+    return FriendDashboardResponse(
+        friendship_id=None,
+        user_a_username=a,
+        user_b_username=b,
+        entries=entries,
+    )
+
+
+def _pair_similarity(db: Session, a_top5: list[int], b_top5: list[int], k: int) -> float | None:
+    """Similarity between two users' top-5s on one album (same math as the
+    friend-dashboard build; see services/friend_dashboard._users_similarity)."""
+    if not a_top5 or not b_top5:
+        return None
+    loss = compute_ranking_loss(a_top5, b_top5)
     stat = db.scalar(select(BaselineStat).where(BaselineStat.k == k))
     if stat is None:
         return None

@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { getAlbum, type Album, type AlbumTrack } from "../api/albums";
 import {
-  getFriendDashboard,
+  fetchComparison,
+  type ComparisonSource,
   type FriendDashboardEntry,
   type FriendDashboardResponse,
 } from "../api/friendDashboard";
@@ -14,11 +15,20 @@ import { setDashboardCompare, type DashboardBackState } from "../lib/dashboardCo
 import { profilePath } from "../lib/paths";
 import styles from "./AlbumDetailPage.module.css";
 
+// Per-album comparison detail, driven off either route:
+//   /friendships/:friendshipId/albums/:spotifyId  → friendship source
+//   /users/:username/compare/:spotifyId           → live user source
 export function FriendAlbumDetailPage() {
-  const { friendshipId, spotifyId } = useParams<{
+  const { friendshipId, username, spotifyId } = useParams<{
     friendshipId: string;
+    username: string;
     spotifyId: string;
   }>();
+  const source: ComparisonSource | null = friendshipId
+    ? { kind: "friendship", friendshipId: Number(friendshipId) }
+    : username
+    ? { kind: "user", username }
+    : null;
   const navigate = useNavigate();
   const location = useLocation();
   // When we arrive from an album page, `backTo` tells us which dashboard to
@@ -27,7 +37,7 @@ export function FriendAlbumDetailPage() {
 
   function goBackToDashboard() {
     if (backTo) {
-      setDashboardCompare(backTo.profile, backTo.compareFriendshipId);
+      setDashboardCompare(backTo.profile, backTo.compareSource);
       navigate(profilePath(backTo.profile));
     } else {
       navigate(-1);
@@ -38,19 +48,24 @@ export function FriendAlbumDetailPage() {
   const [entry, setEntry] = useState<FriendDashboardEntry | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const sourceKey =
+    source?.kind === "friendship"
+      ? `f${source.friendshipId}`
+      : source?.kind === "user"
+      ? `u${source.username}`
+      : "";
+
   useEffect(() => {
-    if (!friendshipId || !spotifyId) return;
-    const fid = Number(friendshipId);
-    if (!Number.isFinite(fid)) return;
+    if (!source || !spotifyId) return;
     setError(null);
 
-    Promise.all([getFriendDashboard(fid), getAlbum(spotifyId)])
+    Promise.all([fetchComparison(source), getAlbum(spotifyId)])
       .then(([pairData, albumData]) => {
         setPair(pairData);
         setAlbum(albumData);
         const match = pairData.entries.find((e) => e.album.spotify_id === spotifyId);
         if (!match) {
-          setError("This album isn't on the pair dashboard yet.");
+          setError("This album isn't on the comparison yet.");
         } else {
           setEntry(match);
         }
@@ -60,7 +75,9 @@ export function FriendAlbumDetailPage() {
         else if (err?.response?.status === 404) setError("Not found.");
         else setError("Could not load album.");
       });
-  }, [friendshipId, spotifyId]);
+    // sourceKey encodes source; re-fetch when it or the album changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sourceKey, spotifyId]);
 
   const trackByIndex = useMemo(
     () => new Map<number, AlbumTrack>((album?.tracks ?? []).map((t) => [t.index, t])),

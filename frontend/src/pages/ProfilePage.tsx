@@ -21,6 +21,7 @@ import Markdown from "react-markdown";
 import { CommentComposer } from "../components/CommentComposer";
 import { usePersistentState } from "../lib/usePersistentState";
 import { compareStorageKey } from "../lib/dashboardCompare";
+import type { ComparisonSource } from "../api/friendDashboard";
 import { formatDate } from "../lib/date";
 import { Avatar } from "../components/Avatar";
 import { ProfileDashboard } from "./ProfileDashboardPage";
@@ -54,9 +55,11 @@ export function ProfilePage() {
   // Set when the solo dashboard is hidden because this profile is private /
   // friends-only, so we can show a clear card instead of an empty section.
   const [accessBlock, setAccessBlock] = useState<AccessBlock>(null);
-  // friendshipId we're comparing against, or null = solo dashboard vs Spotify.
-  // Persisted per profile so returning from an album re-opens the same view.
-  const [compareFriendshipId, setCompareFriendshipId] = usePersistentState<number | null>(
+  // The comparison we're showing, or null = solo dashboard vs Spotify. A
+  // friendship source uses the precomputed pair dashboard; a user source is the
+  // live comparison with any viewable profile. Persisted per profile so returning
+  // from an album re-opens the same view.
+  const [compareSource, setCompareSource] = usePersistentState<ComparisonSource | null>(
     compareStorageKey(username ?? ""),
     null
   );
@@ -87,7 +90,7 @@ export function ProfilePage() {
     setError(null);
     setEditing(false);
     setAccessBlock(null);
-    // compareFriendshipId is keyed by username via usePersistentState, so it
+    // compareSource is keyed by username via usePersistentState, so it
     // restores per profile and resets naturally when viewing a different user.
     void reloadProfile();
     void reloadFriendships();
@@ -109,24 +112,24 @@ export function ProfilePage() {
     return { kind: "pending_received", friendship: match };
   }, [profile, me, friendships]);
 
-  // Reconcile a restored comparison against reality. `compareFriendshipId` is
-  // persisted per profile in sessionStorage, so it can hold a stale id — e.g.
-  // after unfriending and re-friending (a new friendship row, new id), or if the
-  // pair is no longer friends. A stale id makes FriendDashboard 404 with
-  // "Friendship not found"; instead, drop back to the solo dashboard (which a
-  // public profile shows fine regardless of friendship).
+  // Reconcile a restored comparison against reality. `compareSource` is persisted
+  // per profile in sessionStorage, so a *friendship* source can hold a stale id —
+  // e.g. after unfriending and re-friending (a new friendship row, new id), or if
+  // the pair is no longer friends. A stale id makes the pair dashboard 404;
+  // instead, drop back to the solo dashboard. A *user* source has no id to go
+  // stale (validity is enforced server-side by the visibility check).
   useEffect(() => {
     if (friendState === null) return; // friendships not loaded yet
-    if (compareFriendshipId === null) return;
+    if (compareSource === null || compareSource.kind !== "friendship") return;
     const validId =
       friendState.kind === "friends" ? friendState.friendship.id : null;
-    if (compareFriendshipId !== validId) {
-      setCompareFriendshipId(null);
+    if (compareSource.friendshipId !== validId) {
+      setCompareSource(null);
     }
-    // setCompareFriendshipId is stable (usePersistentState); depend on the id and
+    // setCompareSource is stable (usePersistentState); depend on the source and
     // the reconciled friend state.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [friendState, compareFriendshipId]);
+  }, [friendState, compareSource]);
 
   // Accepted friendships, with the "other" username for each, sorted by name.
   const myFriends = useMemo(() => {
@@ -252,30 +255,42 @@ export function ProfilePage() {
           {isOwner && myFriends.length > 0 && (
             <FriendCombobox
               friends={myFriends}
-              selectedId={compareFriendshipId}
-              onSelect={(id) => setCompareFriendshipId(id)}
+              selectedId={
+                compareSource?.kind === "friendship" ? compareSource.friendshipId : null
+              }
+              onSelect={(id) =>
+                setCompareSource(id === null ? null : { kind: "friendship", friendshipId: id })
+              }
             />
           )}
-          {!isOwner && friendState?.kind === "friends" && (
+          {/* Compare against anyone whose dashboard I can see (public, or a
+              friends-only friend). Friends use the precomputed pair dashboard;
+              everyone else is compared live by username. */}
+          {!isOwner && viewerCanSeeDashboard && (
             <Button
               intent="secondary"
               size="sm"
               onClick={() =>
-                setCompareFriendshipId((prev) =>
-                  prev === friendState.friendship.id ? null : friendState.friendship.id
+                setCompareSource((prev) =>
+                  prev !== null
+                    ? null
+                    : friendState?.kind === "friends"
+                    ? { kind: "friendship", friendshipId: friendState.friendship.id }
+                    : { kind: "user", username: profile.username }
                 )
               }
             >
-              {compareFriendshipId === friendState.friendship.id
-                ? "Hide comparison"
-                : "Compare with you"}
+              {compareSource !== null ? "Hide comparison" : "Compare with you"}
             </Button>
           )}
         </div>
-        {compareFriendshipId !== null &&
-        friendState?.kind === "friends" &&
-        friendState.friendship.id === compareFriendshipId ? (
-          <FriendDashboard friendshipId={compareFriendshipId} />
+        {compareSource !== null &&
+        // A friendship source must still match the current accepted friendship
+        // (see the reconciliation effect); a user source is always valid here.
+        (compareSource.kind === "user" ||
+          (friendState?.kind === "friends" &&
+            friendState.friendship.id === compareSource.friendshipId)) ? (
+          <FriendDashboard source={compareSource} />
         ) : (
           <>
             {accessBlock && (

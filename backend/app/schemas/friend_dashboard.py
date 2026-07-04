@@ -20,7 +20,9 @@ class FriendDashboardEntryOut(BaseModel):
 
 
 class FriendDashboardResponse(BaseModel):
-    friendship_id: int
+    # Present for a friend comparison (precomputed); None for an ad-hoc comparison
+    # between two arbitrary viewable users (computed live, no friendship row).
+    friendship_id: int | None
     user_a_username: str
     user_b_username: str
     entries: list[FriendDashboardEntryOut]

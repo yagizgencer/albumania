@@ -378,7 +378,12 @@ describe("AlbumInfoPage", () => {
 
     expect(screen.getByTestId("path")).toHaveTextContent("/friendships/42/albums/alb1");
     expect(screen.getByTestId("state")).toHaveTextContent(
-      JSON.stringify({ backTo: { profile: "bob", compareFriendshipId: 42 } })
+      JSON.stringify({
+        backTo: {
+          profile: "bob",
+          compareSource: { kind: "friendship", friendshipId: 42 },
+        },
+      })
     );
   });
 
@@ -393,7 +398,7 @@ describe("AlbumInfoPage", () => {
 
     expect(screen.getByTestId("path")).toHaveTextContent("/users/bob/albums/alb1");
     expect(screen.getByTestId("state")).toHaveTextContent(
-      JSON.stringify({ backTo: { profile: "bob", compareFriendshipId: null } })
+      JSON.stringify({ backTo: { profile: "bob", compareSource: null } })
     );
   });
 });

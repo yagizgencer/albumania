@@ -77,6 +77,14 @@ export default function App() {
               }
             />
             <Route
+              path="/users/:username/compare/:spotifyId"
+              element={
+                <ProtectedRoute>
+                  <FriendAlbumDetailPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/listen-later"
               element={
                 <ProtectedRoute>
