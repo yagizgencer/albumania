@@ -207,6 +207,15 @@
   font-size: 0.9rem;
 }
 
+.artistLink {
+  color: inherit;
+  text-decoration: none;
+}
+
+.artistLink:hover {
+  text-decoration: underline;
+}
+
 .chipRow {
   display: flex;
   flex-wrap: wrap;
@@ -232,6 +241,19 @@
 .chipDone {
   background: var(--status-ok-bg);
   color: var(--status-ok-fg);
+}
+
+/* The avatar + username inside a chip navigate to the profile. */
+.chipUser {
+  display: inline-flex;
+  align-items: center;
+  color: inherit;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.chipUser:hover {
+  text-decoration: underline;
 }
 
 .action {

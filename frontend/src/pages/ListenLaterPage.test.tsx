@@ -71,4 +71,45 @@ describe("ListenLaterPage", () => {
     await waitFor(() => expect(deleteRating).toHaveBeenCalledWith(7));
     await waitFor(() => expect(screen.queryByText("Test Album")).not.toBeInTheDocument());
   });
+
+  it("links a participant's username to their profile", async () => {
+    vi.mocked(getListenLater).mockResolvedValue([
+      {
+        ...ENTRY,
+        participants: [
+          {
+            username: "bob",
+            picture_url: null,
+            direction: "incoming",
+            invite_status: "accepted",
+            they_published: false,
+          },
+        ],
+      },
+    ] as never);
+
+    render(
+      <MemoryRouter>
+        <ListenLaterPage />
+      </MemoryRouter>
+    );
+
+    const link = await screen.findByRole("link", { name: /bob/i });
+    expect(link).toHaveAttribute("href", "/profile/bob");
+  });
+
+  it("links the album title and artist to their pages", async () => {
+    vi.mocked(getListenLater).mockResolvedValue([ENTRY] as never);
+
+    render(
+      <MemoryRouter>
+        <ListenLaterPage />
+      </MemoryRouter>
+    );
+
+    const albumLink = await screen.findByRole("link", { name: "Test Album" });
+    expect(albumLink).toHaveAttribute("href", "/albums/alb1");
+    const artistLink = screen.getByRole("link", { name: "The Artist" });
+    expect(artistLink).toHaveAttribute("href", "/artists/art1");
+  });
 });

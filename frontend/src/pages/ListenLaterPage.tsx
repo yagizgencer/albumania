@@ -229,7 +229,19 @@ function Row({ entry, onRemoved }: { entry: ListenLaterEntry; onRemoved: () => P
             {entry.album.title}
           </Link>
         </h3>
-        <p>{entry.album.artist} · {entry.album.release_date.slice(0, 4)}</p>
+        <p>
+          {entry.album.artist_spotify_id ? (
+            <Link
+              to={`/artists/${entry.album.artist_spotify_id}`}
+              className={styles.artistLink}
+            >
+              {entry.album.artist}
+            </Link>
+          ) : (
+            entry.album.artist
+          )}{" "}
+          · {entry.album.release_date.slice(0, 4)}
+        </p>
         {activeParticipants.length > 0 && (
           <div className={styles.chipRow}>
             <span style={{ color: "#6b7280", fontSize: "0.8rem", alignSelf: "center" }}>
@@ -294,8 +306,11 @@ function ParticipantChip({ p }: { p: ListenLaterParticipant }) {
   }
   return (
     <span className={className}>
-      <Avatar username={p.username} pictureUrl={p.picture_url} size={18} />
-      <span style={{ marginLeft: 6 }}>{p.username} {tag}{suffix}</span>
+      <Link to={profilePath(p.username)} className={styles.chipUser}>
+        <Avatar username={p.username} pictureUrl={p.picture_url} size={18} />
+        <span style={{ marginLeft: 6 }}>{p.username}</span>
+      </Link>
+      <span style={{ marginLeft: 4 }}>{tag}{suffix}</span>
     </span>
   );
 }
