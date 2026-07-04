@@ -119,17 +119,21 @@ export function ProfilePage() {
   // instead, drop back to the solo dashboard. A *user* source has no id to go
   // stale (validity is enforced server-side by the visibility check).
   useEffect(() => {
-    if (friendState === null) return; // friendships not loaded yet
+    if (friendState === null || friendships === null) return; // not loaded yet
     if (compareSource === null || compareSource.kind !== "friendship") return;
-    const validId =
-      friendState.kind === "friends" ? friendState.friendship.id : null;
-    if (compareSource.friendshipId !== validId) {
-      setCompareSource(null);
-    }
+    // On my own profile the combobox can point at ANY of my accepted friendships;
+    // on someone else's it's only valid if it's *our* current friendship.
+    const isValid = isOwner
+      ? friendships.some(
+          (f) => f.id === compareSource.friendshipId && f.status === "accepted"
+        )
+      : friendState.kind === "friends" &&
+        friendState.friendship.id === compareSource.friendshipId;
+    if (!isValid) setCompareSource(null);
     // setCompareSource is stable (usePersistentState); depend on the source and
     // the reconciled friend state.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [friendState, compareSource]);
+  }, [friendState, friendships, isOwner, compareSource]);
 
   // Accepted friendships, with the "other" username for each, sorted by name.
   const myFriends = useMemo(() => {
@@ -285,11 +289,16 @@ export function ProfilePage() {
           )}
         </div>
         {compareSource !== null &&
-        // A friendship source must still match the current accepted friendship
-        // (see the reconciliation effect); a user source is always valid here.
+        // A user source is always valid here. A friendship source: on my own
+        // profile it may be any accepted friendship (combobox); on someone else's
+        // it must be our current friendship. (Mirrors the reconciliation effect.)
         (compareSource.kind === "user" ||
-          (friendState?.kind === "friends" &&
-            friendState.friendship.id === compareSource.friendshipId)) ? (
+          (isOwner
+            ? (friendships ?? []).some(
+                (f) => f.id === compareSource.friendshipId && f.status === "accepted"
+              )
+            : friendState?.kind === "friends" &&
+              friendState.friendship.id === compareSource.friendshipId)) ? (
           <FriendDashboard source={compareSource} />
         ) : (
           <>
