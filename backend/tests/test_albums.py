@@ -26,6 +26,7 @@ _FAKE_ALBUM = SpotifyAlbumResult(
     release_date="2024-01-01",
     total_songs=10,
     album_art_url="https://example.com/art.jpg",
+    upc="000000000001",
 )
 
 _FAKE_TRACKS = [
@@ -109,6 +110,35 @@ def test_get_album_is_idempotent(authed_client: TestClient) -> None:
     # Spotify should only have been called once — second request hits the DB
     mock: MagicMock = app.dependency_overrides[get_spotify_client]()
     assert mock.get_album.call_count == 1
+
+
+def test_get_album_dedupes_on_upc(authed_client: TestClient) -> None:
+    # First import creates the canonical row.
+    r1 = authed_client.get("/albums/abc123")
+    assert r1.status_code == 200
+
+    # A different spotify_id (regional re-release) but the SAME upc should not
+    # create a second row — it must resolve to the album we already have.
+    mock: MagicMock = app.dependency_overrides[get_spotify_client]()
+    mock.get_album.return_value = SpotifyAlbumResult(
+        spotify_id="xyz789",
+        title="Test Album (Deluxe)",
+        artist="Test Artist",
+        artist_spotify_id="artist123",
+        release_date="2024-01-01",
+        total_songs=10,
+        album_art_url="https://example.com/art.jpg",
+        upc="000000000001",  # same UPC as _FAKE_ALBUM
+    )
+
+    r2 = authed_client.get("/albums/xyz789")
+    assert r2.status_code == 200
+    # Same underlying album row, and it still reports the original spotify_id.
+    assert r2.json()["id"] == r1.json()["id"]
+    assert r2.json()["spotify_id"] == "abc123"
+
+    db = next(app.dependency_overrides[get_db]())
+    assert db.query(Album).filter(Album.title.like("Test Album%")).count() == 1
 
 
 def test_get_album_requires_auth(client: TestClient) -> None:

@@ -15,6 +15,9 @@ class SpotifyAlbumResult:
     release_date: str
     total_songs: int
     album_art_url: str | None
+    # UPC barcode from external_ids. Only present on the full album fetch
+    # (get_album); None for search / artist-listing results.
+    upc: str | None = None
 
 
 @dataclass
@@ -42,6 +45,7 @@ def _album_result_from_item(item: dict) -> SpotifyAlbumResult:
         release_date=item["release_date"],
         total_songs=item["total_tracks"],
         album_art_url=item["images"][0]["url"] if item["images"] else None,
+        upc=(item.get("external_ids") or {}).get("upc"),
     )
 
 

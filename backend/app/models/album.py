@@ -9,6 +9,11 @@ class Album(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     spotify_id: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
+    # Universal Product Code (barcode) from Spotify's external_ids. The same real
+    # album can exist under several spotify_ids (regional/label re-releases) but
+    # shares one upc, so we de-dupe imports on it. Nullable: only present on the
+    # full album fetch (not search/artist listings) and backfilled lazily.
+    upc: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     artist: Mapped[str] = mapped_column(String(255), nullable=False)
     # Spotify id of the primary artist. Nullable: existing rows backfill lazily

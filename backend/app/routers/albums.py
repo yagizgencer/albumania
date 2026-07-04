@@ -138,11 +138,16 @@ def get_or_import_album(
     existing = db.query(Album).filter(Album.spotify_id == spotify_id).first()
     if existing:
         changed = False
-        # Lazily backfill artist_spotify_id for rows imported before that column
-        # existed, so artist links/pages work for the whole catalog over time.
-        if existing.artist_spotify_id is None:
-            existing.artist_spotify_id = spotify.get_album(spotify_id).artist_spotify_id
-            changed = changed or existing.artist_spotify_id is not None
+        # Lazily backfill artist_spotify_id / upc for rows imported before those
+        # columns existed, so artist links and de-duping work catalog-wide over time.
+        if existing.artist_spotify_id is None or existing.upc is None:
+            fetched = spotify.get_album(spotify_id)
+            if existing.artist_spotify_id is None and fetched.artist_spotify_id is not None:
+                existing.artist_spotify_id = fetched.artist_spotify_id
+                changed = True
+            if existing.upc is None and fetched.upc is not None:
+                existing.upc = fetched.upc
+                changed = True
         # Backfill missing tracks for albums imported before we paged past the
         # first 50 (Spotify's album object caps embedded tracks at 50).
         if len(existing.tracks) < existing.total_songs:
@@ -165,10 +170,21 @@ def get_or_import_album(
         return _to_album_out(existing)
 
     album_data = spotify.get_album(spotify_id)
+
+    # De-dupe: Spotify issues several spotify_ids for the same real album
+    # (regional/label re-releases) but they share one UPC barcode. If we already
+    # imported this album under a different id, reuse that canonical row instead
+    # of creating a duplicate that would scatter ratings across editions.
+    if album_data.upc is not None:
+        canonical = db.query(Album).filter(Album.upc == album_data.upc).first()
+        if canonical is not None:
+            return _to_album_out(canonical)
+
     track_data = spotify.get_album_tracks(spotify_id)
 
     album = Album(
         spotify_id=album_data.spotify_id,
+        upc=album_data.upc,
         title=album_data.title,
         artist=album_data.artist,
         artist_spotify_id=album_data.artist_spotify_id,
