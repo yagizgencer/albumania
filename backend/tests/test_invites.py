@@ -448,6 +448,48 @@ def test_delete_rating_removes_invites(client: TestClient) -> None:
     assert db.query(ListenInvite).count() == 0
 
 
+def test_reinvite_allowed_after_receiver_removes_album(client: TestClient) -> None:
+    """The full edge case: alice invites bob, bob accepts and starts a draft, then
+    bob removes the album from Listen Later (deletes his draft). That withdraws him
+    from the invite, so alice can invite him again — and a re-accept restores the
+    shared listen."""
+    alice = _seed_user("alice")
+    bob = _seed_user("bob")
+    a1 = _seed_album()
+    _send_and_accept_friendship(client, alice, bob)
+
+    # alice invites bob; bob accepts.
+    _auth_as(alice)
+    iid = client.post("/invites", json={"username": "bob", "album_id": a1}).json()["id"]
+    _clear_auth()
+    _auth_as(bob)
+    client.post(f"/invites/{iid}/accept")
+
+    # While the invite is accepted, alice cannot invite again (still exists).
+    _clear_auth()
+    _auth_as(alice)
+    assert client.post("/invites", json={"username": "bob", "album_id": a1}).status_code == 409
+    _clear_auth()
+
+    # bob starts a draft, then removes the album from Listen Later.
+    _auth_as(bob)
+    rid = client.post("/ratings", json={"album_id": a1}).json()["id"]
+    client.delete(f"/ratings/{rid}")
+    _clear_auth()
+
+    # The invite is gone → alice can invite again, and bob can re-accept.
+    db = _db()
+    assert db.query(ListenInvite).count() == 0
+    _auth_as(alice)
+    r = client.post("/invites", json={"username": "bob", "album_id": a1})
+    assert r.status_code == 201
+    new_iid = r.json()["id"]
+    _clear_auth()
+    _auth_as(bob)
+    assert client.post(f"/invites/{new_iid}/accept").status_code == 200
+    _clear_auth()
+
+
 def test_unfriend_removes_listen_invites(client: TestClient) -> None:
     from app.models.notification import Notification, NotificationType
 

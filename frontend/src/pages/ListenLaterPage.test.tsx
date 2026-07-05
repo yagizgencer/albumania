@@ -60,6 +60,11 @@ describe("ListenLaterPage", () => {
     );
 
     expect(await screen.findByText("Test Album")).toBeInTheDocument();
+    // The rating action is always just "Rate" (no start/continue distinction).
+    expect(screen.getByRole("link", { name: "Rate" })).toHaveAttribute(
+      "href",
+      "/albums/alb1/rate"
+    );
 
     // Clicking Remove asks for confirmation — nothing deleted yet.
     fireEvent.click(screen.getByRole("button", { name: "Remove" }));

@@ -126,7 +126,6 @@ export function AlbumInfoPage() {
   }
 
   const isPublished = rating?.status === "published";
-  const isDraft = rating?.status === "draft";
 
   // "Active invite" = an invite in either direction has been *accepted*, so the
   // album is already a committed shared listen (and already in my Listen Later).
@@ -161,23 +160,11 @@ export function AlbumInfoPage() {
     }
   }
 
-  function handleContinueRating() {
+  // "Rate" always just opens the editor. It creates the draft on arrival if the
+  // user doesn't have one yet, so there's no separate start/continue distinction.
+  function handleRate() {
     if (!album) return;
     navigate(`/albums/${album.spotify_id}/rate`);
-  }
-
-  async function handleStartRating() {
-    if (!album) return;
-    setBusy(true); setActionError(null);
-    try {
-      if (!rating) await createRating(album.id);
-      navigate(`/albums/${album.spotify_id}/rate`);
-    } catch (e: unknown) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setActionError((e as any)?.response?.data?.detail ?? "Could not start rating.");
-    } finally {
-      setBusy(false);
-    }
   }
 
   async function handleRemoveRating() {
@@ -329,32 +316,26 @@ export function AlbumInfoPage() {
                 </button>
               </div>
             )}
-            {/* Draft, or an active invite (which already puts this in Listen
-                Later): offer to continue rating — never a fresh "Listen Later". */}
-            {(isDraft || (!rating && hasActiveInvite)) && (
-              <button
-                className={`${styles.btn} ${styles.btnPrimary}`}
-                onClick={handleContinueRating}
-                disabled={busy}
-              >
-                Continue Rating
-              </button>
-            )}
-            {!rating && !hasActiveInvite && (
+            {/* Anything not yet published shows a single "Rate" action (the
+                editor creates the draft on arrival if needed). "Listen Later" is
+                a fresh solo add, so only when there's no rating/invite yet. */}
+            {!isPublished && (
               <>
-                <button
-                  className={`${styles.btn} ${styles.btnSecondary}`}
-                  onClick={handleAddToListenLater}
-                  disabled={busy || !rateable}
-                >
-                  Listen Later
-                </button>
+                {!rating && !hasActiveInvite && (
+                  <button
+                    className={`${styles.btn} ${styles.btnSecondary}`}
+                    onClick={handleAddToListenLater}
+                    disabled={busy || !rateable}
+                  >
+                    Listen Later
+                  </button>
+                )}
                 <button
                   className={`${styles.btn} ${styles.btnPrimary}`}
-                  onClick={handleStartRating}
+                  onClick={handleRate}
                   disabled={busy || !rateable}
                 >
-                  Start Rating
+                  Rate
                 </button>
               </>
             )}
@@ -427,6 +408,13 @@ export function AlbumInfoPage() {
           me={me}
           alreadyInvited={pendingInvitees}
           invitedMe={pendingInviters}
+          listeningWith={
+            new Set(
+              participants
+                .filter((p) => p.invite_status === "accepted")
+                .map((p) => p.username)
+            )
+          }
           alreadyRated={new Set(friendRatings.map((f) => f.username))}
           onClose={() => setInviteModalOpen(false)}
           onSent={(friend: FriendForInvite) => {
@@ -542,6 +530,7 @@ function InviteModal({
   me,
   alreadyInvited,
   invitedMe,
+  listeningWith,
   alreadyRated,
   onClose,
   onSent,
@@ -552,6 +541,9 @@ function InviteModal({
   alreadyInvited: Set<string>;
   // Friends who have already invited *me* for this album (grey out: "Invited you").
   invitedMe: Set<string>;
+  // Friends already listening this album with me — an accepted invite exists,
+  // either direction (grey out: "Listening").
+  listeningWith: Set<string>;
   // Friends who already published a rating for this album (grey out: "Rated").
   alreadyRated: Set<string>;
   onClose: () => void;
@@ -615,15 +607,17 @@ function InviteModal({
           <ul className={styles.friendList}>
             {friendUsernames.map((username) => {
               const hasRated = alreadyRated.has(username);
+              const listening = listeningWith.has(username);
               const theyInvitedMe = invitedMe.has(username);
               const iInvited = sentSet.has(username) || alreadyInvited.has(username);
               const err = errors[username];
               // Distinct, grayed-out states, in priority order. Each can't be
-              // (re-)invited: they already rated, they already invited you, or
-              // you already invited them.
-              const disabled = hasRated || theyInvitedMe || iInvited;
+              // (re-)invited because an invite already exists (or they've rated).
+              const disabled = hasRated || listening || theyInvitedMe || iInvited;
               const label = hasRated
                 ? "Rated"
+                : listening
+                ? "Listening"
                 : theyInvitedMe
                 ? "Invited you"
                 : iInvited
@@ -633,6 +627,8 @@ function InviteModal({
                 : "Invite";
               const note = hasRated
                 ? "Already rated this album"
+                : listening
+                ? "Already listening with you"
                 : theyInvitedMe
                 ? `${username} already invited you — check Listen Later`
                 : iInvited

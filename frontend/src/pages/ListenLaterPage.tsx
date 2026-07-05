@@ -192,7 +192,6 @@ function SidebarInvite({
 }
 
 function Row({ entry, onRemoved }: { entry: ListenLaterEntry; onRemoved: () => Promise<void> }) {
-  const action = entry.rating ? "Continue Rating" : "Start Rating";
   const [confirming, setConfirming] = useState(false);
   const [removing, setRemoving] = useState(false);
 
@@ -277,7 +276,7 @@ function Row({ entry, onRemoved }: { entry: ListenLaterEntry; onRemoved: () => P
         ) : (
           <>
             <Link className={styles.action} to={`/albums/${entry.album.spotify_id}/rate`}>
-              {action}
+              Rate
             </Link>
             {entry.rating && (
               <button className={styles.removeBtn} onClick={() => setConfirming(true)}>

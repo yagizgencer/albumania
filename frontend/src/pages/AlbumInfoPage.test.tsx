@@ -172,7 +172,7 @@ describe("AlbumInfoPage", () => {
     fireEvent.click(screen.getByRole("button", { name: /yes, remove/i }));
     await waitFor(() => expect(deleteRating).toHaveBeenCalledWith(9));
     expect(await screen.findByText(/your rating was removed/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /start rating/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^rate$/i })).toBeInTheDocument();
   });
 
   it("cancels removal without deleting", async () => {
@@ -194,20 +194,19 @@ describe("AlbumInfoPage", () => {
     expect(screen.queryByRole("button", { name: /remove rating/i })).not.toBeInTheDocument();
   });
 
-  it("offers Listen Later + Start Rating when unrated and no invite exists", async () => {
+  it("offers Listen Later + Rate when unrated and no invite exists", async () => {
     vi.mocked(getMyRatingForAlbum).mockRejectedValue(new Error("no rating"));
     renderPage();
     await screen.findByRole("link", { name: "Test Album" });
 
     expect(screen.getByRole("button", { name: /listen later/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /start rating/i })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /continue rating/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^rate$/i })).toBeInTheDocument();
   });
 
-  it("replaces Listen Later with Continue Rating when an accepted invite exists", async () => {
+  it("drops Listen Later (only Rate) when an accepted invite exists", async () => {
     vi.mocked(getMyRatingForAlbum).mockRejectedValue(new Error("no rating"));
     // No draft rating, but an invite for this album was accepted → it's already a
-    // committed shared listen, so we continue rating rather than "Listen Later".
+    // committed shared listen, so a fresh "Listen Later" doesn't apply.
     vi.mocked(getListenLater).mockResolvedValue([
       {
         album: ALBUM,
@@ -226,9 +225,8 @@ describe("AlbumInfoPage", () => {
     renderPage();
     await screen.findByRole("link", { name: "Test Album" });
 
-    expect(await screen.findByRole("button", { name: /continue rating/i })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /^rate$/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /listen later/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /start rating/i })).not.toBeInTheDocument();
   });
 
   it("marks a friend as Invited (disabled) when a pending invite already exists", async () => {
@@ -276,6 +274,51 @@ describe("AlbumInfoPage", () => {
     expect(invitedBtn).toBeDisabled();
   });
 
+  it("marks a friend as 'Listening' (disabled) when an accepted invite exists", async () => {
+    vi.mocked(getMyRatingForAlbum).mockRejectedValue(new Error("no rating"));
+    // bob accepted an invite for this album → accepted participant, no re-invite.
+    vi.mocked(getListenLater).mockResolvedValue([
+      {
+        album: ALBUM,
+        rating: null,
+        participants: [
+          {
+            username: "bob",
+            picture_url: null,
+            direction: "outgoing",
+            invite_status: "accepted",
+            they_published: false,
+          },
+        ],
+      },
+    ]);
+    vi.mocked(listFriendships).mockResolvedValue({
+      accepted: [
+        {
+          id: 1,
+          user_a_username: "me",
+          user_b_username: "bob",
+          user_a_picture_url: null,
+          user_b_picture_url: null,
+          user_a_visibility: "public",
+          user_b_visibility: "public",
+          status: "accepted",
+          requested_by: "me",
+          requested_by_picture_url: null,
+          created_at: "",
+          accepted_at: "",
+        },
+      ],
+    });
+    renderPage();
+    await screen.findByRole("link", { name: "Test Album" });
+
+    fireEvent.click(screen.getByRole("button", { name: /invite a friend/i }));
+    const btn = await screen.findByRole("button", { name: /^listening$/i });
+    expect(btn).toBeDisabled();
+    expect(screen.getByText(/already listening with you/i)).toBeInTheDocument();
+  });
+
   it("keeps Listen Later when I sent an invite that is still pending", async () => {
     vi.mocked(getMyRatingForAlbum).mockRejectedValue(new Error("no rating"));
     // Pending outgoing invite → still shows in listMyInvites, not yet accepted.
@@ -301,7 +344,7 @@ describe("AlbumInfoPage", () => {
 
     // A merely-pending invite does not commit me — I still get "Listen Later".
     expect(await screen.findByRole("button", { name: /listen later/i })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /continue rating/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^rate$/i })).toBeInTheDocument();
   });
 
   it("marks a friend as 'Invited you' (disabled) when they invited me first", async () => {

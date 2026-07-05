@@ -268,11 +268,28 @@ export function RatingEditorPage() {
     getAlbum(spotifyId)
       .then(async (a) => {
         setAlbum(a);
+        // "Rate" should drop the user straight into the editor. If they don't
+        // have a rating for this album yet, create the draft now rather than
+        // showing a separate "Start Rating" gate.
         try {
-          const r = await getMyRatingForAlbum(a.id);
-          applyRating(r);
+          applyRating(await getMyRatingForAlbum(a.id));
         } catch {
-          // 404 = no rating yet
+          try {
+            applyRating(await createRating(a.id));
+          } catch (e: unknown) {
+            // 409 = a rating already exists (created concurrently) → fetch it.
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            if ((e as any)?.response?.status === 409) {
+              try {
+                applyRating(await getMyRatingForAlbum(a.id));
+              } catch {
+                setError("Could not open the rating editor.");
+              }
+            } else {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              setError((e as any)?.response?.data?.detail ?? "Could not start rating.");
+            }
+          }
         }
       })
       .catch(() => setError("Failed to load album."))
@@ -291,16 +308,6 @@ export function RatingEditorPage() {
   // Derived
   const filledCount = topSlots.filter((s) => s !== null).length;
   const canPublish = hasScore && filledCount === TOP_5_SIZE;
-
-  async function handleStartRating() {
-    if (!album) return;
-    setSaving(true); setError(null);
-    try {
-      const r = await createRating(album.id);
-      applyRating(r);
-    } catch { setError("Failed to create rating."); }
-    finally { setSaving(false); }
-  }
 
   async function handleSave() {
     if (!rating) return;
@@ -450,15 +457,6 @@ export function RatingEditorPage() {
           )}
         </div>
       </div>
-
-      {!rating && (
-        <div className={styles.startBox}>
-          <p>You haven't rated this album yet.</p>
-          <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={handleStartRating} disabled={saving}>
-            Start Rating
-          </button>
-        </div>
-      )}
 
       {rating && (
         <>
