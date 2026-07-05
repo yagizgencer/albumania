@@ -266,6 +266,8 @@
   font-weight: 700;
   text-decoration: none;
   font-size: var(--text-sm);
+  /* It's a full-width <a> in a stretched column — center the label. */
+  text-align: center;
 }
 
 .action:hover {

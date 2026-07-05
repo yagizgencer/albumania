@@ -524,3 +524,61 @@ def test_unfriend_removes_listen_invites(client: TestClient) -> None:
         .count()
         == 0
     )
+
+
+# ---------------------------------------------------------------------------
+# Remove from Listen Later (DELETE /listen-later/{album_id})
+# ---------------------------------------------------------------------------
+
+def test_remove_accepted_invite_with_no_draft(client: TestClient) -> None:
+    """The reported bug: after accepting an invite (no draft yet), the receiver
+    can still remove the album from Listen Later — it withdraws the invite for
+    both sides."""
+    alice = _seed_user("alice")
+    bob = _seed_user("bob")
+    a1 = _seed_album()
+    _send_and_accept_friendship(client, alice, bob)
+
+    _auth_as(alice)
+    iid = client.post("/invites", json={"username": "bob", "album_id": a1}).json()["id"]
+    _clear_auth()
+    _auth_as(bob)
+    client.post(f"/invites/{iid}/accept")
+    # bob has no draft, but the accepted invite puts the album in his Listen Later.
+    assert len(client.get("/listen-later").json()) == 1
+
+    # bob removes it → 204, and it's gone for him.
+    assert client.delete(f"/listen-later/{a1}").status_code == 204
+    assert client.get("/listen-later").json() == []
+    _clear_auth()
+
+    # The invite is gone, so it drops off alice's Listen Later too.
+    _auth_as(alice)
+    assert client.get("/listen-later").json() == []
+    _clear_auth()
+    assert _db().query(ListenInvite).count() == 0
+
+
+def test_remove_draft_only_entry(client: TestClient) -> None:
+    alice = _seed_user("alice")
+    a1 = _seed_album()
+    _auth_as(alice)
+    client.post("/ratings", json={"album_id": a1})
+    assert len(client.get("/listen-later").json()) == 1
+
+    assert client.delete(f"/listen-later/{a1}").status_code == 204
+    assert client.get("/listen-later").json() == []
+    _clear_auth()
+
+
+def test_remove_from_listen_later_404_when_absent(client: TestClient) -> None:
+    alice = _seed_user("alice")
+    a1 = _seed_album()
+    _auth_as(alice)
+    assert client.delete(f"/listen-later/{a1}").status_code == 404
+    _clear_auth()
+
+
+def test_remove_from_listen_later_requires_auth(client: TestClient) -> None:
+    a1 = _seed_album()
+    assert client.delete(f"/listen-later/{a1}").status_code in (401, 403)

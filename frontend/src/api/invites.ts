@@ -72,3 +72,10 @@ export async function getListenLater(): Promise<ListenLaterEntry[]> {
   const { data } = await apiClient.get<ListenLaterEntry[]>("/listen-later");
   return data;
 }
+
+/** Remove an album from my Listen Later — deletes my draft (if any) and
+ *  withdraws me from any invite for it, so accepted-invite rows with no draft
+ *  can be removed too. */
+export async function removeFromListenLater(albumId: number): Promise<void> {
+  await apiClient.delete(`/listen-later/${albumId}`);
+}

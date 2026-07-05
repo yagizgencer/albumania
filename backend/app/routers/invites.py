@@ -26,6 +26,7 @@ from app.schemas.invite import (
 from app.models.notification import NotificationType
 from app.services.avatars import picture_url_map
 from app.services.friendship import are_friends
+from app.services.invite import delete_invites_for_user_album
 from app.services.notifications import create_notification, resolve_notifications
 from app.services.storage import Storage, get_storage
 
@@ -414,3 +415,40 @@ def get_listen_later(
 
     entries.sort(key=_sort_key, reverse=True)
     return entries
+
+
+@listen_later_router.delete("/{album_id}", status_code=status.HTTP_204_NO_CONTENT)
+def remove_from_listen_later(album_id: int, user: CurrentUser, db: DB) -> None:
+    """Remove an album from my Listen Later, whatever put it there. Deletes my
+    draft rating for the album (if any) AND withdraws me from every invite for it
+    (both directions) — so a shared listen I never started rating can still be
+    removed. Published ratings are left alone (they aren't Listen Later items)."""
+    me = user.username
+
+    draft = db.scalar(
+        select(Rating).where(
+            Rating.username == me,
+            Rating.album_id == album_id,
+            Rating.status == RatingStatus.draft,
+        )
+    )
+    my_invite = db.scalar(
+        select(ListenInvite).where(
+            ListenInvite.album_id == album_id,
+            or_(
+                ListenInvite.sender_username == me,
+                ListenInvite.receiver_username == me,
+            ),
+        )
+    )
+    if draft is None and my_invite is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="This album is not in your Listen Later",
+        )
+
+    if draft is not None:
+        db.delete(draft)
+        db.commit()
+    # Withdraw from any invites for this album (mirrors the rating-delete path).
+    delete_invites_for_user_album(db, me, album_id)

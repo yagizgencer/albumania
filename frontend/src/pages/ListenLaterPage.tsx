@@ -6,11 +6,11 @@ import {
   declineInvite,
   getListenLater,
   listMyInvites,
+  removeFromListenLater,
   type ListenInviteWithAlbum,
   type ListenLaterEntry,
   type ListenLaterParticipant,
 } from "../api/invites";
-import { deleteRating } from "../api/ratings";
 import { Avatar } from "../components/Avatar";
 import { Alert } from "../components/Alert";
 import { LoadingState } from "../components/Spinner";
@@ -196,10 +196,11 @@ function Row({ entry, onRemoved }: { entry: ListenLaterEntry; onRemoved: () => P
   const [removing, setRemoving] = useState(false);
 
   async function handleRemove() {
-    if (!entry.rating) return;
     setRemoving(true);
     try {
-      await deleteRating(entry.rating.id);
+      // Removes the draft (if any) and withdraws from any invite, so an
+      // accepted-invite row with no draft yet can still be removed.
+      await removeFromListenLater(entry.album.id);
       await onRemoved();
     } finally {
       setRemoving(false);
@@ -278,11 +279,9 @@ function Row({ entry, onRemoved }: { entry: ListenLaterEntry; onRemoved: () => P
             <Link className={styles.action} to={`/albums/${entry.album.spotify_id}/rate`}>
               Rate
             </Link>
-            {entry.rating && (
-              <button className={styles.removeBtn} onClick={() => setConfirming(true)}>
-                Remove
-              </button>
-            )}
+            <button className={styles.removeBtn} onClick={() => setConfirming(true)}>
+              Remove
+            </button>
           </>
         )}
       </div>

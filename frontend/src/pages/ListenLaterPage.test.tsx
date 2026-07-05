@@ -3,17 +3,16 @@ import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ListenLaterPage } from "./ListenLaterPage";
-import { getListenLater, listMyInvites } from "../api/invites";
-import { deleteRating } from "../api/ratings";
+import { getListenLater, listMyInvites, removeFromListenLater } from "../api/invites";
 
 vi.mock("../api/invites", () => ({
   getListenLater: vi.fn(),
   listMyInvites: vi.fn(),
+  removeFromListenLater: vi.fn(),
   acceptInvite: vi.fn(),
   declineInvite: vi.fn(),
   cancelInvite: vi.fn(),
 }));
-vi.mock("../api/ratings", () => ({ deleteRating: vi.fn() }));
 
 const ENTRY = {
   album: {
@@ -46,7 +45,7 @@ describe("ListenLaterPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(listMyInvites).mockResolvedValue({ incoming: [], outgoing: [] });
-    vi.mocked(deleteRating).mockResolvedValue(undefined);
+    vi.mocked(removeFromListenLater).mockResolvedValue(undefined);
   });
 
   it("removes a draft only after confirmation", async () => {
@@ -66,14 +65,14 @@ describe("ListenLaterPage", () => {
       "/albums/alb1/rate"
     );
 
-    // Clicking Remove asks for confirmation — nothing deleted yet.
+    // Clicking Remove asks for confirmation — nothing removed yet.
     fireEvent.click(screen.getByRole("button", { name: "Remove" }));
     expect(screen.getByText(/remove from listen later\?/i)).toBeInTheDocument();
-    expect(deleteRating).not.toHaveBeenCalled();
+    expect(removeFromListenLater).not.toHaveBeenCalled();
 
-    // Confirming deletes the draft rating and refreshes the list.
+    // Confirming removes the album (by id) and refreshes the list.
     fireEvent.click(screen.getByRole("button", { name: /yes, remove/i }));
-    await waitFor(() => expect(deleteRating).toHaveBeenCalledWith(7));
+    await waitFor(() => expect(removeFromListenLater).toHaveBeenCalledWith(1));
     await waitFor(() => expect(screen.queryByText("Test Album")).not.toBeInTheDocument());
   });
 
@@ -101,6 +100,40 @@ describe("ListenLaterPage", () => {
 
     const link = await screen.findByRole("link", { name: /bob/i });
     expect(link).toHaveAttribute("href", "/profile/bob");
+  });
+
+  it("shows Remove for an accepted-invite entry that has no draft yet", async () => {
+    // Accepted invite, no draft rating → the row exists purely from the invite.
+    vi.mocked(getListenLater)
+      .mockResolvedValueOnce([
+        {
+          ...ENTRY,
+          rating: null,
+          participants: [
+            {
+              username: "bob",
+              picture_url: null,
+              direction: "outgoing",
+              invite_status: "accepted",
+              they_published: false,
+            },
+          ],
+        },
+      ] as never)
+      .mockResolvedValue([]);
+
+    render(
+      <MemoryRouter>
+        <ListenLaterPage />
+      </MemoryRouter>
+    );
+
+    await screen.findByText("Test Album");
+    // Remove is available even with no draft, and removes by album id.
+    fireEvent.click(screen.getByRole("button", { name: "Remove" }));
+    fireEvent.click(screen.getByRole("button", { name: /yes, remove/i }));
+    await waitFor(() => expect(removeFromListenLater).toHaveBeenCalledWith(1));
+    await waitFor(() => expect(screen.queryByText("Test Album")).not.toBeInTheDocument());
   });
 
   it("links the album title and artist to their pages", async () => {
