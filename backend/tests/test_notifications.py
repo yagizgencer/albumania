@@ -83,7 +83,16 @@ def _send_and_accept_friendship(client: TestClient, a: User, b: User) -> int:
 
 
 def _publish(client: TestClient, album_id: int) -> int:
-    rid = client.post("/ratings", json={"album_id": album_id}).json()["id"]
+    # Reuse an existing draft (e.g. one created by accepting an invite); else create.
+    created = client.post("/ratings", json={"album_id": album_id})
+    if created.status_code == 201:
+        rid = created.json()["id"]
+    else:
+        rid = next(
+            r["id"]
+            for r in client.get("/ratings/me").json()
+            if r["album_id"] == album_id
+        )
     client.patch(
         f"/ratings/{rid}", json={"score": 8.0, "top_track_indices": [1, 2, 3, 4, 5]}
     )

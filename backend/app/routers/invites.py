@@ -174,16 +174,18 @@ def accept_invite(
     invite.status = ListenInviteStatus.accepted
     invite.responded_at = datetime.now(timezone.utc)
 
-    # Accepting puts the album in the receiver's Listen Later independently: give
-    # them their own draft rating if they don't already have one. Membership is
-    # per-user ("I have a draft"), so removing later only affects their own copy.
-    existing = db.scalar(
-        select(Rating).where(
-            Rating.username == user.username, Rating.album_id == invite.album_id
+    # Accepting makes it a shared listen: give BOTH the sender and the receiver
+    # their own draft rating if they don't already have one, so the album lands in
+    # both Listen Laters. Membership is per-user ("I have a draft"), so removing
+    # later only affects that person's own copy — the other keeps theirs.
+    for username in (invite.sender_username, invite.receiver_username):
+        existing = db.scalar(
+            select(Rating).where(
+                Rating.username == username, Rating.album_id == invite.album_id
+            )
         )
-    )
-    if existing is None:
-        db.add(Rating(username=user.username, album_id=invite.album_id))
+        if existing is None:
+            db.add(Rating(username=username, album_id=invite.album_id))
 
     # The accepter's own listen_invite notification is resolved.
     db.execute(

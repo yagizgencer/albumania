@@ -192,9 +192,10 @@ def test_accept_invite_only_by_receiver(client: TestClient) -> None:
     _clear_auth()
 
 
-def test_accept_invite_creates_receiver_draft(client: TestClient) -> None:
-    """Accepting puts the album in the receiver's Listen Later independently by
-    creating their own draft rating (no manual 'start rating' step)."""
+def test_accept_creates_draft_for_both(client: TestClient) -> None:
+    """Accepting an invite creates a draft for BOTH the sender and the receiver,
+    so the shared album lands in both Listen Laters with the 'listening with' chip.
+    (Sending alone puts it in nobody's list.)"""
     alice = _seed_user("alice")
     bob = _seed_user("bob")
     a1 = _seed_album()
@@ -202,15 +203,28 @@ def test_accept_invite_creates_receiver_draft(client: TestClient) -> None:
 
     _auth_as(alice)
     iid = client.post("/invites", json={"username": "bob", "album_id": a1}).json()["id"]
+    # Send made no draft for anyone yet.
+    assert client.get("/listen-later").json() == []
+    _clear_auth()
+    _auth_as(bob)
+    assert client.get("/listen-later").json() == []
     _clear_auth()
 
     _auth_as(bob)
-    assert client.get("/listen-later").json() == []  # nothing before accepting
     client.post(f"/invites/{iid}/accept")
-    entries = client.get("/listen-later").json()
-    assert len(entries) == 1
-    assert entries[0]["rating"] is not None  # bob now has his own draft
-    assert entries[0]["participants"][0]["username"] == "alice"
+    # Receiver (bob) now has the album with alice as a participant.
+    bob_entries = client.get("/listen-later").json()
+    assert len(bob_entries) == 1
+    assert bob_entries[0]["rating"] is not None
+    assert bob_entries[0]["participants"][0]["username"] == "alice"
+    _clear_auth()
+
+    # Sender (alice) ALSO now has the album with bob as a participant.
+    _auth_as(alice)
+    alice_entries = client.get("/listen-later").json()
+    assert len(alice_entries) == 1
+    assert alice_entries[0]["rating"] is not None
+    assert alice_entries[0]["participants"][0]["username"] == "bob"
     _clear_auth()
 
 
@@ -593,10 +607,9 @@ def test_unfriend_removes_listen_invites(client: TestClient) -> None:
 # Remove from Listen Later (DELETE /listen-later/{album_id})
 # ---------------------------------------------------------------------------
 
-def test_remove_accepted_invite_with_no_draft(client: TestClient) -> None:
-    """The reported bug: after accepting an invite (no draft yet), the receiver
-    can still remove the album from Listen Later — it withdraws the invite for
-    both sides."""
+def test_receiver_removes_shared_album_sender_keeps_it(client: TestClient) -> None:
+    """Sender (alice) never manually added the album — she got her draft purely
+    from bob accepting. When bob removes his copy, alice's stays (now solo)."""
     alice = _seed_user("alice")
     bob = _seed_user("bob")
     a1 = _seed_album()
@@ -604,20 +617,24 @@ def test_remove_accepted_invite_with_no_draft(client: TestClient) -> None:
 
     _auth_as(alice)
     iid = client.post("/invites", json={"username": "bob", "album_id": a1}).json()["id"]
+    # Before bob accepts, the album is NOT in alice's Listen Later (send makes no draft).
+    assert client.get("/listen-later").json() == []
     _clear_auth()
+
     _auth_as(bob)
     client.post(f"/invites/{iid}/accept")
-    # bob has no draft, but the accepted invite puts the album in his Listen Later.
+    # bob now has the album (his own draft from accepting).
     assert len(client.get("/listen-later").json()) == 1
-
-    # bob removes it → 204, and it's gone for him.
+    # bob removes it → gone for him.
     assert client.delete(f"/listen-later/{a1}").status_code == 204
     assert client.get("/listen-later").json() == []
     _clear_auth()
 
-    # The invite is gone, so it drops off alice's Listen Later too.
+    # alice KEEPS her copy (she got a draft when bob accepted); now solo, invite gone.
     _auth_as(alice)
-    assert client.get("/listen-later").json() == []
+    entries = client.get("/listen-later").json()
+    assert len(entries) == 1
+    assert entries[0]["participants"] == []
     _clear_auth()
     assert _db().query(ListenInvite).count() == 0
 
