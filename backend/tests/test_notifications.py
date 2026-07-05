@@ -177,6 +177,41 @@ def test_friend_published_notifies_other_party(client: TestClient) -> None:
     _clear_auth()
 
 
+def test_second_publisher_also_notifies_first(client: TestClient) -> None:
+    """Both directions: when the SECOND person publishes (completing the shared
+    listen), the FIRST publisher still gets a `friend_published` notification that
+    the other has now finished too."""
+    alice = _seed_user("alice")
+    bob = _seed_user("bob")
+    a1 = _seed_album()
+    _send_and_accept_friendship(client, alice, bob)
+
+    _auth_as(alice)
+    iid = client.post("/invites", json={"username": "bob", "album_id": a1}).json()["id"]
+    _clear_auth()
+    _auth_as(bob)
+    client.post(f"/invites/{iid}/accept")
+    _clear_auth()
+
+    # Alice publishes first (bob gets notified — covered by the test above).
+    _auth_as(alice)
+    _publish(client, a1)
+    _clear_auth()
+
+    # Bob publishes second → alice should now be told bob finished.
+    _auth_as(bob)
+    _publish(client, a1)
+    _clear_auth()
+
+    _auth_as(alice)
+    rows = client.get("/notifications").json()
+    pubs = [r for r in rows if r["type"] == NotificationType.friend_published.value]
+    assert len(pubs) == 1
+    assert pubs[0]["actor_username"] == "bob"
+    assert pubs[0]["album"]["id"] == a1
+    _clear_auth()
+
+
 def test_mark_seen_friend_requests_only(client: TestClient) -> None:
     alice = _seed_user("alice")
     bob = _seed_user("bob")

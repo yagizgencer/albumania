@@ -13,11 +13,14 @@ from app.services.notifications import create_notification
 
 def maybe_complete_invites_for_rating(db: Session, username: str, album_id: int) -> None:
     """Called after `username` publishes a rating for `album_id`. For every
-    accepted invite that involves them:
-      - if the other party has also published, flip to `completed` and rebuild
-        that friend-pair's dashboard.
-      - otherwise, drop a `friend_published` notification on the other party
-        ("alice rated this — your turn").
+    accepted invite that involves them, notify the other party that `username`
+    finished ("alice finished rating an album you're both listening to"), and:
+      - if the other party has ALSO already published, this publish completes the
+        shared listen: flip the invite to `completed` and rebuild the pair's
+        dashboard.
+      - otherwise it's still pending on the other side.
+    Either way the other party is notified — so whoever publishes second still
+    tells the first-publisher that they've now finished too.
     """
     invites = db.scalars(
         select(ListenInvite).where(
@@ -33,11 +36,29 @@ def maybe_complete_invites_for_rating(db: Session, username: str, album_id: int)
     now = datetime.now(timezone.utc)
     pairs_to_rebuild: list[int] = []
     for invite in invites:
+        # Only accepted invites are a shared listen — a pending invite the other
+        # side hasn't responded to yet doesn't notify anyone.
+        if invite.status != ListenInviteStatus.accepted:
+            continue
+
         other = (
             invite.receiver_username
             if invite.sender_username == username
             else invite.sender_username
         )
+
+        # Tell the other party I've finished — whether they published before me
+        # (this completes the listen) or haven't yet (their turn). This is what
+        # was missing: the second publisher used to notify no one.
+        create_notification(
+            db,
+            recipient_username=other,
+            type=NotificationType.friend_published,
+            actor_username=username,
+            invite_id=invite.id,
+            album_id=album_id,
+        )
+
         other_published = db.scalar(
             select(Rating).where(
                 Rating.username == other,
@@ -46,19 +67,7 @@ def maybe_complete_invites_for_rating(db: Session, username: str, album_id: int)
             )
         )
         if other_published is None:
-            # Only fires when the *other* party has already accepted — a pending
-            # outgoing invite the other side hasn't responded to yet isn't a
-            # shared listen yet, so skip.
-            if invite.status == ListenInviteStatus.accepted:
-                create_notification(
-                    db,
-                    recipient_username=other,
-                    type=NotificationType.friend_published,
-                    actor_username=username,
-                    invite_id=invite.id,
-                    album_id=album_id,
-                )
-            continue
+            continue  # still pending on their side
         invite.status = ListenInviteStatus.completed
         invite.responded_at = invite.responded_at or now
         friendship = get_friendship(db, username, other)
