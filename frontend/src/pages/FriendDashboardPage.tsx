@@ -74,12 +74,7 @@ export function FriendDashboard({ source }: { source: ComparisonSource }) {
       .then(setData)
       .catch((err) => {
         if (err?.response?.status === 403) {
-          const detail: string = err?.response?.data?.detail ?? "";
-          setError(
-            detail.toLowerCase().includes("private")
-              ? "This profile is now private, so you can't see this comparison."
-              : "You don't have access to this comparison."
-          );
+          setError("You don't have access to this comparison.");
         } else if (err?.response?.status === 404) {
           setError("Comparison not found.");
         } else {

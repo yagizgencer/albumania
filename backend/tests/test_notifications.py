@@ -177,6 +177,34 @@ def test_friend_published_notifies_other_party(client: TestClient) -> None:
     _clear_auth()
 
 
+def test_accepting_invite_notifies_sender(client: TestClient) -> None:
+    """When bob accepts alice's listen invite, alice (the sender) gets a
+    `listen_invite_accepted` notification."""
+    alice = _seed_user("alice")
+    bob = _seed_user("bob")
+    a1 = _seed_album()
+    _send_and_accept_friendship(client, alice, bob)
+
+    _auth_as(alice)
+    iid = client.post("/invites", json={"username": "bob", "album_id": a1}).json()["id"]
+    _clear_auth()
+    _auth_as(bob)
+    client.post(f"/invites/{iid}/accept")
+    _clear_auth()
+
+    _auth_as(alice)
+    rows = client.get("/notifications").json()
+    accepted = [
+        r for r in rows if r["type"] == NotificationType.listen_invite_accepted.value
+    ]
+    assert len(accepted) == 1
+    assert accepted[0]["actor_username"] == "bob"
+    assert accepted[0]["album"]["id"] == a1
+    # It counts toward the bell badge.
+    assert client.get("/notifications/summary").json()["bell"] >= 1
+    _clear_auth()
+
+
 def test_second_publisher_also_notifies_first(client: TestClient) -> None:
     """Both directions: when the SECOND person publishes (completing the shared
     listen), the FIRST publisher still gets a `friend_published` notification that

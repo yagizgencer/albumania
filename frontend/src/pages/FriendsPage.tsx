@@ -218,8 +218,8 @@ export function FriendsPage() {
                     <span className={styles.userHandle}>{u.username}</span>
                   </span>
                   {u.profile_visibility !== "public" && (
-                    <span className={styles.privatePill} title="This profile is private">
-                      🔒 {u.profile_visibility === "friends" ? "Friends" : "Private"}
+                    <span className={styles.privatePill} title="Visible to friends only">
+                      🔒 Friends
                     </span>
                   )}
                 </span>

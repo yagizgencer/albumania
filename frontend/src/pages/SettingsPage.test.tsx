@@ -34,7 +34,7 @@ function renderPage() {
 describe("SettingsPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(updateMe).mockResolvedValue({ ...PROFILE, profile_visibility: "private" });
+    vi.mocked(updateMe).mockResolvedValue({ ...PROFILE, profile_visibility: "friends" });
   });
 
   it("defaults to the Account tab and hides the password form", () => {
@@ -53,11 +53,11 @@ describe("SettingsPage", () => {
     renderPage();
     fireEvent.click(screen.getByRole("tab", { name: "Privacy" }));
 
-    fireEvent.change(screen.getByRole("combobox"), { target: { value: "private" } });
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "friends" } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
     await waitFor(() => {
-      expect(updateMe).toHaveBeenCalledWith({ profile_visibility: "private" });
+      expect(updateMe).toHaveBeenCalledWith({ profile_visibility: "friends" });
       expect(refreshProfile).toHaveBeenCalled();
     });
   });

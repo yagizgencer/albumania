@@ -187,16 +187,6 @@ def test_cannot_compare_with_self(client: TestClient) -> None:
     _clear_auth()
 
 
-def test_private_target_forbidden(client: TestClient) -> None:
-    alice = _seed_user("alice")
-    _seed_user("bob", ProfileVisibility.private)
-    _auth_as(alice)
-    r = client.get("/users/bob/comparison")
-    assert r.status_code == 403
-    assert "private" in r.json()["detail"].lower()
-    _clear_auth()
-
-
 def test_friends_only_non_friend_forbidden(client: TestClient) -> None:
     alice = _seed_user("alice")
     _seed_user("bob", ProfileVisibility.friends)

@@ -34,7 +34,7 @@ import { ConfirmButton } from "../components/ConfirmButton";
 import { Card } from "../components/Card";
 import styles from "./ProfilePage.module.css";
 
-type AccessBlock = "private" | "friends-only" | null;
+type AccessBlock = "friends-only" | null;
 
 type FriendState =
   | { kind: "self" }
@@ -145,7 +145,6 @@ export function ProfilePage() {
         return {
           friendshipId: f.id,
           username: isA ? f.user_b_username : f.user_a_username,
-          isPrivate: (isA ? f.user_b_visibility : f.user_a_visibility) === "private",
         };
       })
       .sort((a, b) => a.username.localeCompare(b.username));
@@ -199,15 +198,8 @@ export function ProfilePage() {
               <div className={styles.nameRow}>
                 <h1 className={styles.displayName}>{profile.display_name}</h1>
                 {!viewerCanSeeDashboard && (
-                  <span
-                    className={styles.privacyPill}
-                    title={
-                      profile.profile_visibility === "friends"
-                        ? "Visible to friends only"
-                        : "Private profile"
-                    }
-                  >
-                    🔒 {profile.profile_visibility === "friends" ? "Friends only" : "Private"}
+                  <span className={styles.privacyPill} title="Visible to friends only">
+                    🔒 Friends only
                   </span>
                 )}
               </div>
@@ -304,7 +296,6 @@ export function ProfilePage() {
           <>
             {accessBlock && (
               <PrivateNotice
-                reason={accessBlock}
                 friendState={friendState}
                 displayName={profile.display_name}
               />
@@ -337,30 +328,20 @@ export function ProfilePage() {
 // ---------------------------------------------------------------------------
 
 function PrivateNotice({
-  reason,
   friendState,
   displayName,
 }: {
-  reason: "private" | "friends-only";
   friendState: FriendState | null;
   displayName: string;
 }) {
   const canAddFriend = friendState?.kind === "none";
   const requestSent = friendState?.kind === "pending_sent";
 
-  const heading =
-    reason === "friends-only" ? "Friends-only profile" : "This profile is private";
-
-  let hint: string;
-  if (reason === "friends-only") {
-    hint = requestSent
-      ? `Your friend request is pending. Once ${displayName} accepts, you'll see their dashboard.`
-      : canAddFriend
-        ? `Add ${displayName} as a friend to see their listening dashboard.`
-        : `${displayName} shares their dashboard with friends only.`;
-  } else {
-    hint = `${displayName} keeps their listening dashboard private.`;
-  }
+  const hint = requestSent
+    ? `Your friend request is pending. Once ${displayName} accepts, you'll see their dashboard.`
+    : canAddFriend
+      ? `Add ${displayName} as a friend to see their listening dashboard.`
+      : `${displayName} shares their dashboard with friends only.`;
 
   return (
     <Card className={styles.privateNotice}>
@@ -368,7 +349,7 @@ function PrivateNotice({
         🔒
       </span>
       <div>
-        <h3 className={styles.privateNoticeTitle}>{heading}</h3>
+        <h3 className={styles.privateNoticeTitle}>Friends-only profile</h3>
         <p className={styles.privateNoticeHint}>{hint}</p>
       </div>
     </Card>
@@ -669,7 +650,6 @@ function ProfileEditor({
 interface FriendOption {
   friendshipId: number;
   username: string;
-  isPrivate: boolean;
 }
 
 function FriendCombobox({
@@ -776,15 +756,6 @@ function FriendCombobox({
                   onClick={() => choose(f.friendshipId)}
                 >
                   {f.username}
-                  {f.isPrivate && (
-                    <span
-                      className={styles.comboLock}
-                      title="This profile is private — you can't see their dashboard"
-                      aria-label="private"
-                    >
-                      🔒
-                    </span>
-                  )}
                 </li>
               ))
             )}

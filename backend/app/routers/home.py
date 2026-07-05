@@ -11,7 +11,7 @@ from app.models.album import Album
 from app.models.comment import Comment, CommentVisibility
 from app.models.friendship import Friendship, FriendshipStatus
 from app.models.rating import Rating, RatingStatus
-from app.models.user import ProfileVisibility, User
+from app.models.user import User
 from app.schemas.home import (
     FeedActor,
     FeedAlbum,
@@ -88,21 +88,9 @@ def get_feed(
     cutoff = before or datetime.now(timezone.utc)
     friends = _accepted_friends(db, user.username)
     feed_users = [user.username, *friends]
-
-    # A private friend hides their *ratings* (which are what a private profile
-    # protects), but their public comments and the "we became friends" event are
-    # not private, so those still surface. Only ratings get filtered by this set.
-    private_friends: set[str] = set()
-    if friends:
-        private_friends = set(
-            db.scalars(
-                select(User.username).where(
-                    User.username.in_(friends),
-                    User.profile_visibility == ProfileVisibility.private,
-                )
-            ).all()
-        )
-    rating_users = [u for u in feed_users if u not in private_friends]
+    # Profiles are only public or friends-only now; a friend can always see a
+    # friend's ratings, so every feed user contributes rating events.
+    rating_users = feed_users
 
     def wants(category: FeedCategory) -> bool:
         return not types or category in types

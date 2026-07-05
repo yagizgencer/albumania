@@ -9,7 +9,7 @@ from app.db.session import get_db
 from app.models.album import Album, AlbumTrack
 from app.models.friendship import Friendship, FriendshipStatus
 from app.models.rating import Rating, RatingStatus
-from app.models.user import ProfileVisibility, User
+from app.models.user import User
 from app.schemas.album import (
     AlbumFriendRating,
     AlbumOut,
@@ -109,10 +109,6 @@ def get_album_friend_ratings(
             Rating.album_id == album.id,
             Rating.status == RatingStatus.published,
             User.username.in_(friendship_by_friend.keys()),
-            # A friend who hid their profile (private) shouldn't surface here —
-            # their rating stays hidden even from friends. Friends-only is fine
-            # since everyone in this list is already an accepted friend.
-            User.profile_visibility != ProfileVisibility.private,
         )
         .order_by(User.display_name.asc())
     ).all()

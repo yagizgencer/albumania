@@ -180,16 +180,11 @@ def get_user(
 def require_can_view_profile(db: Session, *, viewer: User, target: User) -> None:
     """Raise 403 if `viewer` may not see `target`'s ratings/dashboard. The owner
     always may; a public profile is visible to everyone; a friends-only profile
-    only to accepted friends; a private profile to no one else. Shared by the solo
-    dashboard and the pair-comparison endpoint so the rules (and messages) match."""
+    only to accepted friends. Shared by the solo dashboard and the pair-comparison
+    endpoint so the rules (and messages) match."""
     if viewer.username == target.username:
         return
-    vis = target.profile_visibility
-    if vis == ProfileVisibility.private:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Profile is private"
-        )
-    if vis == ProfileVisibility.friends and not are_friends(
+    if target.profile_visibility == ProfileVisibility.friends and not are_friends(
         db, viewer.username, target.username
     ):
         raise HTTPException(

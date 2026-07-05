@@ -10,7 +10,6 @@ from app.db.session import Base
 class ProfileVisibility(str, enum.Enum):
     public = "public"
     friends = "friends"
-    private = "private"
 
 
 class User(Base):

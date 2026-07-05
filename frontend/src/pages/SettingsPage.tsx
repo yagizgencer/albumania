@@ -195,7 +195,6 @@ function PrivacyTab({ profile }: { profile: UserProfile }) {
           >
             <option value="public">Public — anyone can see your dashboard</option>
             <option value="friends">Friends only — only your friends can see it</option>
-            <option value="private">Private — only you can see it</option>
           </select>
         </label>
         {error && <Alert>{error}</Alert>}

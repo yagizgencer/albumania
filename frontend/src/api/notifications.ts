@@ -5,6 +5,7 @@ export type NotificationType =
   | "friend_request"
   | "friend_accept"
   | "listen_invite"
+  | "listen_invite_accepted"
   | "friend_published"
   | "comment_liked";
 

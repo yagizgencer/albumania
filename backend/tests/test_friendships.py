@@ -222,7 +222,7 @@ def test_list_my_friendships_buckets(client: TestClient) -> None:
 
 def test_friendship_list_includes_visibility(client: TestClient) -> None:
     alice = _seed_user("alice")
-    bob = _seed_user("bob", visibility=ProfileVisibility.private)
+    bob = _seed_user("bob", visibility=ProfileVisibility.friends)
     _auth_as(alice)
     fid = client.post("/friendships", json={"username": "bob"}).json()["id"]
     _clear_auth()
@@ -238,7 +238,7 @@ def test_friendship_list_includes_visibility(client: TestClient) -> None:
         row["user_a_username"]: row["user_a_visibility"],
         row["user_b_username"]: row["user_b_visibility"],
     }
-    assert vis["bob"] == "private"
+    assert vis["bob"] == "friends"
     assert vis["alice"] == "public"
     _clear_auth()
 
@@ -270,14 +270,14 @@ def test_user_search_excludes_self(client: TestClient) -> None:
 
 def test_user_search_includes_visibility(client: TestClient) -> None:
     alice = _seed_user("alice")
-    _seed_user("bob", visibility=ProfileVisibility.private)
+    _seed_user("bob", visibility=ProfileVisibility.friends)
     _auth_as(alice)
 
     r = client.get("/users/search", params={"q": "bob"})
     assert r.status_code == 200
     result = r.json()[0]
     assert result["username"] == "bob"
-    assert result["profile_visibility"] == "private"
+    assert result["profile_visibility"] == "friends"
     _clear_auth()
 
 
@@ -312,15 +312,3 @@ def test_friends_only_profile_blocks_pending_friend(client: TestClient) -> None:
     _clear_auth()
 
 
-def test_private_profile_blocks_even_accepted_friend(client: TestClient) -> None:
-    alice = _seed_user("alice", visibility=ProfileVisibility.private)
-    bob = _seed_user("bob")
-    _auth_as(alice)
-    fid = client.post("/friendships", json={"username": "bob"}).json()["id"]
-    _clear_auth()
-    _auth_as(bob)
-    client.post(f"/friendships/{fid}/accept")
-    # private now means owner-only — even an accepted friend is blocked
-    r = client.get("/users/alice/dashboard")
-    assert r.status_code == 403
-    _clear_auth()

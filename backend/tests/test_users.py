@@ -46,14 +46,14 @@ def test_patch_me_updates_fields(client: TestClient) -> None:
         json={
             "display_name": "Alice Cooper",
             "description": "Loves Rock",
-            "profile_visibility": "private",
+            "profile_visibility": "friends",
         },
     )
     assert r.status_code == 200
     data = r.json()
     assert data["display_name"] == "Alice Cooper"
     assert data["description"] == "Loves Rock"
-    assert data["profile_visibility"] == "private"
+    assert data["profile_visibility"] == "friends"
     _clear_auth()
 
 

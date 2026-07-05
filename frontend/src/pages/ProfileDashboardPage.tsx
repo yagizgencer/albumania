@@ -26,8 +26,8 @@ export function ProfileDashboard({
   username: string;
   /** Called when the dashboard can't be shown because the profile is private
    *  (403) so the parent can render a nicer explanation instead of a bare
-   *  alert. Passing "private" | "friends-only" | null (cleared on success). */
-  onAccessBlocked?: (reason: "private" | "friends-only" | null) => void;
+   *  alert. Passing "friends-only" | null (cleared on success). */
+  onAccessBlocked?: (reason: "friends-only" | null) => void;
 }) {
   const navigate = useNavigate();
   const [entries, setEntries] = useState<DashboardEntry[] | null>(null);
@@ -53,18 +53,9 @@ export function ProfileDashboard({
       })
       .catch((err) => {
         if (err?.response?.status === 403) {
-          // The backend distinguishes fully-private from friends-only via the
-          // detail message; fall back to "private" if it's absent.
-          const detail: string = err?.response?.data?.detail ?? "";
-          const reason = detail.toLowerCase().includes("friend")
-            ? "friends-only"
-            : "private";
-          onAccessBlocked?.(reason);
-          setError(
-            reason === "friends-only"
-              ? "This profile is visible to friends only."
-              : "This profile is private."
-          );
+          // A 403 means the profile is friends-only and we aren't friends.
+          onAccessBlocked?.("friends-only");
+          setError("This profile is visible to friends only.");
         } else if (err?.response?.status === 404) {
           setError("User not found.");
         } else {
@@ -145,7 +136,7 @@ export function ProfileDashboard({
     [sorted, mode]
   );
 
-  // When the profile is private/friends-only the parent renders a dedicated
+  // When the profile is friends-only the parent renders a dedicated
   // explanation card, so stay silent here to avoid a duplicate message.
   if (error) return onAccessBlocked ? null : <Alert>{error}</Alert>;
   if (!entries) return <LoadingState />;

@@ -14,6 +14,7 @@ const LABELS: Record<NotificationType, (actor: string) => string> = {
   friend_request: (actor) => `${actor} sent you a friend request`,
   friend_accept: (actor) => `${actor} accepted your friend request`,
   listen_invite: (actor) => `${actor} invited you to listen`,
+  listen_invite_accepted: (actor) => `${actor} accepted your listen invite`,
   friend_published: (actor) => `${actor} finished rating an album you're both listening to`,
   // Likes are anonymous — no actor is shown; the album meta line names the album.
   comment_liked: () => "Someone liked your comment",
@@ -140,6 +141,8 @@ function linkFor(item: NotificationItem): string {
       return "/friends";
     case "listen_invite":
       return "/listen-later";
+    case "listen_invite_accepted":
+      return item.album ? `/albums/${item.album.spotify_id}` : "/listen-later";
     case "friend_published":
       return item.album ? `/albums/${item.album.spotify_id}` : "/listen-later";
     case "comment_liked":

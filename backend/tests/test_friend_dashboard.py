@@ -176,33 +176,6 @@ def test_dashboard_includes_spotify_similarity(client: TestClient) -> None:
     _clear_auth()
 
 
-def test_dashboard_blocked_when_other_user_private(client: TestClient) -> None:
-    from app.models.user import ProfileVisibility
-
-    alice = _seed_user("alice")
-    bob = _seed_user("bob")
-    a1 = _seed_album("spot1")
-    d = datetime(2025, 1, 1, tzinfo=timezone.utc)
-    _seed_published_rating("alice", a1, 8.0, [1, 2, 3, 4, 5], d)
-    _seed_published_rating("bob", a1, 9.0, [1, 2, 3, 4, 5], d)
-    fid = _send_and_accept(client, alice, bob)
-
-    # bob makes his profile private → alice can no longer see the comparison.
-    db = _db()
-    db.query(User).filter(User.username == "bob").one().profile_visibility = (
-        ProfileVisibility.private
-    )
-    db.commit()
-
-    _auth_as(alice)
-    r = client.get(f"/friendships/{fid}/dashboard")
-    assert r.status_code == 403
-    _clear_auth()
-
-    # ...and bob still sees his own comparison (owner is never blocked).
-    _auth_as(bob)
-    assert client.get(f"/friendships/{fid}/dashboard").status_code == 200
-    _clear_auth()
 
 
 def test_dashboard_blocked_for_pending(client: TestClient) -> None:

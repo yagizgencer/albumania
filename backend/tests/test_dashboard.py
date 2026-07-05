@@ -169,8 +169,8 @@ def test_dashboard_public_visible_to_other(client: TestClient, spotify_mock: Mag
     _clear_auth()
 
 
-def test_dashboard_private_blocks_stranger(client: TestClient, spotify_mock: MagicMock) -> None:
-    _seed_user_with_published_rating(visibility=ProfileVisibility.private)
+def test_dashboard_friends_only_blocks_stranger(client: TestClient, spotify_mock: MagicMock) -> None:
+    _seed_user_with_published_rating(visibility=ProfileVisibility.friends)
     _auth_as(_STRANGER)
 
     r = client.get("/users/owner/dashboard")
@@ -179,8 +179,8 @@ def test_dashboard_private_blocks_stranger(client: TestClient, spotify_mock: Mag
     _clear_auth()
 
 
-def test_dashboard_private_allows_owner(client: TestClient, spotify_mock: MagicMock) -> None:
-    _seed_user_with_published_rating(visibility=ProfileVisibility.private)
+def test_dashboard_friends_only_allows_owner(client: TestClient, spotify_mock: MagicMock) -> None:
+    _seed_user_with_published_rating(visibility=ProfileVisibility.friends)
     _auth_as(_OWNER)
 
     r = client.get("/users/owner/dashboard")

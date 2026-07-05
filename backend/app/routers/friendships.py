@@ -242,19 +242,6 @@ def get_friend_dashboard(
             status_code=status.HTTP_403_FORBIDDEN, detail="Friendship is not accepted"
         )
 
-    # The other user in this pair may have made their profile private after we
-    # became friends — a private profile hides ratings from everyone, so the
-    # comparison must not expose their scores/top-tracks.
-    other_username = (
-        friendship.user_b_username
-        if friendship.user_a_username == current_user.username
-        else friendship.user_a_username
-    )
-    other = db.scalar(select(User).where(User.username == other_username))
-    if other is not None and other.profile_visibility == ProfileVisibility.private:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Profile is private"
-        )
 
     rows = db.execute(
         select(FriendDashboardEntry, Album)

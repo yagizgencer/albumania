@@ -1,6 +1,6 @@
 import { apiClient } from "./client";
 
-export type ProfileVisibility = "public" | "friends" | "private";
+export type ProfileVisibility = "public" | "friends";
 
 // Bio character cap. Mirrors the backend rule (app/schemas/user.py); the backend
 // is the real gate.

@@ -11,6 +11,7 @@ class NotificationType(str, enum.Enum):
     friend_request = "friend_request"
     friend_accept = "friend_accept"
     listen_invite = "listen_invite"
+    listen_invite_accepted = "listen_invite_accepted"
     friend_published = "friend_published"
     comment_liked = "comment_liked"
 

@@ -13,7 +13,7 @@ from app.db.session import get_db
 from app.models.album import Album
 from app.models.invite import ListenInvite, ListenInviteStatus
 from app.models.rating import Rating, RatingStatus
-from app.models.user import ProfileVisibility, User
+from app.models.user import User
 from app.schemas.album import AlbumOut, TrackOut
 from app.schemas.invite import (
     ListenInviteCreate,
@@ -187,6 +187,16 @@ def accept_invite(
         if existing is None:
             db.add(Rating(username=username, album_id=invite.album_id))
 
+    # Tell the sender their invite was accepted (they're now listening together).
+    create_notification(
+        db,
+        recipient_username=invite.sender_username,
+        type=NotificationType.listen_invite_accepted,
+        actor_username=invite.receiver_username,
+        invite_id=invite.id,
+        album_id=invite.album_id,
+    )
+
     # The accepter's own listen_invite notification is resolved.
     db.execute(
         update(Notification)
@@ -350,17 +360,11 @@ def get_listen_later(
     }
     published_pairs: set[tuple[str, int]] = set()
     if other_users:
-        # Skip private users: the "they published" flag would otherwise reveal
-        # that a private friend has rated a shared album. (Friends-only is fine —
-        # a Listen Later invite already implies an accepted friendship.)
         for r in db.scalars(
-            select(Rating)
-            .join(User, User.username == Rating.username)
-            .where(
+            select(Rating).where(
                 Rating.status == RatingStatus.published,
                 Rating.username.in_(other_users),
                 Rating.album_id.in_(entry_album_ids),
-                User.profile_visibility != ProfileVisibility.private,
             )
         ):
             published_pairs.add((r.username, r.album_id))

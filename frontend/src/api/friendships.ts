@@ -23,7 +23,7 @@ export interface FriendshipList {
   accepted: Friendship[];
 }
 
-export type ProfileVisibility = "public" | "friends" | "private";
+export type ProfileVisibility = "public" | "friends";
 
 export interface UserSearchResult {
   username: string;

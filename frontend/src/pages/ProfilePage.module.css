@@ -298,11 +298,6 @@
   font-size: 0.9rem;
 }
 
-.comboLock {
-  font-size: 0.8rem;
-  line-height: 1;
-  flex-shrink: 0;
-}
 
 .comboItem:hover,
 .comboItemActive {
