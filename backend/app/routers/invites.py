@@ -173,6 +173,18 @@ def accept_invite(
         )
     invite.status = ListenInviteStatus.accepted
     invite.responded_at = datetime.now(timezone.utc)
+
+    # Accepting puts the album in the receiver's Listen Later independently: give
+    # them their own draft rating if they don't already have one. Membership is
+    # per-user ("I have a draft"), so removing later only affects their own copy.
+    existing = db.scalar(
+        select(Rating).where(
+            Rating.username == user.username, Rating.album_id == invite.album_id
+        )
+    )
+    if existing is None:
+        db.add(Rating(username=user.username, album_id=invite.album_id))
+
     # The accepter's own listen_invite notification is resolved.
     db.execute(
         update(Notification)
@@ -316,15 +328,11 @@ def get_listen_later(
     for inv in relevant_invites:
         participants_by_album.setdefault(inv.album_id, []).append(inv)
 
-    # An album only gets a row when *I* have committed to listening: I have a
-    # draft, OR at least one of the related invites is `accepted` (either I sent
-    # one and they accepted, or they sent one and I accepted). Purely-pending
-    # outgoing invites do NOT add a row — they live in /invites/me.outgoing
-    # until the receiver responds.
+    # Membership is per-user and draft-based: an album is in *my* Listen Later
+    # exactly when I have a draft rating for it. Accepting an invite creates that
+    # draft (see accept_invite), so there's no need to derive rows from invites —
+    # invites only add the "Listening with:" participant chips below.
     entry_album_ids: set[int] = set(drafts_by_album)
-    for album_id, invs in participants_by_album.items():
-        if any(i.status == ListenInviteStatus.accepted for i in invs):
-            entry_album_ids.add(album_id)
 
     if not entry_album_ids:
         return []
@@ -374,7 +382,7 @@ def get_listen_later(
         if album_id in my_published:
             continue
         album = album_map[album_id]
-        rating = drafts_by_album.get(album_id)
+        rating = drafts_by_album[album_id]  # always present: membership is draft-based
         participants: list[ListenLaterParticipant] = []
         for inv in participants_by_album.get(album_id, []):
             if inv.sender_username == me:
@@ -393,10 +401,6 @@ def get_listen_later(
                 )
             )
 
-        # If there's no draft AND no qualifying participants, skip (shouldn't happen).
-        if rating is None and not participants:
-            continue
-
         entries.append(
             ListenLaterEntry(
                 album=_album_out(album),
@@ -405,15 +409,8 @@ def get_listen_later(
             )
         )
 
-    # Sort newest-first by either rating start or invite creation.
-    def _sort_key(entry: ListenLaterEntry) -> datetime:
-        if entry.rating is not None:
-            return entry.rating.started_at
-        # safe: participants is non-empty here
-        invs = participants_by_album[entry.album.id]
-        return max(i.created_at for i in invs)
-
-    entries.sort(key=_sort_key, reverse=True)
+    # Newest-first by when I started my draft for the album.
+    entries.sort(key=lambda e: drafts_by_album[e.album.id].started_at, reverse=True)
     return entries
 
 

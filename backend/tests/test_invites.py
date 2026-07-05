@@ -76,7 +76,17 @@ def _send_and_accept_friendship(client: TestClient, a: User, b: User) -> int:
 
 
 def _publish(client: TestClient, album_id: int) -> int:
-    rid = client.post("/ratings", json={"album_id": album_id}).json()["id"]
+    # Reuse an existing draft (e.g. one created by accepting an invite); otherwise
+    # create one.
+    created = client.post("/ratings", json={"album_id": album_id})
+    if created.status_code == 201:
+        rid = created.json()["id"]
+    else:
+        rid = next(
+            r["id"]
+            for r in client.get("/ratings/me").json()
+            if r["album_id"] == album_id
+        )
     client.patch(
         f"/ratings/{rid}", json={"score": 8.0, "top_track_indices": [1, 2, 3, 4, 5]}
     )
@@ -180,6 +190,59 @@ def test_accept_invite_only_by_receiver(client: TestClient) -> None:
     assert r.status_code == 200
     assert r.json()["status"] == ListenInviteStatus.accepted.value
     _clear_auth()
+
+
+def test_accept_invite_creates_receiver_draft(client: TestClient) -> None:
+    """Accepting puts the album in the receiver's Listen Later independently by
+    creating their own draft rating (no manual 'start rating' step)."""
+    alice = _seed_user("alice")
+    bob = _seed_user("bob")
+    a1 = _seed_album()
+    _send_and_accept_friendship(client, alice, bob)
+
+    _auth_as(alice)
+    iid = client.post("/invites", json={"username": "bob", "album_id": a1}).json()["id"]
+    _clear_auth()
+
+    _auth_as(bob)
+    assert client.get("/listen-later").json() == []  # nothing before accepting
+    client.post(f"/invites/{iid}/accept")
+    entries = client.get("/listen-later").json()
+    assert len(entries) == 1
+    assert entries[0]["rating"] is not None  # bob now has his own draft
+    assert entries[0]["participants"][0]["username"] == "alice"
+    _clear_auth()
+
+
+def test_remove_my_copy_keeps_friends_copy(client: TestClient) -> None:
+    """The headline fix: removing my copy of a shared album must not remove the
+    friend's copy. It only deletes my draft and clears the invite link."""
+    alice = _seed_user("alice")
+    bob = _seed_user("bob")
+    a1 = _seed_album()
+    _send_and_accept_friendship(client, alice, bob)
+
+    # alice adds the album + invites bob; bob accepts (both now have a draft).
+    _auth_as(alice)
+    client.post("/ratings", json={"album_id": a1})
+    iid = client.post("/invites", json={"username": "bob", "album_id": a1}).json()["id"]
+    _clear_auth()
+    _auth_as(bob)
+    client.post(f"/invites/{iid}/accept")
+
+    # bob removes his copy.
+    assert client.delete(f"/listen-later/{a1}").status_code == 204
+    assert client.get("/listen-later").json() == []  # gone for bob
+    _clear_auth()
+
+    # alice still has the album — now solo (no participant chip), invite cleared.
+    _auth_as(alice)
+    entries = client.get("/listen-later").json()
+    assert len(entries) == 1
+    assert entries[0]["rating"] is not None
+    assert entries[0]["participants"] == []
+    _clear_auth()
+    assert _db().query(ListenInvite).count() == 0
 
 
 def test_cancel_deletes_invite(client: TestClient) -> None:
@@ -471,10 +534,10 @@ def test_reinvite_allowed_after_receiver_removes_album(client: TestClient) -> No
     assert client.post("/invites", json={"username": "bob", "album_id": a1}).status_code == 409
     _clear_auth()
 
-    # bob starts a draft, then removes the album from Listen Later.
+    # Accepting already gave bob his own draft; he removes the album from Listen
+    # Later, which withdraws him from the invite.
     _auth_as(bob)
-    rid = client.post("/ratings", json={"album_id": a1}).json()["id"]
-    client.delete(f"/ratings/{rid}")
+    assert client.delete(f"/listen-later/{a1}").status_code == 204
     _clear_auth()
 
     # The invite is gone → alice can invite again, and bob can re-accept.
