@@ -7,8 +7,11 @@ import {
   type FriendDashboardEntry,
   type FriendDashboardResponse,
 } from "../api/friendDashboard";
+import { deleteRating, getMyRatingForAlbum } from "../api/ratings";
+import { useAuth } from "../context/AuthContext";
 import { formatDuration } from "../utils/duration";
 import { Alert } from "../components/Alert";
+import { ConfirmButton } from "../components/ConfirmButton";
 import { LoadingState } from "../components/Spinner";
 import { formatDate } from "../lib/date";
 import { setDashboardCompare, type DashboardBackState } from "../lib/dashboardCompare";
@@ -29,6 +32,7 @@ export function FriendAlbumDetailPage() {
     : username
     ? { kind: "user", username }
     : null;
+  const { username: me } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   // When we arrive from an album page, `backTo` tells us which dashboard to
@@ -42,6 +46,15 @@ export function FriendAlbumDetailPage() {
     } else {
       navigate(-1);
     }
+  }
+
+  // Remove my own rating for this album (I'm always user A in the comparison),
+  // then leave — this detail view no longer exists, so go to my profile.
+  async function handleRemoveRating() {
+    if (!album || !me) return;
+    const mine = await getMyRatingForAlbum(album.id);
+    await deleteRating(mine.id);
+    navigate(profilePath(me));
   }
   const [album, setAlbum] = useState<Album | null>(null);
   const [pair, setPair] = useState<FriendDashboardResponse | null>(null);
@@ -154,6 +167,14 @@ export function FriendAlbumDetailPage() {
               <Link className={styles.pageBtn} to={`/artists/${album.artist_spotify_id}`}>
                 Go to artist page
               </Link>
+            )}
+            {pair.user_a_username === me && (
+              <ConfirmButton
+                label="Remove my rating"
+                prompt="Remove your rating?"
+                confirmLabel="Yes, remove"
+                onConfirm={handleRemoveRating}
+              />
             )}
           </div>
 

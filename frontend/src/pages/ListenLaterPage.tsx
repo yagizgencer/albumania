@@ -276,7 +276,11 @@ function Row({ entry, onRemoved }: { entry: ListenLaterEntry; onRemoved: () => P
           </div>
         ) : (
           <>
-            <Link className={styles.action} to={`/albums/${entry.album.spotify_id}/rate`}>
+            <Link
+              className={styles.action}
+              to={`/albums/${entry.album.spotify_id}/rate`}
+              state={{ from: "/listen-later" }}
+            >
               Rate
             </Link>
             <button className={styles.removeBtn} onClick={() => setConfirming(true)}>

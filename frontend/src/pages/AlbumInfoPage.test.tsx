@@ -175,6 +175,14 @@ describe("AlbumInfoPage", () => {
     expect(screen.getByRole("button", { name: /^rate$/i })).toBeInTheDocument();
   });
 
+  it("shows no disabled 'Rated' button for a published album", async () => {
+    renderPage();
+    await screen.findByRole("link", { name: "Test Album" });
+    // Only "Remove rating" should be present — the greyed "Rated" button is gone.
+    expect(screen.queryByRole("button", { name: /^rated$/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /remove rating/i })).toBeInTheDocument();
+  });
+
   it("cancels removal without deleting", async () => {
     renderPage();
     await screen.findByRole("link", { name: "Test Album" });

@@ -415,3 +415,62 @@
   margin-top: 0.5rem;
 }
 
+/* ---- Unsaved-changes modal ---- */
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  padding: 1rem;
+}
+
+.modal {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius, 10px);
+  box-shadow: var(--shadow-pop, 0 8px 30px rgba(0, 0, 0, 0.25));
+  max-width: 420px;
+  width: 100%;
+  padding: 1.5rem;
+}
+
+.modalTitle {
+  margin: 0 0 0.5rem;
+  font-size: 1.15rem;
+}
+
+.modalText {
+  margin: 0 0 1.25rem;
+  color: var(--text-muted);
+}
+
+.modalActions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+/* Modal-scoped variants (the .actions-scoped ones don't reach here). */
+.modalActions .btnRemove {
+  background: transparent;
+  color: var(--danger-text);
+  border: 1px solid var(--danger-text);
+}
+
+.modalActions .btnRemove:hover {
+  background: rgba(214, 69, 63, 0.1);
+}
+
+.modalActions .btnCancel {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.modalActions .btnCancel:hover {
+  background: var(--surface-muted);
+}
+

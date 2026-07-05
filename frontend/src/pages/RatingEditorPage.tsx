@@ -12,8 +12,14 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
-import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useBeforeUnload,
+  useBlocker,
+  useLocation,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
 import { getAlbum, type Album, type AlbumTrack } from "../api/albums";
 import {
   createRating,
@@ -241,6 +247,12 @@ function TrackOverlayCard({ name }: { name: string }) {
 export function RatingEditorPage() {
   const { spotifyId } = useParams<{ spotifyId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  // Where the editor was opened from (album page or Listen Later); publishing
+  // returns here. Falls back to the album page when the origin is unknown
+  // (direct link / refresh).
+  const from = (location.state as { from?: string } | null)?.from;
+  const origin = from ?? `/albums/${spotifyId}`;
 
   const [album, setAlbum] = useState<Album | null>(null);
   const [rating, setRating] = useState<Rating | null>(null);
@@ -256,6 +268,13 @@ export function RatingEditorPage() {
   const [error, setError] = useState<string | null>(null);
   const [commentText, setCommentText] = useState("");
   const [commentVisibility, setCommentVisibility] = useState<Visibility>("public");
+  // Serialized snapshot of the last saved rating state; used to detect unsaved
+  // edits. Reset by applyRating (load/save).
+  const savedSnapshotRef = useRef<string>("");
+  // Set true right before a programmatic leave (publish / remove) so the unsaved
+  // guard doesn't fire on our own navigation. A ref so the guard callbacks read it
+  // synchronously in the same tick we navigate.
+  const isLeavingRef = useRef(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -296,18 +315,63 @@ export function RatingEditorPage() {
       .finally(() => setLoading(false));
   }, [spotifyId]);
 
+  // A stable string capturing the editable rating state, for dirty-detection.
+  function serialize(
+    hs: boolean,
+    sc: number,
+    slots: (number | null)[],
+    ns: Record<number, string>
+  ): string {
+    const noteEntries = Object.entries(ns)
+      .filter(([, v]) => v.trim() !== "")
+      .sort(([a], [b]) => Number(a) - Number(b));
+    return JSON.stringify({ hs, sc: hs ? sc : null, slots, notes: noteEntries });
+  }
+
   function applyRating(r: Rating) {
     setRating(r);
-    if (r.score !== null) { setScore(r.score); setHasScore(true); }
-    setTopSlots(slotsFromIndices(r.top_track_indices ?? []));
+    const hs = r.score !== null;
+    const sc = r.score ?? 5;
+    if (hs) { setScore(sc); setHasScore(true); }
+    const slots = slotsFromIndices(r.top_track_indices ?? []);
+    setTopSlots(slots);
     const noteMap: Record<number, string> = {};
     for (const n of r.notes) noteMap[n.track_index] = n.note_text;
     setNotes(noteMap);
+    // This is now the saved baseline — clears the dirty flag.
+    savedSnapshotRef.current = serialize(hs, sc, slots, noteMap);
   }
 
   // Derived
   const filledCount = topSlots.filter((s) => s !== null).length;
   const canPublish = hasScore && filledCount === TOP_5_SIZE;
+
+  // Unsaved edits: the rating differs from the last saved state, or there's text
+  // in the publish comment box that would be lost.
+  const isDirty =
+    serialize(hasScore, score, topSlots, notes) !== savedSnapshotRef.current ||
+    commentText.trim() !== "";
+
+  // Warn on tab close / refresh while there are unsaved edits.
+  useBeforeUnload(
+    useCallback(
+      (e: BeforeUnloadEvent) => {
+        if (isDirty && !isLeavingRef.current) e.preventDefault();
+      },
+      [isDirty]
+    )
+  );
+
+  // Intercept in-app navigation while there are unsaved edits.
+  const blocker = useBlocker(
+    useCallback(
+      ({ currentLocation, nextLocation }) =>
+        isDirty &&
+        !isLeavingRef.current &&
+        currentLocation.pathname !== nextLocation.pathname,
+      [isDirty]
+    )
+  );
 
   async function handleSave() {
     if (!rating) return;
@@ -343,10 +407,16 @@ export function RatingEditorPage() {
           await createComment(album.spotify_id, { text: trimmed, visibility: commentVisibility });
           setCommentText("");
         } catch {
+          // Comment failed but the rating is published — surface it and stay so
+          // the user can retry the comment (don't redirect over the message).
+          applyRating(updated);
           setError("Rating published, but the comment could not be posted.");
+          return;
         }
       }
-      applyRating(updated);
+      // Published successfully → leave the editor for wherever we came from.
+      isLeavingRef.current = true;
+      navigate(origin);
     } catch (e: unknown) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       setError((e as any)?.response?.data?.detail ?? "Publish failed.");
@@ -358,8 +428,21 @@ export function RatingEditorPage() {
     setSaving(true); setError(null);
     try {
       await deleteRating(rating.id);
-      navigate("/");
+      isLeavingRef.current = true;
+      navigate(origin);
     } catch { setError("Remove failed."); setSaving(false); setConfirmingRemove(false); }
+  }
+
+  // Unsaved-changes modal actions (blocker is active when isDirty).
+  async function handleSaveAndQuit() {
+    await handleSave();
+    blocker.proceed?.();
+  }
+  function handleQuitWithoutSaving() {
+    blocker.proceed?.();
+  }
+  function handleCancelLeave() {
+    blocker.reset?.();
   }
 
   function handleNoteChange(trackIndex: number, text: string) {
@@ -599,6 +682,40 @@ export function RatingEditorPage() {
             )}
           </div>
         </>
+      )}
+
+      {blocker.state === "blocked" && (
+        <div className={styles.modalBackdrop} role="dialog" aria-modal="true">
+          <div className={styles.modal}>
+            <h2 className={styles.modalTitle}>Unsaved changes</h2>
+            <p className={styles.modalText}>
+              You have unsaved changes. What would you like to do?
+            </p>
+            <div className={styles.modalActions}>
+              <button
+                className={`${styles.btn} ${styles.btnPrimary}`}
+                onClick={handleSaveAndQuit}
+                disabled={saving}
+              >
+                {saving ? "Saving…" : "Save & quit"}
+              </button>
+              <button
+                className={`${styles.btn} ${styles.btnRemove}`}
+                onClick={handleQuitWithoutSaving}
+                disabled={saving}
+              >
+                Quit without saving
+              </button>
+              <button
+                className={`${styles.btn} ${styles.btnCancel}`}
+                onClick={handleCancelLeave}
+                disabled={saving}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

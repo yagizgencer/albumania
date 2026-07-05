@@ -2,8 +2,11 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { getAlbum, type Album } from "../api/albums";
 import { getDashboard, type DashboardEntry } from "../api/dashboard";
+import { deleteRating, getMyRatingForAlbum } from "../api/ratings";
+import { useAuth } from "../context/AuthContext";
 import { formatDuration } from "../utils/duration";
 import { Alert } from "../components/Alert";
+import { ConfirmButton } from "../components/ConfirmButton";
 import { LoadingState } from "../components/Spinner";
 import { formatDate } from "../lib/date";
 import { setDashboardCompare, type DashboardBackState } from "../lib/dashboardCompare";
@@ -12,8 +15,10 @@ import styles from "./AlbumDetailPage.module.css";
 
 export function AlbumDetailPage() {
   const { username, spotifyId } = useParams<{ username: string; spotifyId: string }>();
+  const { username: me } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const isMine = !!me && me === username;
   // When we arrive from an album page, `backTo` tells us which dashboard to
   // return to (and which comparison to restore). Otherwise, go back in history.
   const backTo = (location.state as { backTo?: DashboardBackState } | null)?.backTo ?? null;
@@ -44,11 +49,20 @@ export function AlbumDetailPage() {
         }
       })
       .catch((err) => {
-        if (err?.response?.status === 403) setError("This profile is private.");
+        if (err?.response?.status === 403) setError("This profile is visible to friends only.");
         else if (err?.response?.status === 404) setError("Not found.");
         else setError("Could not load album.");
       });
   }, [username, spotifyId]);
+
+  // Remove my own rating for this album, then leave — the detail view no longer
+  // exists, so go to my profile.
+  async function handleRemoveRating() {
+    if (!album || !me) return;
+    const mine = await getMyRatingForAlbum(album.id);
+    await deleteRating(mine.id);
+    navigate(profilePath(me));
+  }
 
   if (error) return <main className={styles.page}><Alert>{error}</Alert></main>;
   if (!album || !entry) return <main className={styles.page}><LoadingState /></main>;
@@ -124,6 +138,14 @@ export function AlbumDetailPage() {
               <Link className={styles.pageBtn} to={`/artists/${album.artist_spotify_id}`}>
                 Go to artist page
               </Link>
+            )}
+            {isMine && (
+              <ConfirmButton
+                label="Remove rating"
+                prompt="Remove this rating?"
+                confirmLabel="Yes, remove"
+                onConfirm={handleRemoveRating}
+              />
             )}
           </div>
           <div className={styles.metricRow}>

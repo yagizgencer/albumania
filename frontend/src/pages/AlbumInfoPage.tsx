@@ -162,9 +162,12 @@ export function AlbumInfoPage() {
 
   // "Rate" always just opens the editor. It creates the draft on arrival if the
   // user doesn't have one yet, so there's no separate start/continue distinction.
+  // Pass `from` so the editor can return here after publishing.
   function handleRate() {
     if (!album) return;
-    navigate(`/albums/${album.spotify_id}/rate`);
+    navigate(`/albums/${album.spotify_id}/rate`, {
+      state: { from: `/albums/${album.spotify_id}` },
+    });
   }
 
   async function handleRemoveRating() {
@@ -284,18 +287,13 @@ export function AlbumInfoPage() {
               </Link>
             )}
             {isPublished && !confirmingRemove && (
-              <>
-                <button className={`${styles.btn} ${styles.btnDisabled}`} disabled>
-                  Rated
-                </button>
-                <button
-                  className={`${styles.btn} ${styles.btnRemove}`}
-                  onClick={() => { setConfirmingRemove(true); setActionError(null); setActionInfo(null); }}
-                  disabled={busy}
-                >
-                  Remove rating
-                </button>
-              </>
+              <button
+                className={`${styles.btn} ${styles.btnRemove}`}
+                onClick={() => { setConfirmingRemove(true); setActionError(null); setActionInfo(null); }}
+                disabled={busy}
+              >
+                Remove rating
+              </button>
             )}
             {isPublished && confirmingRemove && (
               <div className={styles.confirm}>

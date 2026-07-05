@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { createBrowserRouter, Navigate, Outlet, RouterProvider } from "react-router-dom";
 import { NavBar } from "./components/NavBar";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -21,106 +21,55 @@ import { RegisterPage } from "./pages/RegisterPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { VerifyEmailPage } from "./pages/VerifyEmailPage";
 
-export default function App() {
+// App chrome + providers. This is the layout route's element, rendered inside the
+// data router so all children (and the providers, which use router hooks) have
+// router context. A data router is required for useBlocker (see RatingEditorPage).
+function AppLayout() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <NotificationsProvider>
-          <NavBar />
-          <VerifyBanner />
-          <ErrorBoundary>
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="/reset-password" element={<ResetPasswordPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/verify-email" element={<VerifyEmailPage />} />
-            <Route path="/" element={<HomePage />} />
-            <Route
-              path="/settings"
-              element={
-                <ProtectedRoute>
-                  <SettingsPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/profile/:username"
-              element={
-                <ProtectedRoute>
-                  <ProfilePage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/users/:username/albums/:spotifyId"
-              element={
-                <ProtectedRoute>
-                  <AlbumDetailPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/friends"
-              element={
-                <ProtectedRoute>
-                  <FriendsPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/friendships/:friendshipId/albums/:spotifyId"
-              element={
-                <ProtectedRoute>
-                  <FriendAlbumDetailPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/users/:username/compare/:spotifyId"
-              element={
-                <ProtectedRoute>
-                  <FriendAlbumDetailPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/listen-later"
-              element={
-                <ProtectedRoute>
-                  <ListenLaterPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/albums/:spotifyId"
-              element={
-                <ProtectedRoute>
-                  <AlbumInfoPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/artists/:artistId"
-              element={
-                <ProtectedRoute>
-                  <ArtistPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/albums/:spotifyId/rate"
-              element={
-                <ProtectedRoute>
-                  <RatingEditorPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-          </ErrorBoundary>
-        </NotificationsProvider>
-      </AuthProvider>
-    </BrowserRouter>
+    <AuthProvider>
+      <NotificationsProvider>
+        <NavBar />
+        <VerifyBanner />
+        <ErrorBoundary>
+          <Outlet />
+        </ErrorBoundary>
+      </NotificationsProvider>
+    </AuthProvider>
   );
+}
+
+const protectedRoutes = [
+  { path: "/settings", element: <SettingsPage /> },
+  { path: "/profile/:username", element: <ProfilePage /> },
+  { path: "/users/:username/albums/:spotifyId", element: <AlbumDetailPage /> },
+  { path: "/friends", element: <FriendsPage /> },
+  { path: "/friendships/:friendshipId/albums/:spotifyId", element: <FriendAlbumDetailPage /> },
+  { path: "/users/:username/compare/:spotifyId", element: <FriendAlbumDetailPage /> },
+  { path: "/listen-later", element: <ListenLaterPage /> },
+  { path: "/albums/:spotifyId", element: <AlbumInfoPage /> },
+  { path: "/artists/:artistId", element: <ArtistPage /> },
+  { path: "/albums/:spotifyId/rate", element: <RatingEditorPage /> },
+].map((r) => ({
+  path: r.path,
+  element: <ProtectedRoute>{r.element}</ProtectedRoute>,
+}));
+
+const router = createBrowserRouter([
+  {
+    element: <AppLayout />,
+    children: [
+      { path: "/login", element: <LoginPage /> },
+      { path: "/forgot-password", element: <ForgotPasswordPage /> },
+      { path: "/reset-password", element: <ResetPasswordPage /> },
+      { path: "/register", element: <RegisterPage /> },
+      { path: "/verify-email", element: <VerifyEmailPage /> },
+      { path: "/", element: <HomePage /> },
+      ...protectedRoutes,
+      { path: "*", element: <Navigate to="/" replace /> },
+    ],
+  },
+]);
+
+export default function App() {
+  return <RouterProvider router={router} />;
 }
