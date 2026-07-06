@@ -9,6 +9,7 @@ import {
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { RatingEditorPage } from "./RatingEditorPage";
+import { UnsavedChangesProvider } from "../lib/unsavedChanges";
 import { getAlbum } from "../api/albums";
 import {
   createRating,
@@ -74,10 +75,10 @@ function renderEditor(state?: unknown) {
     [
       {
         element: (
-          <>
+          <UnsavedChangesProvider>
             <Link to="/somewhere">leave</Link>
             <Outlet />
-          </>
+          </UnsavedChangesProvider>
         ),
         children: [
           { path: "/albums/:spotifyId/rate", element: <RatingEditorPage /> },

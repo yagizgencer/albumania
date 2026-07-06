@@ -1,8 +1,9 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
+import { createMemoryRouter, RouterProvider, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AlbumInfoPage } from "./AlbumInfoPage";
+import { UnsavedChangesProvider } from "../lib/unsavedChanges";
 import { getAlbum, getAlbumFriendRatings, getAlbumStats } from "../api/albums";
 import { deleteRating, getMyRatingForAlbum } from "../api/ratings";
 import { getListenLater, listMyInvites } from "../api/invites";
@@ -25,6 +26,14 @@ vi.mock("../api/invites", () => ({
 }));
 vi.mock("../api/friendships", () => ({ listFriendships: vi.fn().mockResolvedValue({ accepted: [] }) }));
 vi.mock("../context/AuthContext", () => ({ useAuth: () => ({ username: "me" }) }));
+
+// Spy on navigation so the friend-pick tests can assert the target path + state
+// without a *completed* data-router navigation (jsdom can't finish those).
+const navSpy = vi.fn();
+vi.mock("react-router-dom", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("react-router-dom")>()),
+  useNavigate: () => navSpy,
+}));
 // The comments section has its own tests; stub it here to isolate the page.
 vi.mock("../components/CommentsSection", () => ({ CommentsSection: () => null }));
 
@@ -69,17 +78,20 @@ function LocationProbe() {
 }
 
 function renderPage() {
+  // A data router (createMemoryRouter) is required because AlbumInfoPage's
+  // unsaved-changes guard uses useBlocker; wrap in the provider it registers into.
+  const router = createMemoryRouter(
+    [
+      { path: "/albums/:spotifyId", element: <AlbumInfoPage /> },
+      { path: "/friendships/:friendshipId/albums/:spotifyId", element: <LocationProbe /> },
+      { path: "/users/:username/albums/:spotifyId", element: <LocationProbe /> },
+    ],
+    { initialEntries: ["/albums/alb1"] }
+  );
   return render(
-    <MemoryRouter initialEntries={["/albums/alb1"]}>
-      <Routes>
-        <Route path="/albums/:spotifyId" element={<AlbumInfoPage />} />
-        <Route
-          path="/friendships/:friendshipId/albums/:spotifyId"
-          element={<LocationProbe />}
-        />
-        <Route path="/users/:username/albums/:spotifyId" element={<LocationProbe />} />
-      </Routes>
-    </MemoryRouter>
+    <UnsavedChangesProvider>
+      <RouterProvider router={router} />
+    </UnsavedChangesProvider>
   );
 }
 
@@ -427,15 +439,14 @@ describe("AlbumInfoPage", () => {
     fireEvent.focus(screen.getByPlaceholderText(/search friends/i));
     fireEvent.click(screen.getByRole("option", { name: /bob/i }));
 
-    expect(screen.getByTestId("path")).toHaveTextContent("/friendships/42/albums/alb1");
-    expect(screen.getByTestId("state")).toHaveTextContent(
-      JSON.stringify({
+    expect(navSpy).toHaveBeenCalledWith("/friendships/42/albums/alb1", {
+      state: {
         backTo: {
           profile: "bob",
           compareSource: { kind: "friendship", friendshipId: 42 },
         },
-      })
-    );
+      },
+    });
   });
 
   it("opens the friend-vs-Spotify view when you haven't rated the album", async () => {
@@ -447,9 +458,8 @@ describe("AlbumInfoPage", () => {
     fireEvent.focus(screen.getByPlaceholderText(/search friends/i));
     fireEvent.click(screen.getByRole("option", { name: /bob/i }));
 
-    expect(screen.getByTestId("path")).toHaveTextContent("/users/bob/albums/alb1");
-    expect(screen.getByTestId("state")).toHaveTextContent(
-      JSON.stringify({ backTo: { profile: "bob", compareSource: null } })
-    );
+    expect(navSpy).toHaveBeenCalledWith("/users/bob/albums/alb1", {
+      state: { backTo: { profile: "bob", compareSource: null } },
+    });
   });
 });

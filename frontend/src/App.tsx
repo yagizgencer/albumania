@@ -5,6 +5,7 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { VerifyBanner } from "./components/VerifyBanner";
 import { AuthProvider } from "./context/AuthContext";
 import { NotificationsProvider } from "./context/NotificationsContext";
+import { UnsavedChangesProvider } from "./lib/unsavedChanges";
 import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
 import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
@@ -28,11 +29,13 @@ function AppLayout() {
   return (
     <AuthProvider>
       <NotificationsProvider>
-        <NavBar />
-        <VerifyBanner />
-        <ErrorBoundary>
-          <Outlet />
-        </ErrorBoundary>
+        <UnsavedChangesProvider>
+          <NavBar />
+          <VerifyBanner />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
+        </UnsavedChangesProvider>
       </NotificationsProvider>
     </AuthProvider>
   );

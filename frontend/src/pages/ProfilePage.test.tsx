@@ -1,8 +1,9 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter, Routes, Route } from "react-router-dom";
+import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ProfilePage } from "./ProfilePage";
+import { UnsavedChangesProvider } from "../lib/unsavedChanges";
 import { getUser } from "../api/users";
 import { listFriendships } from "../api/friendships";
 
@@ -64,12 +65,16 @@ function friendship(id: number, other: string) {
 }
 
 function renderProfile(username: string) {
+  // Data router (createMemoryRouter) + provider: ProfilePage's unsaved-bio guard
+  // uses useBlocker, which requires a data router.
+  const router = createMemoryRouter(
+    [{ path: "/profile/:username", element: <ProfilePage /> }],
+    { initialEntries: [`/profile/${username}`] }
+  );
   return render(
-    <MemoryRouter initialEntries={[`/profile/${username}`]}>
-      <Routes>
-        <Route path="/profile/:username" element={<ProfilePage />} />
-      </Routes>
-    </MemoryRouter>
+    <UnsavedChangesProvider>
+      <RouterProvider router={router} />
+    </UnsavedChangesProvider>
   );
 }
 

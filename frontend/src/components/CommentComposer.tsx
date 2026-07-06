@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import EmojiPicker, { EmojiClickData, Theme } from "emoji-picker-react";
 import type { Visibility } from "../api/comments";
+import { useRegisterUnsaved } from "../lib/unsavedChanges";
 import styles from "./CommentComposer.module.css";
 
 export const MAX_COMMENT_LEN = 10000;
@@ -119,6 +120,15 @@ export function CommentComposer({
     await onSubmit(trimmed, visibility);
     if (!onCancel) setText(""); // add mode: clear after posting
   }
+
+  // Register with the unsaved-changes guard. Only "action" composers (add/edit a
+  // comment) own a draft worth protecting — controlled "field" composers (bio,
+  // rating publish box) are guarded by their parent. Dirty when the text differs
+  // from what it started as. "Save" for the guard = submit this comment.
+  const isActionComposer = !controlled && onSubmit !== undefined;
+  const composerId = useId();
+  const dirty = isActionComposer && text.trim() !== initialText.trim();
+  useRegisterUnsaved(composerId, dirty, handleSubmit);
 
   return (
     <div className={styles.composer}>

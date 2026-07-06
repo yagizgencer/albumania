@@ -29,6 +29,8 @@ import { LoadingState } from "../components/Spinner";
 import { ScoreMeter } from "../components/ScoreMeter";
 import { CommentsSection } from "../components/CommentsSection";
 import { ChevronDownIcon } from "../components/Icons";
+import { UnsavedChangesModal } from "../components/UnsavedChangesModal";
+import { useUnsavedNavigationGuard } from "../lib/unsavedChanges";
 import { formatDate } from "../lib/date";
 import { isRateable, RATEABLE_RULE_TEXT } from "../lib/albumRules";
 import type { DashboardBackState } from "../lib/dashboardCompare";
@@ -42,6 +44,8 @@ export function AlbumInfoPage() {
   const { spotifyId } = useParams<{ spotifyId: string }>();
   const navigate = useNavigate();
   const { username: me } = useAuth();
+  // Prompt before leaving with an unsaved comment draft (add or edit).
+  const unsavedGuard = useUnsavedNavigationGuard();
 
   const [album, setAlbum] = useState<Album | null>(null);
   const [rating, setRating] = useState<Rating | null>(null);
@@ -423,6 +427,8 @@ export function AlbumInfoPage() {
           }}
         />
       )}
+
+      <UnsavedChangesModal {...unsavedGuard} />
     </main>
   );
 }

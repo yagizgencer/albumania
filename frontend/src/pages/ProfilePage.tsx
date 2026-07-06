@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -21,6 +21,11 @@ import Markdown from "react-markdown";
 import { CommentComposer } from "../components/CommentComposer";
 import { usePersistentState } from "../lib/usePersistentState";
 import { compareStorageKey } from "../lib/dashboardCompare";
+import {
+  useRegisterUnsaved,
+  useUnsavedNavigationGuard,
+} from "../lib/unsavedChanges";
+import { UnsavedChangesModal } from "../components/UnsavedChangesModal";
 import type { ComparisonSource } from "../api/friendDashboard";
 import { formatDate } from "../lib/date";
 import { Avatar } from "../components/Avatar";
@@ -46,6 +51,8 @@ type FriendState =
 export function ProfilePage() {
   const { username } = useParams<{ username: string }>();
   const { username: me, refreshProfile } = useAuth();
+  // Prompt before leaving with unsaved bio edits.
+  const unsavedGuard = useUnsavedNavigationGuard();
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -319,6 +326,8 @@ export function ProfilePage() {
           }}
         />
       )}
+
+      <UnsavedChangesModal {...unsavedGuard} />
     </PageContainer>
   );
 }
@@ -588,8 +597,16 @@ function ProfileEditor({
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  async function handleSave(e: React.FormEvent) {
-    e.preventDefault();
+  // Register bio edits with the unsaved-changes guard. Dirty when either field
+  // differs from the profile; "save" for the guard persists the changes.
+  const editorId = useId();
+  const dirty =
+    displayName !== profile.display_name ||
+    description !== (profile.description ?? "");
+  useRegisterUnsaved(editorId, dirty, () => handleSave());
+
+  async function handleSave(e?: React.FormEvent) {
+    e?.preventDefault();
     setSaving(true);
     setErr(null);
     try {

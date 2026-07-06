@@ -12,14 +12,8 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
-import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  useBeforeUnload,
-  useBlocker,
-  useLocation,
-  useNavigate,
-  useParams,
-} from "react-router-dom";
+import { useEffect, useId, useRef, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { getAlbum, type Album, type AlbumTrack } from "../api/albums";
 import {
   createRating,
@@ -30,6 +24,11 @@ import {
   type Rating,
 } from "../api/ratings";
 import { createComment, type Visibility } from "../api/comments";
+import {
+  useRegisterUnsaved,
+  useUnsavedNavigationGuard,
+} from "../lib/unsavedChanges";
+import { UnsavedChangesModal } from "../components/UnsavedChangesModal";
 import { Alert } from "../components/Alert";
 import { CommentComposer } from "../components/CommentComposer";
 import { LoadingState } from "../components/Spinner";
@@ -271,10 +270,10 @@ export function RatingEditorPage() {
   // Serialized snapshot of the last saved rating state; used to detect unsaved
   // edits. Reset by applyRating (load/save).
   const savedSnapshotRef = useRef<string>("");
-  // Set true right before a programmatic leave (publish / remove) so the unsaved
-  // guard doesn't fire on our own navigation. A ref so the guard callbacks read it
-  // synchronously in the same tick we navigate.
-  const isLeavingRef = useRef(false);
+  // A pending programmatic navigation (publish / remove). We clear our dirty
+  // registration first, then this effect performs the nav once the guard is no
+  // longer armed — so our own navigation isn't blocked.
+  const [pendingNav, setPendingNav] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -347,31 +346,24 @@ export function RatingEditorPage() {
   const canPublish = hasScore && filledCount === TOP_5_SIZE;
 
   // Unsaved edits: the rating differs from the last saved state, or there's text
-  // in the publish comment box that would be lost.
+  // in the publish comment box that would be lost. Suppressed once we've kicked
+  // off our own programmatic navigation (publish / remove).
   const isDirty =
-    serialize(hasScore, score, topSlots, notes) !== savedSnapshotRef.current ||
-    commentText.trim() !== "";
+    !pendingNav &&
+    (serialize(hasScore, score, topSlots, notes) !== savedSnapshotRef.current ||
+      commentText.trim() !== "");
 
-  // Warn on tab close / refresh while there are unsaved edits.
-  useBeforeUnload(
-    useCallback(
-      (e: BeforeUnloadEvent) => {
-        if (isDirty && !isLeavingRef.current) e.preventDefault();
-      },
-      [isDirty]
-    )
-  );
+  // Register with the shared unsaved-changes guard. "Save" for the guard writes
+  // the current draft (Save & quit uses this).
+  const editorId = useId();
+  useRegisterUnsaved(editorId, isDirty, () => handleSave());
+  const unsavedGuard = useUnsavedNavigationGuard();
 
-  // Intercept in-app navigation while there are unsaved edits.
-  const blocker = useBlocker(
-    useCallback(
-      ({ currentLocation, nextLocation }) =>
-        isDirty &&
-        !isLeavingRef.current &&
-        currentLocation.pathname !== nextLocation.pathname,
-      [isDirty]
-    )
-  );
+  // Perform a queued programmatic nav once our dirty flag has cleared (so the
+  // guard doesn't block our own publish/remove redirect).
+  useEffect(() => {
+    if (pendingNav && !isDirty) navigate(pendingNav);
+  }, [pendingNav, isDirty, navigate]);
 
   async function handleSave() {
     if (!rating) return;
@@ -415,8 +407,8 @@ export function RatingEditorPage() {
         }
       }
       // Published successfully → leave the editor for wherever we came from.
-      isLeavingRef.current = true;
-      navigate(origin);
+      // Queue the nav so it fires after our dirty flag clears (see the effect).
+      setPendingNav(origin);
     } catch (e: unknown) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       setError((e as any)?.response?.data?.detail ?? "Publish failed.");
@@ -428,21 +420,8 @@ export function RatingEditorPage() {
     setSaving(true); setError(null);
     try {
       await deleteRating(rating.id);
-      isLeavingRef.current = true;
-      navigate(origin);
+      setPendingNav(origin);
     } catch { setError("Remove failed."); setSaving(false); setConfirmingRemove(false); }
-  }
-
-  // Unsaved-changes modal actions (blocker is active when isDirty).
-  async function handleSaveAndQuit() {
-    await handleSave();
-    blocker.proceed?.();
-  }
-  function handleQuitWithoutSaving() {
-    blocker.proceed?.();
-  }
-  function handleCancelLeave() {
-    blocker.reset?.();
   }
 
   function handleNoteChange(trackIndex: number, text: string) {
@@ -684,39 +663,7 @@ export function RatingEditorPage() {
         </>
       )}
 
-      {blocker.state === "blocked" && (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true">
-          <div className={styles.modal}>
-            <h2 className={styles.modalTitle}>Unsaved changes</h2>
-            <p className={styles.modalText}>
-              You have unsaved changes. What would you like to do?
-            </p>
-            <div className={styles.modalActions}>
-              <button
-                className={`${styles.btn} ${styles.btnPrimary}`}
-                onClick={handleSaveAndQuit}
-                disabled={saving}
-              >
-                {saving ? "Saving…" : "Save & quit"}
-              </button>
-              <button
-                className={`${styles.btn} ${styles.btnRemove}`}
-                onClick={handleQuitWithoutSaving}
-                disabled={saving}
-              >
-                Quit without saving
-              </button>
-              <button
-                className={`${styles.btn} ${styles.btnCancel}`}
-                onClick={handleCancelLeave}
-                disabled={saving}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <UnsavedChangesModal {...unsavedGuard} />
     </div>
   );
 }
