@@ -1,51 +1,65 @@
 .page {
-  max-width: var(--page-max);
+  max-width: var(--page-max-wide);
   margin: 2rem auto;
-  padding: 0 var(--page-pad);
+  padding: 0 clamp(1rem, 3vw, 2rem);
   color: var(--text);
 }
 
 /* -- Public landing ----------------------------------------------------- */
 
+/* Full-bleed warm gradient covering the whole landing (same palette as the auth
+   pages). Breaks out of the centered `main` constraint so the gradient reaches
+   every edge; content is centered in an inner column. */
 .landing {
-  max-width: 720px;
-  margin: 4rem auto;
-  padding: 0 1rem;
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  min-height: calc(100vh - var(--nav-height));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(155deg, var(--primary) 0%, var(--data) 55%, var(--select) 100%);
+  color: var(--on-primary);
+}
+
+.landingInner {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: var(--space-8) var(--page-pad);
   text-align: center;
 }
 
 .landingLogo {
-  width: 300px;
-  height: 300px;
+  width: 172px;
+  height: 172px;
   display: block;
-  margin: 0 auto 1rem;
+  margin: 0 auto var(--space-3);
 }
-
 
 .landingHero {
   font-family: var(--font-display);
-  font-size: 3.25rem;
+  font-size: clamp(3rem, 6vw, 4.5rem);
   font-weight: 400;
-  margin: 0 0 0.5rem;
-  color: var(--text);
-}
-
-.heroUnderline {
-  max-width: 240px;
-  margin: -0.5rem auto 1.5rem;
+  margin: 0 0 var(--space-3);
+  color: var(--on-primary);
 }
 
 .landingTagline {
-  color: var(--text-muted);
-  font-size: 1.1rem;
-  margin: 0 0 2rem;
+  color: var(--on-primary);
+  opacity: 0.92;
+  font-size: var(--text-xl);
+  max-width: 52ch;
+  margin: 0 auto var(--space-6);
+  line-height: 1.4;
 }
 
 .landingBullets {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-  margin: 0 0 2.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-4);
+  margin: var(--space-8) 0 0;
   padding: 0;
   list-style: none;
   text-align: left;
@@ -53,81 +67,66 @@
 
 .landingBullet {
   background: var(--surface);
-  border: 2px solid var(--border);
+  color: var(--text);
+  border: var(--border-w) solid var(--border);
   border-radius: var(--radius);
-  box-shadow: var(--shadow-soft);
-  padding: 1rem 1.1rem;
+  box-shadow: var(--shadow-card);
+  padding: var(--space-5);
 }
 
 .landingBullet h3 {
-  margin: 0 0 0.4rem;
-  font-size: 1.25rem;
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-xl);
   font-weight: 700;
 }
 
 .landingBullet p {
   margin: 0;
   color: var(--text-muted);
-  font-size: 0.9rem;
-  line-height: 1.45;
+  font-size: var(--text-md);
+  line-height: 1.5;
 }
 
 .landingCtas {
   display: flex;
-  gap: 0.75rem;
+  gap: var(--space-3);
   justify-content: center;
   flex-wrap: wrap;
 }
 
-.ctaPrimary,
-.ctaSecondary {
-  display: inline-block;
-  padding: 0.65rem 1.5rem;
-  border: 2px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-soft);
-  font-weight: 700;
-  text-decoration: none;
-  font-size: 1rem;
-  transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.12s ease;
+/* On the warm gradient, the coral primary would blend in — make the CTAs
+   high-contrast: a solid surface "Get started" that pops, and an inverse
+   outline "Log in". */
+.landingCtas a:first-child {
+  background: var(--surface);
+  color: var(--text);
 }
 
-.ctaPrimary:hover,
-.ctaSecondary:hover {
-  transform: translate(-1px, -1px);
-  box-shadow: var(--shadow-pop);
+.landingCtas a:last-child {
+  background: transparent;
+  color: var(--on-primary);
+  border-color: var(--on-primary);
 }
 
-.ctaPrimary {
-  background: var(--btn-primary-bg);
-  color: var(--btn-primary-fg);
-}
-.ctaPrimary:hover {
-  background: var(--btn-primary-bg-hover);
-}
-
-.ctaSecondary {
-  background: var(--btn-secondary-bg);
-  color: var(--btn-secondary-fg);
-}
-.ctaSecondary:hover {
-  background: var(--btn-secondary-bg-hover);
+.landingCtas a:last-child:hover {
+  background: rgba(46, 38, 32, 0.1);
+  color: var(--on-primary);
 }
 
 /* -- Logged-in home ----------------------------------------------------- */
 
 .welcome {
   background: var(--surface);
-  border: 2px solid var(--border);
+  border: var(--border-w) solid var(--border);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-soft);
-  padding: 1.25rem 1.5rem;
-  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow-card);
+  padding: var(--space-4) var(--space-5);
+  margin-bottom: var(--space-5);
 }
 
 .welcome h1 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 2rem;
 }
 
 .welcomeUnderline {
@@ -135,24 +134,22 @@
 }
 
 .welcome p {
-  margin: 0.2rem 0 0;
+  margin: var(--space-1) 0 0;
   color: var(--text-muted);
-  font-size: 0.95rem;
+  font-size: var(--text-md);
 }
 
-/* Two-column body: activity feed (left) + trending sidebar (right, sticky).
-   The sidebar is a touch wider (feed slightly tightened) so the trending rows
-   breathe. */
+/* Two-column body: activity feed (left) + trending sidebar (right, sticky). */
 .content {
   display: grid;
-  grid-template-columns: 1fr 380px;
-  gap: 1.5rem;
+  grid-template-columns: 1fr 420px;
+  gap: var(--space-6);
   align-items: start;
 }
 
 .colHeading {
-  margin: 0 0 0.6rem;
-  font-size: 1.1rem;
+  margin: 0 0 var(--space-4);
+  font-size: 1.6rem;
 }
 
 .feedCol {
@@ -161,23 +158,20 @@
 
 .feedCard {
   background: var(--surface);
-  border: 2px solid var(--border);
+  border: var(--border-w) solid var(--border);
   border-radius: var(--radius);
-  box-shadow: var(--shadow-soft);
-  padding: 1rem 1.25rem;
+  box-shadow: var(--shadow-card);
+  padding: var(--space-5) var(--space-6);
 }
 
-/* Pinned like Twitter's right rail: the page/feed scrolls, the sidebar stays put
-   just below the sticky nav and fits the viewport. A *definite* height (not just
-   max-height) is required so the two boxes can flex-split it; each then scrolls
-   internally (see TrendingBox `fill`). */
+/* Pinned right rail: page scrolls, sidebar stays put below the sticky nav. */
 .sideCol {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: var(--space-5);
   position: sticky;
-  top: calc(var(--nav-height) + 0.75rem);
-  height: calc(100vh - var(--nav-height) - 1.5rem);
+  top: calc(var(--nav-height) + var(--space-3));
+  height: calc(100vh - var(--nav-height) - var(--space-6));
 }
 
 .sideCol > * {
@@ -189,8 +183,6 @@
   .content {
     grid-template-columns: 1fr;
   }
-  /* Single column on mobile: let the sidebar flow normally and the boxes keep
-     their own compact scroll height. */
   .sideCol {
     position: static;
     height: auto;

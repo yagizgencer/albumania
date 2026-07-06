@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import EmojiPicker, { EmojiClickData, Theme } from "emoji-picker-react";
 import type { Visibility } from "../api/comments";
 import { useRegisterUnsaved } from "../lib/unsavedChanges";
+import { Select } from "./Select";
 import styles from "./CommentComposer.module.css";
 
 export const MAX_COMMENT_LEN = 10000;
@@ -185,20 +186,15 @@ export function CommentComposer({
 
       <div className={styles.footer}>
         {showVisibility && (
-          <label className={styles.visibility}>
+          <div className={styles.visibility}>
             <span className={styles.visibilityLabel}>Visibility:</span>
-            <select
+            <Select
               value={visibility}
-              onChange={(e) => setVisibility(e.target.value as Visibility)}
-              aria-label="Comment visibility"
-            >
-              {VISIBILITY_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </label>
+              options={VISIBILITY_OPTIONS}
+              onChange={setVisibility}
+              ariaLabel="Comment visibility"
+            />
+          </div>
         )}
 
         <span

@@ -263,6 +263,13 @@ export function AlbumInfoPage() {
             Released {formatDate(album.release_date)} · {album.total_songs} tracks
             {hasAnyDuration && <> · {formatDuration(totalMs)}</>}
           </p>
+          {album.artist_spotify_id && (
+            <p className={styles.artistLinkRow}>
+              <Link className={styles.artistLink} to={`/artists/${album.artist_spotify_id}`}>
+                View artist page →
+              </Link>
+            </p>
+          )}
 
           <div className={styles.stats}>
             {stats && stats.num_raters > 0 && stats.mean_score !== null ? (
@@ -282,14 +289,6 @@ export function AlbumInfoPage() {
           </div>
 
           <div className={styles.actions}>
-            {album.artist_spotify_id && (
-              <Link
-                className={`${styles.btn} ${styles.btnSecondary}`}
-                to={`/artists/${album.artist_spotify_id}`}
-              >
-                Go to artist page
-              </Link>
-            )}
             {isPublished && !confirmingRemove && (
               <button
                 className={`${styles.btn} ${styles.btnRemove}`}

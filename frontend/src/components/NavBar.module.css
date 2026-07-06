@@ -86,6 +86,17 @@
 
 .item:hover {
   color: var(--text);
+  /* The bell is a <button>; override the global button hover (pink fill + nudge)
+     so it behaves exactly like the Home/Friends <a> items. */
+  background: transparent;
+  transform: none;
+  box-shadow: none;
+}
+
+.item:active {
+  background: transparent;
+  transform: none;
+  box-shadow: none;
 }
 
 .itemActive {
@@ -170,7 +181,7 @@
   background: var(--surface);
   border: 2px solid var(--border);
   border-radius: 10px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+  box-shadow: var(--shadow-modal);
   padding: 0.35rem;
   z-index: 30;
   display: flex;
@@ -208,7 +219,7 @@
   background: var(--surface);
   border: 2px solid var(--border);
   border-radius: 10px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+  box-shadow: var(--shadow-modal);
   padding: 0.5rem 0;
   z-index: 30;
 }
@@ -260,7 +271,7 @@
 }
 
 .bellItemUnread {
-  background: rgba(220, 38, 38, 0.04);
+  background: var(--danger-tint);
 }
 
 .bellLikeIcon {

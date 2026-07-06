@@ -15,7 +15,7 @@
 .avatarPlaceholder {
   width: 120px;
   height: 120px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   object-fit: cover;
   flex-shrink: 0;
 }
@@ -49,7 +49,7 @@
 .empty {
   background: var(--surface);
   border: 1px dashed var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius);
   padding: 1.5rem;
   text-align: center;
   color: var(--text-muted);

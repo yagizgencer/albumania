@@ -24,6 +24,6 @@ describe("App", () => {
     });
     expect(screen.getByRole("heading", { name: /albumania/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /log in/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /sign up/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /get started/i })).toBeInTheDocument();
   });
 });

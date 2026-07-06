@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { forgotPassword } from "../api/auth";
 import { Alert } from "../components/Alert";
+import { AuthLayout } from "../components/AuthLayout";
+import { Button } from "../components/Button";
 
 export function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -23,8 +25,7 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <main className="auth-page">
-      <h1>Forgot password</h1>
+    <AuthLayout title="Forgot password">
       {sent ? (
         <>
           <Alert variant="success">
@@ -49,15 +50,15 @@ export function ForgotPasswordPage() {
                 required
               />
             </label>
-            <button type="submit" disabled={submitting}>
+            <Button type="submit" block disabled={submitting}>
               {submitting ? "Sending…" : "Send reset link"}
-            </button>
+            </Button>
           </form>
           <p>
             <Link to="/login">Back to log in</Link>
           </p>
         </>
       )}
-    </main>
+    </AuthLayout>
   );
 }

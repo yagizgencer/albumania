@@ -1,109 +1,217 @@
+/* =============================================================================
+   ALBUMANIA — "Warm Peach Pro" design system (neobrutalist, light + dark)
+   Light values live in :root; dark overrides in [data-theme="dark"]. Only
+   neutrals + a few on-fill/shadow tokens change between themes — the accent hues
+   (coral / teal / amber) are shared. Everything else in the app reads these vars.
+   ========================================================================== */
+
 :root {
-  /* Body copy: Nunito (rounded, friendly, very readable for tables/data).
-     Headings use Patrick Hand (hand-drawn, sketchy) — see --font-display. */
-  font-family: "Nunito", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Body: Comic Neue (rounded, readable). Headings: Patrick Hand (--font-display). */
+  font-family: "Comic Neue", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   line-height: 1.55;
-  color-scheme: light;
-  /* Always reserve the scrollbar gutter so navigating between a short page
-     (no scrollbar) and a tall page (scrollbar) doesn't change the viewport
-     width — which otherwise makes the sticky top nav visibly jump. */
+  color-scheme: light dark;
   scrollbar-gutter: stable;
 
   --font-display: "Patrick Hand", "Comic Sans MS", system-ui, cursive;
 
-  /* Cozy "paper" surfaces — warm off-white, like a sketchbook page. */
-  --paper: #fdf4e7;
-  --surface: #fffdf8;
-  --surface-muted: #f6ebd9;
-  --border: #3a342e;          /* sketch ink — dark & warm, drawn ~2px */
-  --border-soft: #d9c9ad;     /* faint ink for inner dividers */
-  --text: #3a322a;
-  --text-muted: #6f6457;
-  --text-subtle: #98897a;
-  --link-underline: #c9b89a;
-  --link-underline-hover: #3a322e;
+  /* ---- Accent hues (shared across themes) ---------------------------------- */
+  --primary: #f2a6a0;          /* coral — the ONE main action per screen */
+  --primary-hover: #ec938c;
+  --select: #4fb8a4;           /* teal — selected / active / "you are here" */
+  --select-hover: #45a794;
+  --data: #f0c66a;             /* amber — data / info / charts / baseline */
+  --data-hover: #e8b850;
 
-  /* Pastel "happy hues" — a small, cohesive set. Used as fills behind dark
-     ink text (cozy/sketch look), not as text colors on white. */
-  --pastel-coral: #ffadad;
-  --pastel-peach: #ffd6a5;
-  --pastel-butter: #fdffb6;
-  --pastel-mint: #c7f0c4;
-  --pastel-sky: #a8dce0;
-  --pastel-lavender: #cdc1ff;
-  --pastel-pink: #ffc8dd;
+  /* on-fill text (dark ink reads on these light fills, both themes) */
+  --on-primary: #2e2620;
+  --on-select: #0b352d;
+  --on-data: #3a2c14;
 
-  /* Height of the sticky top nav — shared so sticky panels can offset below it. */
+  /* ---- Neutrals (LIGHT) ---------------------------------------------------- */
+  --paper: #f7e7d3;            /* page background */
+  --surface: #fffaf2;          /* cards / panels */
+  --surface-muted: #f4e4cf;    /* hover wash / muted panels */
+  --border: #2e2620;           /* warm near-black — the 3px sketch border */
+  --border-soft: #d8c4a8;      /* faint inner dividers */
+  --text: #2e2620;
+  --text-muted: #6f6155;
+  --text-subtle: #9a8b7b;
+
+  /* ---- Semantic (success / danger / info) — bg + text, both themes -------- */
+  --success-bg: #a9d9c0;
+  --success-text: #1f5540;
+  --danger-bg: #eaa0a0;
+  --danger-text: #8a2f2f;
+  --danger-tint: rgba(180, 70, 70, 0.12);   /* faint hover wash for danger */
+  --info-bg: #a9cfe0;
+  --info-text: #22505f;
+
+  /* Links / focus */
+  --link: #c26a4a;             /* warm terracotta link on light */
+  --link-hover: #a5522f;
+  --accent: #c26a4a;           /* legacy alias used by NavBar active etc. */
+  --accent-hover: #a5522f;
+  --focus-ring: 0 0 0 3px rgba(79, 184, 164, 0.4);  /* teal focus ring */
+
+  /* Dotted paper texture ink (theme-aware) */
+  --paper-dot: rgba(46, 38, 32, 0.05);
+  /* Modal overlay + elevated (non-offset) shadow, theme-aware */
+  --overlay: rgba(46, 38, 32, 0.4);
+  --shadow-modal: 0 12px 32px rgba(46, 38, 32, 0.22);
+
+  /* ---- Button intent tokens (consumed by Button + global button) ---------- */
+  --btn-primary-bg: var(--primary);
+  --btn-primary-bg-hover: var(--primary-hover);
+  --btn-primary-fg: var(--on-primary);
+  --btn-secondary-bg: var(--surface);
+  --btn-secondary-bg-hover: var(--surface-muted);
+  --btn-secondary-fg: var(--text);
+  --btn-secondary-border: var(--border);
+  --btn-success-bg: var(--success-bg);
+  --btn-success-bg-hover: #98cfb0;
+  --btn-success-fg: var(--on-select);
+  --btn-danger-bg: var(--danger-bg);
+  --btn-danger-bg-hover: #e08a8a;
+  --btn-danger-fg: #2e2620;
+  --btn-disabled-bg: #e9ddcb;
+  --btn-disabled-fg: #b0a291;
+
+  /* ---- Status pills (ListenLater / RatingEditor badges) ------------------- */
+  --status-info-bg: var(--data);
+  --status-info-fg: var(--on-data);
+  --status-warn-bg: var(--primary);
+  --status-warn-fg: var(--on-primary);
+  --status-ok-bg: var(--select);
+  --status-ok-fg: var(--on-select);
+
+  /* ---- Selection role (tabs / toggles / active nav) ----------------------- */
+  --selected-bg: var(--select);
+  --selected-fg: var(--on-select);
+  --selected-border: var(--border);
+  --hover-tint: rgba(46, 38, 32, 0.05);
+
+  /* ---- Structure ---------------------------------------------------------- */
+  --border-w: 3px;
+  --border-w-thin: 2px;
+  --radius-sm: 7px;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --radius-pill: 999px;
+  /* Hard offset "sticker" shadows (the neobrutalist depth). */
+  --shadow-soft: 3px 3px 0 var(--border);
+  --shadow-pop: 5px 5px 0 var(--border);
+  --shadow-card: 5px 5px 0 var(--border);
+
+  /* ---- Layout ------------------------------------------------------------- */
   --nav-height: 76px;
-
-  /* Page width — one shared container width so every page aligns to the same
-     edges. Pages that need more room (dashboards) or less (auth) use the
-     PageContainer `width` prop instead of redefining their own max-width. */
   --page-max: 1140px;
   --page-max-narrow: 760px;
   --page-max-wide: 1320px;
   --page-pad: clamp(1rem, 4vw, 2rem);
 
-  /* Type scale — a small, fixed set so button/tab/label sizes stop drifting. */
+  /* ---- Type scale --------------------------------------------------------- */
   --text-xl: 1.35rem;
   --text-lg: 1.05rem;
   --text-md: 0.95rem;
   --text-sm: 0.85rem;
   --text-xs: 0.75rem;
 
-  /* Sketch geometry: soft rounding + a hand-placed offset shadow. */
-  --radius: 14px;
-  --radius-lg: 20px;
-  --radius-pill: 999px;
-  --shadow-soft: 3px 3px 0 rgba(58, 52, 46, 0.16);
-  --shadow-pop: 4px 4px 0 rgba(58, 52, 46, 0.22);
+  /* ---- Spacing scale (8px based — the only allowed pad/margin/gap values) -- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-8: 48px;
 
-  /* Button intents — pastel fills with dark ink text + an inked border,
-     keeping the four semantic intents the app already references. */
-  --btn-primary-bg: var(--pastel-lavender);
-  --btn-primary-bg-hover: #b9aaff;
-  --btn-primary-fg: var(--text);
-
-  --btn-success-bg: var(--pastel-mint);
-  --btn-success-bg-hover: #aee7aa;
-  --btn-success-fg: var(--text);
-
-  --btn-danger-bg: var(--pastel-coral);
-  --btn-danger-bg-hover: #ff8f8f;
-  --btn-danger-fg: var(--text);
-
-  --btn-secondary-bg: var(--surface);
-  --btn-secondary-bg-hover: var(--surface-muted);
-  --btn-secondary-fg: var(--text);
-  --btn-secondary-border: var(--border);
-
-  --btn-disabled-bg: #ece2d2;
-  --btn-disabled-fg: #b3a999;
-
-  /* Status pill palette (used by ListenLater / RatingEditor badges). */
-  --status-info-bg: var(--pastel-sky);
-  --status-info-fg: #1f5760;
-  --status-warn-bg: var(--pastel-peach);
-  --status-warn-fg: #8a5a1a;
-  --status-ok-bg: var(--pastel-mint);
-  --status-ok-fg: #2f6b34;
-
-  --danger-text: #d6453f;
-
-  /* Readable accent for links / icons / active states — a deeper lavender
-     that holds contrast on cream (the pastel fills are too light for text). */
-  --accent: #7a6ad0;
-  --accent-hover: #6354bd;
+  /* Link underline colors (used by the global `a` rule). */
+  --link-underline: var(--border-soft);
+  --link-underline-hover: var(--border);
 }
 
+/* =============================================================================
+   DARK THEME — same accent hues, flipped neutrals. Fills stay light enough that
+   the dark on-fill ink still reads; text/border/paper invert to warm dark tones.
+   ========================================================================== */
+[data-theme="dark"] {
+  --paper: #211b16;
+  --surface: #2c251f;
+  --surface-muted: #38302a;
+  --border: #0f0b08;           /* deep line so the sticker shadow still reads */
+  --border-soft: #4a4038;
+  --text: #f5ece0;
+  --text-muted: #bcaf9f;
+  --text-subtle: #8a7d6e;
+
+  /* accents unchanged; nudge hovers a touch brighter for dark */
+  --primary-hover: #f6b3ad;
+  --select-hover: #5cc7b3;
+  --data-hover: #f4d07e;
+
+  --success-bg: #6fbf9c;
+  --success-text: #0c3325;
+  --danger-bg: #e59191;
+  --danger-text: #3a1414;
+  --danger-tint: rgba(229, 145, 145, 0.14);
+  --info-bg: #7fb6cc;
+  --info-text: #10333f;
+
+  --link: #f0a888;
+  --link-hover: #f6bfa4;
+  --accent: #f0a888;
+  --accent-hover: #f6bfa4;
+  --focus-ring: 0 0 0 3px rgba(92, 199, 179, 0.45);
+
+  --paper-dot: rgba(245, 236, 224, 0.04);
+  --overlay: rgba(0, 0, 0, 0.6);
+  --shadow-modal: 0 12px 32px rgba(0, 0, 0, 0.5);
+
+  --btn-secondary-bg: var(--surface-muted);
+  --btn-secondary-bg-hover: #433a32;
+  --btn-success-bg-hover: #7fcaa8;
+  --btn-danger-bg-hover: #ec9f9f;
+  --btn-disabled-bg: #37302a;
+  --btn-disabled-fg: #6f6458;
+
+  --hover-tint: rgba(245, 236, 224, 0.06);
+}
+
+/* =============================================================================
+   GLOBAL ELEMENTS
+   ========================================================================== */
 body {
   margin: 0;
   min-height: 100vh;
   color: var(--text);
   background-color: var(--paper);
-  /* Faint dotted "grid paper" texture — barely there, just cozy. */
-  background-image: radial-gradient(rgba(58, 52, 46, 0.05) 1px, transparent 1px);
+  background-image: radial-gradient(var(--paper-dot) 1px, transparent 1px);
   background-size: 22px 22px;
+}
+
+/* Thin, unobtrusive scrollbars everywhere (Firefox + WebKit). Individual scroll
+   areas can still override, but this replaces the chunky OS default app-wide. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-soft) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--border-soft);
+  border-radius: var(--radius-pill);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--text-subtle);
 }
 
 h1,
@@ -122,52 +230,49 @@ main {
   padding: 0 var(--page-pad);
 }
 
-.auth-page {
-  max-width: 360px;
-}
-
 form {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
 }
 
 label {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  font-size: 0.9rem;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
 }
 
 input,
 select,
 textarea {
-  padding: 0.55rem 0.8rem;
+  padding: var(--space-2) var(--space-3);
   font-size: 1rem;
   font-family: inherit;
-  border: 2px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
   color: var(--text);
+  background: var(--surface);
+  border: var(--border-w-thin) solid var(--border);
+  border-radius: var(--radius);
 }
 
 input:focus,
 select:focus,
 textarea:focus {
   outline: none;
-  box-shadow: var(--shadow-soft);
+  box-shadow: var(--focus-ring);
 }
 
+/* Global fallback button = primary intent. Prefer the shared <Button> component. */
 button {
-  padding: 0.55rem 1.1rem;
-  font-size: 0.95rem;
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-md);
   font-weight: 700;
   cursor: pointer;
-  border: 2px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--btn-primary-bg);
   color: var(--btn-primary-fg);
+  background: var(--btn-primary-bg);
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--radius);
   box-shadow: var(--shadow-soft);
   transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.12s ease;
 }
@@ -179,7 +284,7 @@ button:hover:not(:disabled) {
 }
 
 button:active:not(:disabled) {
-  transform: translate(1px, 1px);
+  transform: translate(2px, 2px);
   box-shadow: none;
 }
 
@@ -192,16 +297,17 @@ button:disabled {
 }
 
 a {
-  color: var(--text);
+  color: var(--link);
   text-decoration-color: var(--link-underline);
   text-underline-offset: 3px;
 }
 
 a:hover {
+  color: var(--link-hover);
   text-decoration-color: var(--link-underline-hover);
 }
 
 .error {
   color: var(--danger-text);
-  font-size: 0.9rem;
+  font-size: var(--text-sm);
 }

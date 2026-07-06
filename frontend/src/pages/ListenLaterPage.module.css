@@ -28,8 +28,8 @@
 
 .sideSection {
   background: var(--surface);
-  border: 2px solid var(--border);
-  border-radius: 10px;
+  border: var(--border-w-thin) solid var(--border);
+  border-radius: var(--radius);
   padding: 0.85rem 0.9rem;
 }
 
@@ -131,8 +131,8 @@
 .sideBtnGhost {
   font-size: var(--text-xs);
   padding: 0.25rem 0.6rem;
-  border-radius: 10px;
-  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  border: var(--border-w-thin) solid var(--border);
   cursor: pointer;
 }
 
@@ -164,7 +164,7 @@
 .empty {
   background: var(--surface);
   border: 1px dashed var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius);
   padding: 2rem;
   text-align: center;
   color: var(--text-subtle);
@@ -182,8 +182,8 @@
   gap: 1rem;
   background: var(--surface);
   color: var(--text);
-  border: 2px solid var(--border);
-  border-radius: 10px;
+  border: var(--border-w-thin) solid var(--border);
+  border-radius: var(--radius);
   padding: 0.75rem;
   align-items: center;
 }
@@ -191,7 +191,7 @@
 .art {
   width: 80px;
   height: 80px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   object-fit: cover;
   cursor: pointer;
 }
@@ -228,7 +228,7 @@
   color: var(--status-info-fg);
   font-size: 0.78rem;
   padding: 0.2rem 0.55rem 0.2rem 0.25rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   display: inline-flex;
   align-items: center;
 }
@@ -259,7 +259,7 @@
 .action {
   background: var(--btn-primary-bg);
   color: var(--btn-primary-fg);
-  border: 2px solid var(--border);
+  border: var(--border-w-thin) solid var(--border);
   padding: 0.45rem 1rem;
   border-radius: var(--radius);
   cursor: pointer;
@@ -286,9 +286,9 @@
 .actions .removeBtn {
   background: transparent;
   color: var(--text-muted);
-  border: 2px solid var(--border);
+  border: var(--border-w-thin) solid var(--border);
   padding: 0.35rem 1rem;
-  border-radius: 10px;
+  border-radius: var(--radius);
   cursor: pointer;
   font-weight: 700;
   font-size: var(--text-sm);
@@ -322,9 +322,9 @@
 .actions .removeConfirmBtn {
   background: var(--btn-danger-bg);
   color: var(--btn-danger-fg);
-  border: 2px solid var(--border);
+  border: var(--border-w-thin) solid var(--border);
   padding: 0.35rem 0.75rem;
-  border-radius: 10px;
+  border-radius: var(--radius);
   cursor: pointer;
   font-weight: 700;
   font-size: var(--text-sm);
@@ -345,9 +345,9 @@
 .actions .cancelBtn {
   background: transparent;
   color: var(--text);
-  border: 2px solid var(--border);
+  border: var(--border-w-thin) solid var(--border);
   padding: 0.35rem 0.75rem;
-  border-radius: 10px;
+  border-radius: var(--radius);
   cursor: pointer;
   font-weight: 700;
   font-size: var(--text-sm);
@@ -392,7 +392,7 @@
 .actionGhost {
   background: var(--surface-muted);
   color: var(--text);
-  border: 2px solid var(--border);
+  border: var(--border-w-thin) solid var(--border);
   padding: 0.45rem 1rem;
   border-radius: var(--radius);
   cursor: pointer;

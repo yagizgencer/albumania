@@ -53,7 +53,9 @@ describe("CommentsSection", () => {
   it("re-queries when the sort changes", async () => {
     renderSection();
     await screen.findByText("Comments (1)");
-    fireEvent.change(screen.getByLabelText("Sort comments by"), { target: { value: "score" } });
+    // Custom dropdown: open it, then pick "Most liked".
+    fireEvent.click(screen.getByRole("button", { name: /sort comments by/i }));
+    fireEvent.click(screen.getByRole("button", { name: /most liked/i }));
     await waitFor(() => expect(listComments).toHaveBeenCalledWith("sid1", "score", "desc"));
   });
 

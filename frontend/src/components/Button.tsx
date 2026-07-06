@@ -1,7 +1,7 @@
 import { Link, type LinkProps } from "react-router-dom";
 import styles from "./Button.module.css";
 
-type Intent = "primary" | "secondary" | "danger" | "success";
+type Intent = "primary" | "secondary" | "danger" | "success" | "ghost";
 type Size = "sm" | "md";
 
 const INTENT_CLASS: Record<Intent, string> = {
@@ -9,6 +9,7 @@ const INTENT_CLASS: Record<Intent, string> = {
   secondary: styles.secondary,
   danger: styles.danger,
   success: styles.success,
+  ghost: styles.ghost,
 };
 
 function classes(intent: Intent, size: Size, block: boolean, extra?: string): string {

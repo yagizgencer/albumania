@@ -5,18 +5,18 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.45);
-  padding: 1rem;
+  background: var(--overlay);
+  padding: var(--space-4);
 }
 
 .modal {
   background: var(--surface);
-  border: 2px solid var(--border);
-  border-radius: var(--radius, 10px);
-  box-shadow: var(--shadow-pop, 0 8px 30px rgba(0, 0, 0, 0.25));
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-modal);
   max-width: 440px;
   width: 100%;
-  padding: 1.5rem;
+  padding: var(--space-5);
 }
 
 .title {
@@ -66,7 +66,7 @@
 }
 
 .quit:hover:not(:disabled) {
-  background: rgba(214, 69, 63, 0.1);
+  background: var(--danger-tint);
 }
 
 .cancel {

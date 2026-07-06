@@ -1,0 +1,101 @@
+/* Rectangular segmented control — one bordered bar, cells divided by borders,
+   the active cell fills with the selection (teal) color. Hover on an inactive
+   cell is a faint tint only, so hover never looks like selected. Replaces the
+   old oval pill-in-pill toggles. */
+
+.tabs {
+  display: inline-flex;
+  border: var(--border-w-thin) solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-soft);
+}
+
+.block {
+  display: flex;
+  width: 100%;
+}
+
+.block .tab {
+  flex: 1;
+}
+
+.tab {
+  border: none;
+  border-left: var(--border-w-thin) solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  font: inherit;
+  font-weight: 800;
+  font-size: var(--text-sm);
+  padding: var(--space-2) var(--space-4);
+  cursor: pointer;
+  box-shadow: none;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.tab:first-child {
+  border-left: none;
+}
+
+.tab:not(.active):hover {
+  background: var(--hover-tint);
+  color: var(--text);
+  transform: none;
+  box-shadow: none;
+}
+
+.tab:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  position: relative;
+  z-index: 1;
+}
+
+.active {
+  background: var(--selected-bg);
+  color: var(--selected-fg);
+}
+
+/* --- Subtle variant: compact, borderless text toggle (tight headers) ------ */
+.tabsSubtle {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--surface-muted);
+  border-radius: var(--radius-pill);
+}
+
+.tabSubtle {
+  border: none;
+  background: transparent;
+  color: var(--text-subtle);
+  font: inherit;
+  font-weight: 700;
+  font-size: var(--text-xs);
+  line-height: 1;
+  padding: 5px 10px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  box-shadow: none;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.tabSubtle:not(.activeSubtle):hover {
+  color: var(--text);
+  background: transparent;
+  transform: none;
+  box-shadow: none;
+}
+
+.tabSubtle:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Active pill: quiet raised surface, not a bold color fill. */
+.activeSubtle {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-soft);
+}

@@ -122,8 +122,8 @@ describe("AlbumInfoPage", () => {
       "https://open.spotify.com/artist/art1"
     );
 
-    // Go to artist page → Albumania artist route.
-    expect(screen.getByRole("link", { name: /go to artist page/i })).toHaveAttribute(
+    // View artist page → Albumania artist route.
+    expect(screen.getByRole("link", { name: /view artist page/i })).toHaveAttribute(
       "href",
       "/artists/art1"
     );

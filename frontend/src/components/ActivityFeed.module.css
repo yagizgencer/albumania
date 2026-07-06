@@ -23,24 +23,24 @@
 .chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: var(--space-1);
   background: var(--surface);
   color: var(--text-muted);
-  border: 1.5px solid var(--border-soft);
-  border-radius: 999px;
-  padding: 0.4rem 0.9rem;
+  border: var(--border-w-thin) solid var(--border-soft);
+  border-radius: var(--radius-pill);
+  padding: var(--space-1) var(--space-4);
   font: inherit;
-  font-size: 0.85rem;
-  font-weight: 600;
+  font-size: var(--text-sm);
+  font-weight: 700;
   cursor: pointer;
   box-shadow: none;
   transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
 }
 
-.chip:hover {
+.chip:not(.chipOn):hover {
   color: var(--text);
   border-color: var(--border);
-  background: var(--surface);
+  background: var(--hover-tint);
   transform: none;
   box-shadow: none;
 }
@@ -50,14 +50,13 @@
 }
 
 .chipOn {
-  background: var(--btn-primary-bg);
-  color: var(--text);
+  background: var(--selected-bg);
+  color: var(--selected-fg);
   border-color: var(--border);
 }
 
-.chipOn:hover {
-  color: var(--text);
-  background: var(--btn-primary-bg-hover);
+.chipOn .chipIcon {
+  opacity: 1;
 }
 
 .chipOn .chipIcon {
@@ -69,20 +68,69 @@
   flex-direction: column;
 }
 
+/* --- Grouped activity list ---------------------------------------------- */
+/* Discrete events (not a connected sequence), so: no spine. Structure comes
+   from grouped, sticky date headers + calm whitespace + a faint inset divider
+   between rows — the pattern GitHub / Linear / Twitter use for activity. */
+.group {
+  display: flex;
+  flex-direction: column;
+}
+
+.group + .group {
+  margin-top: var(--space-4);
+}
+
+/* Sticky date-bucket header (Today / This week / June 2026) that stays pinned
+   while its group scrolls past. */
+.groupHeader {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  margin: 0 0 var(--space-1);
+  padding: var(--space-1) 0;
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  color: var(--text-muted);
+  background: var(--surface);
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+}
+
 .row {
   display: grid;
   grid-template-columns: 40px 1fr;
-  gap: 0.75rem;
-  padding: 0.85rem 0;
-  border-bottom: 1px solid var(--surface-muted);
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-2);
+  border-radius: var(--radius);
+  transition: background 0.12s ease;
 }
 
-.row:first-child {
-  padding-top: 0;
+/* Faint hairline between rows, inset so it doesn't cut under the avatar. */
+.row + .row {
+  position: relative;
 }
 
-.row:last-child {
-  border-bottom: none;
+.row + .row::before {
+  content: "";
+  position: absolute;
+  left: calc(40px + var(--space-3) + var(--space-2));
+  right: var(--space-2);
+  top: 0;
+  height: 1px;
+  background: var(--border-soft);
+}
+
+.row:hover {
+  background: var(--hover-tint);
+}
+
+.row:hover + .row::before,
+.row:hover::before {
+  background: transparent;
 }
 
 .avatarCol {
@@ -97,9 +145,9 @@
   bottom: -4px;
   width: 18px;
   height: 18px;
-  border-radius: 999px;
-  background: var(--btn-primary-bg);
-  color: var(--btn-primary-fg);
+  border-radius: var(--radius-pill);
+  background: var(--select);
+  color: var(--on-select);
   border: 2px solid var(--surface);
   display: inline-flex;
   align-items: center;
@@ -119,7 +167,8 @@
 .text {
   flex: 1;
   min-width: 0;
-  line-height: 1.4;
+  line-height: 1.45;
+  font-size: var(--text-md);
   display: inline-flex;
   flex-wrap: wrap;
   align-items: baseline;

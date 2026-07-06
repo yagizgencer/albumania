@@ -190,19 +190,19 @@
 }
 
 .dangerBtn {
-  background: #dc2626;
-  border: 1px solid #dc2626;
-  border-radius: 6px;
+  background: var(--btn-danger-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
   padding: 0.25rem 0.6rem;
   font-size: 0.82rem;
-  font-weight: 600;
-  color: #fff;
+  font-weight: 700;
+  color: var(--btn-danger-fg);
   cursor: pointer;
   box-shadow: none;
 }
 
 .dangerBtn:hover {
-  background: #b91c1c;
+  background: var(--btn-danger-bg-hover);
   transform: none;
   box-shadow: none;
 }

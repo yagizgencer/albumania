@@ -4,15 +4,15 @@
 .card {
   background: var(--surface);
   color: var(--text);
-  border: 2px solid var(--border);
+  border: var(--border-w) solid var(--border);
   border-radius: var(--radius);
-  box-shadow: var(--shadow-soft);
-  padding: 1rem;
+  box-shadow: var(--shadow-card);
+  padding: var(--space-4);
   box-sizing: border-box;
 }
 
 .padSm {
-  padding: 0.75rem 1rem;
+  padding: var(--space-3) var(--space-4);
 }
 
 .muted {

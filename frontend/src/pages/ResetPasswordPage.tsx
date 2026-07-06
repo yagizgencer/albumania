@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { resetPassword } from "../api/auth";
 import { Alert } from "../components/Alert";
+import { AuthLayout } from "../components/AuthLayout";
+import { Button } from "../components/Button";
 import { PasswordInput } from "../components/PasswordInput";
 import { getErrorMessage } from "../lib/apiError";
 
@@ -17,13 +19,12 @@ export function ResetPasswordPage() {
 
   if (!token) {
     return (
-      <main className="auth-page">
-        <h1>Reset password</h1>
+      <AuthLayout title="Reset password">
         <Alert>This reset link is invalid or incomplete.</Alert>
         <p>
           <Link to="/forgot-password">Request a new link</Link>
         </p>
-      </main>
+      </AuthLayout>
     );
   }
 
@@ -52,8 +53,7 @@ export function ResetPasswordPage() {
   }
 
   return (
-    <main className="auth-page">
-      <h1>Reset password</h1>
+    <AuthLayout title="Reset password">
       {done ? (
         <>
           <Alert variant="success">
@@ -84,11 +84,11 @@ export function ResetPasswordPage() {
             />
           </label>
           {error && <Alert>{error}</Alert>}
-          <button type="submit" disabled={submitting}>
+          <Button type="submit" block disabled={submitting}>
             {submitting ? "Resetting…" : "Reset password"}
-          </button>
+          </Button>
         </form>
       )}
-    </main>
+    </AuthLayout>
   );
 }

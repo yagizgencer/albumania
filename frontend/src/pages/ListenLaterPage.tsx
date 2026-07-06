@@ -244,7 +244,7 @@ function Row({ entry, onRemoved }: { entry: ListenLaterEntry; onRemoved: () => P
         </p>
         {activeParticipants.length > 0 && (
           <div className={styles.chipRow}>
-            <span style={{ color: "#6b7280", fontSize: "0.8rem", alignSelf: "center" }}>
+            <span style={{ color: "var(--text-muted)", fontSize: "0.8rem", alignSelf: "center" }}>
               Listening with:
             </span>
             {activeParticipants.map((p) => (

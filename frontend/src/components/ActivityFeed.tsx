@@ -122,6 +122,40 @@ export function ActivityFeed() {
   );
 }
 
+/** Human-friendly bucket label for the timeline group headers, e.g. "Today",
+ *  "Yesterday", "This week", or "June 2026" for older items. */
+function groupLabel(iso: string): string {
+  const then = new Date(iso);
+  if (Number.isNaN(then.getTime())) return "Earlier";
+  const now = new Date();
+  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const days = Math.round(
+    (startOfDay(now).getTime() - startOfDay(then).getTime()) / 86_400_000,
+  );
+  if (days <= 0) return "Today";
+  if (days === 1) return "Yesterday";
+  if (days < 7) return "This week";
+  if (
+    then.getFullYear() === now.getFullYear() &&
+    then.getMonth() === now.getMonth()
+  ) {
+    return "Earlier this month";
+  }
+  return then.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+}
+
+/** Split items (already newest-first) into consecutive groups by bucket label. */
+function groupItems(items: FeedItem[]): { label: string; items: FeedItem[] }[] {
+  const groups: { label: string; items: FeedItem[] }[] = [];
+  for (const item of items) {
+    const label = groupLabel(item.created_at);
+    const last = groups[groups.length - 1];
+    if (last && last.label === label) last.items.push(item);
+    else groups.push({ label, items: [item] });
+  }
+  return groups;
+}
+
 function FeedBody({
   items,
   error,
@@ -155,8 +189,15 @@ function FeedBody({
 
   return (
     <div className={styles.feed}>
-      {items.map((item) => (
-        <FeedRow key={item.id} item={item} />
+      {groupItems(items).map((group) => (
+        <section key={group.label} className={styles.group}>
+          <h3 className={styles.groupHeader}>{group.label}</h3>
+          <div className={styles.timeline}>
+            {group.items.map((item) => (
+              <FeedRow key={item.id} item={item} />
+            ))}
+          </div>
+        </section>
       ))}
       {error && <Alert>{error}</Alert>}
       {nextBefore && (

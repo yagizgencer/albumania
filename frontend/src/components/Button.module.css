@@ -1,18 +1,18 @@
-/* Shared button styling — one source of truth for the four intents + two sizes.
-   Built on the design tokens so every button matches the sketch look: pastel
-   fill, 2px inked border, offset shadow, and the hand-placed hover/active nudge. */
+/* Shared button — one source of truth for the intents + sizes. Warm Peach Pro:
+   chunky ink border, hard offset shadow, per-intent hover (darker shade of the
+   intent's own color), and the hand-placed press nudge. */
 
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
+  gap: var(--space-2);
   font-family: inherit;
-  font-weight: 700;
+  font-weight: 800;
   line-height: 1.1;
   text-decoration: none;
   cursor: pointer;
-  border: 2px solid var(--border);
+  border: var(--border-w) solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow-soft);
   transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.12s ease;
@@ -24,8 +24,13 @@
 }
 
 .btn:active:not(:disabled):not([aria-disabled="true"]) {
-  transform: translate(1px, 1px);
+  transform: translate(2px, 2px);
   box-shadow: none;
+}
+
+.btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .btn:disabled,
@@ -40,17 +45,17 @@
 
 /* Sizes */
 .md {
-  padding: 0.55rem 1.1rem;
+  padding: var(--space-2) var(--space-4);
   font-size: var(--text-md);
 }
 
 .sm {
-  padding: 0.35rem 0.8rem;
+  padding: var(--space-1) var(--space-3);
   font-size: var(--text-sm);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
 }
 
-/* Intents */
+/* Intents — each hovers toward a darker shade of its OWN color. */
 .primary {
   background: var(--btn-primary-bg);
   color: var(--btn-primary-fg);
@@ -81,6 +86,25 @@
 }
 .success:hover:not(:disabled):not([aria-disabled="true"]) {
   background: var(--btn-success-bg-hover);
+}
+
+/* Ghost — a light, borderless-feeling action for navigation / tertiary use.
+   Keeps a subtle border so it still reads as a control. */
+.ghost {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--border-soft);
+  box-shadow: none;
+}
+.ghost:hover:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--hover-tint);
+  border-color: var(--border);
+  box-shadow: none;
+  transform: none;
+}
+.ghost:active:not(:disabled):not([aria-disabled="true"]) {
+  box-shadow: none;
+  transform: none;
 }
 
 .block {

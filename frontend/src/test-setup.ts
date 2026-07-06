@@ -10,6 +10,25 @@ if (!("ResizeObserver" in globalThis)) {
   };
 }
 
+// jsdom has no matchMedia; ThemeContext uses it to resolve the "system" theme.
+// Stub a light-scheme, no-op media query so components that mount under the
+// ThemeProvider (or read the OS scheme) work in tests.
+if (!window.matchMedia) {
+  window.matchMedia = (query: string) =>
+    ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addEventListener() {},
+      removeEventListener() {},
+      addListener() {},
+      removeListener() {},
+      dispatchEvent() {
+        return false;
+      },
+    }) as unknown as MediaQueryList;
+}
+
 // React Router v7's data router builds a `Request` (with an AbortSignal) per
 // navigation; jsdom's `AbortSignal` isn't accepted by Node's undici `Request`, so
 // a *completed* data-router navigation rejects with "Expected signal to be an

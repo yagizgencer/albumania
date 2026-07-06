@@ -1,0 +1,15 @@
+/* Layout for the labelled metric toggle — the segmented control itself comes
+   from the shared Tabs component. */
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.label {
+  font-size: var(--text-xs);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}

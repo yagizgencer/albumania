@@ -1,7 +1,7 @@
-import { Link } from "react-router-dom";
 import { getTrendingAlbums, getTrendingArtists } from "../api/home";
 import { useAuth } from "../context/AuthContext";
 import { ActivityFeed } from "../components/ActivityFeed";
+import { ButtonLink } from "../components/Button";
 import { TrendingAlbumRow, TrendingArtistRow, TrendingBox } from "../components/TrendingBox";
 import SketchUnderline from "../components/SketchUnderline";
 import { LoadingState } from "../components/Spinner";
@@ -22,39 +22,46 @@ export function HomePage() {
 function PublicLanding() {
   return (
     <main className={styles.landing}>
-      <img
-        src="/albumania_icon.png"
-        alt=""
-        className={styles.landingLogo}
-        aria-hidden
-      />
-      <h1 className={styles.landingHero}>Albumania</h1>
-      <div className={styles.heroUnderline}>
-        <SketchUnderline strokeWidth={3} />
-      </div>
-      <p className={styles.landingTagline}>
-        Rate albums, pick your top 5 tracks, and see how your taste lines up
-        with friends and Spotify's most-popular.
-      </p>
+      <div className={styles.landingInner}>
+        <img
+          src="/albumania_icon.png"
+          alt=""
+          className={styles.landingLogo}
+          aria-hidden
+        />
+        <h1 className={styles.landingHero}>Albumania</h1>
+        <p className={styles.landingTagline}>
+          Score albums out of 10, rank your top 5 tracks, and see exactly how your
+          taste lines up with your friends — and with the crowd on Spotify.
+        </p>
+        <div className={styles.landingCtas}>
+          <ButtonLink to="/register" intent="primary">Get started</ButtonLink>
+          <ButtonLink to="/login" intent="secondary">Log in</ButtonLink>
+        </div>
 
-      <ul className={styles.landingBullets}>
+        <ul className={styles.landingBullets}>
         <li className={styles.landingBullet}>
-          <h3>Score every album</h3>
-          <p>Rate 0–10, rank your top 5, and jot notes per track.</p>
+          <h3>Rate &amp; rank</h3>
+          <p>
+            Give every album a score, pick your top 5 tracks, and jot notes on the
+            songs that stuck with you.
+          </p>
         </li>
         <li className={styles.landingBullet}>
-          <h3>Compare with friends</h3>
-          <p>See how closely your rankings match — per album and overall.</p>
+          <h3>Compare your taste</h3>
+          <p>
+            Your dashboard charts how closely you agree with friends and Spotify's
+            most-played — track by track.
+          </p>
         </li>
         <li className={styles.landingBullet}>
-          <h3>Listen Later, together</h3>
-          <p>Invite friends to an album and discover it side-by-side.</p>
+          <h3>Listen together</h3>
+          <p>
+            Invite a friend to an album, rate it side by side, and unlock a shared
+            comparison once you both finish.
+          </p>
         </li>
-      </ul>
-
-      <div className={styles.landingCtas}>
-        <Link to="/login" className={styles.ctaPrimary}>Log in</Link>
-        <Link to="/register" className={styles.ctaSecondary}>Sign up</Link>
+        </ul>
       </div>
     </main>
   );
@@ -70,7 +77,7 @@ function LoggedInHome({ displayName }: { displayName: string }) {
       <section className={styles.welcome}>
         <h1>Welcome back, {displayName}.</h1>
         <div className={styles.welcomeUnderline}>
-          <SketchUnderline color="#8a78dd" />
+          <SketchUnderline color="var(--accent)" />
         </div>
         <p>What did you listen to today?</p>
       </section>

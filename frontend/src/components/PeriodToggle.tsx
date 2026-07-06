@@ -1,7 +1,7 @@
 import type { TrendingPeriod } from "../api/home";
-import styles from "./PeriodToggle.module.css";
+import { Tabs, type TabOption } from "./Tabs";
 
-const OPTIONS: { value: TrendingPeriod; label: string }[] = [
+const OPTIONS: TabOption<TrendingPeriod>[] = [
   { value: "week", label: "Week" },
   { value: "month", label: "Month" },
   { value: "year", label: "Year" },
@@ -15,18 +15,12 @@ interface PeriodToggleProps {
 
 export function PeriodToggle({ value, onChange }: PeriodToggleProps) {
   return (
-    <div className={styles.segmented} role="group" aria-label="Time period">
-      {OPTIONS.map((o) => (
-        <button
-          key={o.value}
-          type="button"
-          className={`${styles.seg} ${value === o.value ? styles.segActive : ""}`}
-          aria-pressed={value === o.value}
-          onClick={() => onChange(o.value)}
-        >
-          {o.label}
-        </button>
-      ))}
-    </div>
+    <Tabs
+      options={OPTIONS}
+      value={value}
+      onChange={onChange}
+      variant="subtle"
+      ariaLabel="Time period"
+    />
   );
 }

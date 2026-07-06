@@ -1,32 +1,53 @@
 .section {
   background: var(--surface);
   color: var(--text);
-  border: 2px solid var(--border);
-  border-radius: 12px;
-  box-shadow: var(--shadow-soft);
-  padding: 1rem 1.1rem;
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-4) var(--space-5);
 }
 
+/* Title left, the subtle period toggle right, on one row. */
 .header {
   display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  margin-bottom: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
 }
 
 .title {
   margin: 0;
-  font-size: 1.2rem;
+  font-size: var(--text-xl);
 }
 
 /* Fits ~5 rows; the rest (up to 20) scroll inside so the box stays compact and
-   the sidebar can fit on screen. */
+   the sidebar can fit on screen. Thin, unobtrusive scrollbar. */
 .list {
   display: flex;
   flex-direction: column;
   max-height: 296px;
   overflow-y: auto;
-  padding-right: 0.35rem;
+  padding-right: var(--space-2);
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-soft) transparent;
+}
+
+.list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.list::-webkit-scrollbar-thumb {
+  background: var(--border-soft);
+  border-radius: var(--radius-pill);
+}
+
+.list::-webkit-scrollbar-thumb:hover {
+  background: var(--text-subtle);
 }
 
 /* `fill` variant: the box takes its share of a height-constrained parent (the

@@ -44,13 +44,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  border: 2px solid var(--surface);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  color: var(--on-primary);
+  border: var(--border-w-thin) solid var(--border);
+  box-shadow: var(--shadow-soft);
 }
 
 .badgeNone {
-  background: #6b7280;
+  background: var(--surface-muted);
+  color: var(--text-muted);
 }
 
 /* The "+" badge is interactive: it adds the album to Listen Later. */
@@ -60,7 +61,7 @@
 }
 
 .badgeBtn:hover {
-  background: var(--btn-primary-bg, #6b7280);
+  background: var(--primary);
   transform: scale(1.15);
   filter: brightness(1.05);
 }
@@ -81,11 +82,13 @@
 }
 
 .badgeDraft {
-  background: #eab308;
+  background: var(--data);
+  color: var(--on-data);
 }
 
 .badgePublished {
-  background: #16a34a;
+  background: var(--select);
+  color: var(--on-select);
 }
 
 .title {

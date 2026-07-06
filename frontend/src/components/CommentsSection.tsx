@@ -10,8 +10,18 @@ import {
 import { CommentComposer } from "./CommentComposer";
 import { CommentItem } from "./CommentItem";
 import { Alert } from "./Alert";
+import { Select } from "./Select";
 import { LoadingState } from "./Spinner";
 import styles from "./CommentsSection.module.css";
+
+const SORT_OPTIONS: { value: CommentSort; label: string }[] = [
+  { value: "recent", label: "Most recent" },
+  { value: "score", label: "Most liked" },
+];
+const ORDER_OPTIONS: { value: SortOrder; label: string }[] = [
+  { value: "desc", label: "Descending" },
+  { value: "asc", label: "Ascending" },
+];
 
 const INITIAL_VISIBLE = 10;
 
@@ -57,19 +67,23 @@ export function CommentsSection({ spotifyId }: { spotifyId: string }) {
       <div className={styles.header}>
         <h2 className={styles.title}>Comments ({count})</h2>
         <div className={styles.sortControls}>
-          <label>
-            Sort by{" "}
-            <select value={sort} onChange={(e) => setSort(e.target.value as CommentSort)} aria-label="Sort comments by">
-              <option value="recent">Most recent</option>
-              <option value="score">Most liked</option>
-            </select>
+          <label className={styles.sortField}>
+            <span className={styles.sortLabel}>Sort by</span>
+            <Select
+              value={sort}
+              options={SORT_OPTIONS}
+              onChange={setSort}
+              ariaLabel="Sort comments by"
+            />
           </label>
-          <label>
-            Order{" "}
-            <select value={order} onChange={(e) => setOrder(e.target.value as SortOrder)} aria-label="Sort order">
-              <option value="desc">Descending</option>
-              <option value="asc">Ascending</option>
-            </select>
+          <label className={styles.sortField}>
+            <span className={styles.sortLabel}>Order</span>
+            <Select
+              value={order}
+              options={ORDER_OPTIONS}
+              onChange={setOrder}
+              ariaLabel="Sort order"
+            />
           </label>
         </div>
       </div>

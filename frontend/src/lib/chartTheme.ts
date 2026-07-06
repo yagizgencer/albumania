@@ -1,36 +1,58 @@
 import { Chart as ChartJS } from "chart.js";
 
 /**
- * Cozy pastel theme for every Chart.js chart in the app.
+ * Theme-aware Chart.js defaults for the Warm Peach Pro look.
  *
- * Import this module once (in main.tsx) to apply global defaults: the Nunito
- * body font, warm-ink text, and faint grid lines. Charts then read as part of
- * the same sketchbook palette as the rest of the UI. Per-dataset colors come
- * from `chartPalette` below.
+ * `applyChartTheme()` reads ink/grid colors from the live CSS custom properties
+ * on <html>, so charts follow light/dark. ThemeContext calls it on every theme
+ * change; we also call it once at module load for the initial paint. Per-dataset
+ * colors come from `chartPalette` / `chartFill` below (the warm accent hues).
  */
-const INK = "#3a322a";
-const INK_FAINT = "rgba(58, 50, 42, 0.12)";
+function cssVar(name: string, fallback: string): string {
+  if (typeof document === "undefined") return fallback;
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return v || fallback;
+}
 
-ChartJS.defaults.font.family =
-  '"Nunito", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
-ChartJS.defaults.font.size = 13;
-ChartJS.defaults.color = INK;
-ChartJS.defaults.borderColor = INK_FAINT;
+export function applyChartTheme(): void {
+  const ink = cssVar("--text", "#2e2620");
+  // Faint grid tuned to the current ink; use a translucent ink so it works on
+  // both light and dark paper.
+  const grid = cssVar("--paper-dot", "rgba(46,38,32,0.08)");
 
-/** Solid pastel line/point colors (readable as strokes on cream). */
+  ChartJS.defaults.font.family =
+    '"Comic Neue", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+  ChartJS.defaults.font.size = 13;
+  ChartJS.defaults.color = ink;
+  ChartJS.defaults.borderColor = grid;
+}
+
+// Initial application (ThemeContext re-applies on theme change).
+applyChartTheme();
+
+/** Solid line/point colors — the Warm Peach accent family + friends.
+ *  (lavender/mint/sky/peach are back-compat aliases used by the dashboards until
+ *  the M2 dashboard sweep repoints them to coral/teal/amber.) */
 export const chartPalette = {
-  lavender: "#8a78dd",
-  coral: "#ff7a7a",
-  mint: "#4fb56a",
-  sky: "#3f9aa6",
-  peach: "#e89a4a",
-  ink: INK,
+  coral: "#f2a6a0",
+  teal: "#4fb8a4",
+  amber: "#f0c66a",
+  terracotta: "#d47a52",
+  olive: "#8a9a52",
+  ink: "#2e2620",
+  lavender: "#d47a52",
+  mint: "#4fb8a4",
+  sky: "#8a9a52",
+  peach: "#f0c66a",
 } as const;
 
 /** Translucent fills to pair with the stroke colors above. */
 export const chartFill = {
-  lavender: "rgba(138, 120, 221, 0.18)",
-  coral: "rgba(255, 122, 122, 0.18)",
-  mint: "rgba(79, 181, 106, 0.18)",
-  sky: "rgba(63, 154, 166, 0.18)",
+  coral: "rgba(242, 166, 160, 0.22)",
+  teal: "rgba(79, 184, 164, 0.22)",
+  amber: "rgba(240, 198, 106, 0.22)",
+  terracotta: "rgba(212, 122, 82, 0.22)",
+  lavender: "rgba(212, 122, 82, 0.22)",
+  mint: "rgba(79, 184, 164, 0.22)",
+  sky: "rgba(138, 154, 82, 0.22)",
 } as const;

@@ -31,9 +31,9 @@
   left: 0;
   width: min(440px, 90vw);
   background: var(--surface);
-  border: 2px solid var(--border);
-  border-radius: 10px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+  border: var(--border-w-thin) solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-modal);
   overflow: hidden;
   z-index: 30;
 }

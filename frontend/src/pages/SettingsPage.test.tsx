@@ -45,15 +45,17 @@ describe("SettingsPage", () => {
 
   it("shows the password form only under the Security tab", () => {
     renderPage();
-    fireEvent.click(screen.getByRole("tab", { name: "Security" }));
+    fireEvent.click(screen.getByRole("button", { name: "Security" }));
     expect(screen.getByRole("button", { name: /change password/i })).toBeInTheDocument();
   });
 
   it("saves profile visibility from the Privacy tab", async () => {
     renderPage();
-    fireEvent.click(screen.getByRole("tab", { name: "Privacy" }));
+    fireEvent.click(screen.getByRole("button", { name: "Privacy" }));
 
-    fireEvent.change(screen.getByRole("combobox"), { target: { value: "friends" } });
+    // The visibility control is a custom dropdown (Select): open it, pick the option.
+    fireEvent.click(screen.getByRole("button", { name: /who can see your dashboard/i }));
+    fireEvent.click(screen.getByRole("button", { name: /friends only/i }));
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
     await waitFor(() => {

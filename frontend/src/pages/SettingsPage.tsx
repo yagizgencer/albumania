@@ -3,17 +3,23 @@ import { Link, useSearchParams } from "react-router-dom";
 import { changePassword, resendVerification } from "../api/auth";
 import { updateMe, type ProfileVisibility, type UserProfile } from "../api/users";
 import { useAuth } from "../context/AuthContext";
+import { useTheme, type ThemePreference } from "../context/ThemeContext";
 import { getErrorMessage } from "../lib/apiError";
 import { profilePath } from "../lib/paths";
 import { Alert } from "../components/Alert";
+import { Button } from "../components/Button";
 import { LoadingState } from "../components/Spinner";
+import { PageContainer } from "../components/PageContainer";
 import { PasswordInput } from "../components/PasswordInput";
+import { Select } from "../components/Select";
+import { Tabs } from "../components/Tabs";
 import styles from "./SettingsPage.module.css";
 
-type TabId = "account" | "security" | "privacy";
+type TabId = "account" | "appearance" | "security" | "privacy";
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "account", label: "Account" },
+  { id: "appearance", label: "Appearance" },
   { id: "security", label: "Security" },
   { id: "privacy", label: "Privacy" },
 ];
@@ -29,22 +35,25 @@ export function SettingsPage() {
   }
 
   if (!profile) {
-    return <main className={styles.page}><LoadingState /></main>;
+    return (
+      <PageContainer>
+        <LoadingState />
+      </PageContainer>
+    );
   }
 
   return (
-    <main className={styles.page}>
-      <h1>Settings</h1>
+    <PageContainer>
+      <h1 className={styles.pageTitle}>Settings</h1>
 
       <div className={styles.layout}>
-        <nav className={styles.tabs} role="tablist" aria-label="Settings sections">
+        <nav className={styles.rail} aria-label="Settings sections">
           {TABS.map((t) => (
             <button
               key={t.id}
               type="button"
-              role="tab"
-              aria-selected={tab === t.id}
-              className={`${styles.tab} ${tab === t.id ? styles.tabActive : ""}`}
+              aria-current={tab === t.id ? "page" : undefined}
+              className={`${styles.railItem} ${tab === t.id ? styles.railItemActive : ""}`}
               onClick={() => selectTab(t.id)}
             >
               {t.label}
@@ -52,17 +61,39 @@ export function SettingsPage() {
           ))}
         </nav>
 
-        <div className={styles.panel}>
+        <div className={styles.content}>
           {tab === "account" && <AccountTab profile={profile} />}
+          {tab === "appearance" && <AppearanceTab />}
           {tab === "security" && <SecurityTab />}
           {tab === "privacy" && <PrivacyTab profile={profile} />}
+
+          <p className={styles.backLink}>
+            <Link to={profilePath(profile.username)}>← Back to profile</Link>
+          </p>
         </div>
       </div>
+    </PageContainer>
+  );
+}
 
-      <p className={styles.backLink}>
-        <Link to={profilePath(profile.username)}>Back to profile</Link>
-      </p>
-    </main>
+/** Reusable settings panel — a titled card so the content fills the width nicely. */
+function Panel({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className={styles.panel}>
+      <div className={styles.panelHead}>
+        <h2 className={styles.panelTitle}>{title}</h2>
+        {description && <p className={styles.panelDesc}>{description}</p>}
+      </div>
+      {children}
+    </section>
   );
 }
 
@@ -79,16 +110,15 @@ function AccountTab({ profile }: { profile: UserProfile }) {
   }
 
   return (
-    <section className={styles.section}>
-      <h2>Email</h2>
+    <Panel title="Email" description="The address you use to sign in.">
       <p className={styles.email}>{profile.email}</p>
       {!profile.email_verified ? (
         <Alert
           variant="info"
           action={
-            <button type="button" onClick={onResend} disabled={resent}>
+            <Button intent="secondary" size="sm" onClick={onResend} disabled={resent}>
               {resent ? "Sent" : "Resend"}
-            </button>
+            </Button>
           }
         >
           Your email isn't verified yet. Verify it to unlock friends and listen invites.
@@ -96,7 +126,37 @@ function AccountTab({ profile }: { profile: UserProfile }) {
       ) : (
         <p className={styles.verified}>✓ Verified</p>
       )}
-    </section>
+    </Panel>
+  );
+}
+
+const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
+  { value: "system", label: "System" },
+  { value: "light", label: "Light" },
+  { value: "dark", label: "Dark" },
+];
+
+function AppearanceTab() {
+  const { preference, setPreference } = useTheme();
+  return (
+    <Panel
+      title="Theme"
+      description="Choose a light or dark look, or follow your device's setting."
+    >
+      <div className={styles.themeRow}>
+        <Tabs
+          options={THEME_OPTIONS}
+          value={preference}
+          onChange={setPreference}
+          ariaLabel="Theme preference"
+        />
+        <span className={styles.themeHint}>
+          {preference === "system"
+            ? "Following your device's light/dark setting."
+            : `Always ${preference}.`}
+        </span>
+      </div>
+    </Panel>
   );
 }
 
@@ -135,8 +195,7 @@ function SecurityTab() {
   }
 
   return (
-    <section className={styles.section}>
-      <h2>Change password</h2>
+    <Panel title="Change password" description="Use at least 8 characters.">
       <form onSubmit={handleSubmit}>
         <label>
           Current password
@@ -152,13 +211,18 @@ function SecurityTab() {
         </label>
         {error && <Alert>{error}</Alert>}
         {success && <Alert variant="success">{success}</Alert>}
-        <button type="submit" disabled={submitting}>
+        <Button type="submit" disabled={submitting}>
           {submitting ? "Saving…" : "Change password"}
-        </button>
+        </Button>
       </form>
-    </section>
+    </Panel>
   );
 }
+
+const VISIBILITY_OPTIONS: { value: ProfileVisibility; label: string }[] = [
+  { value: "public", label: "Public — anyone can see your dashboard" },
+  { value: "friends", label: "Friends only — only your friends can see it" },
+];
 
 function PrivacyTab({ profile }: { profile: UserProfile }) {
   const { refreshProfile } = useAuth();
@@ -184,25 +248,24 @@ function PrivacyTab({ profile }: { profile: UserProfile }) {
   }
 
   return (
-    <section className={styles.section}>
-      <h2>Profile visibility</h2>
+    <Panel title="Profile visibility" description="Control who can see your dashboard.">
       <form onSubmit={handleSave}>
         <label>
           Who can see your dashboard
-          <select
+          <Select
             value={visibility}
-            onChange={(e) => setVisibility(e.target.value as ProfileVisibility)}
-          >
-            <option value="public">Public — anyone can see your dashboard</option>
-            <option value="friends">Friends only — only your friends can see it</option>
-          </select>
+            options={VISIBILITY_OPTIONS}
+            onChange={setVisibility}
+            ariaLabel="Who can see your dashboard"
+            block
+          />
         </label>
         {error && <Alert>{error}</Alert>}
         {success && <Alert variant="success">{success}</Alert>}
-        <button type="submit" disabled={saving}>
+        <Button type="submit" disabled={saving}>
           {saving ? "Saving…" : "Save"}
-        </button>
+        </Button>
       </form>
-    </section>
+    </Panel>
   );
 }

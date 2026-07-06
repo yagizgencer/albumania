@@ -5,6 +5,8 @@ import { useAuth } from "../context/AuthContext";
 import { getErrorMessage } from "../lib/apiError";
 import { usernameError, emailError } from "../lib/validation";
 import { Alert } from "../components/Alert";
+import { AuthLayout } from "../components/AuthLayout";
+import { Button } from "../components/Button";
 import { PasswordInput } from "../components/PasswordInput";
 
 export function RegisterPage() {
@@ -54,8 +56,7 @@ export function RegisterPage() {
   }
 
   return (
-    <main className="auth-page">
-      <h1>Create account</h1>
+    <AuthLayout title="Create account">
       <form onSubmit={handleSubmit}>
         <label>
           Username
@@ -103,11 +104,11 @@ export function RegisterPage() {
           />
         </label>
         {error && <Alert>{error}</Alert>}
-        <button type="submit" disabled={submitting}>
+        <Button type="submit" block disabled={submitting}>
           {submitting ? "Creating…" : "Create account"}
-        </button>
+        </Button>
       </form>
       <p>Already have an account? <Link to="/login">Log in</Link></p>
-    </main>
+    </AuthLayout>
   );
 }

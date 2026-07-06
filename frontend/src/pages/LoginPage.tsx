@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { login as loginRequest } from "../api/auth";
 import { useAuth } from "../context/AuthContext";
 import { Alert } from "../components/Alert";
+import { AuthLayout } from "../components/AuthLayout";
+import { Button } from "../components/Button";
 import { PasswordInput } from "../components/PasswordInput";
 
 export function LoginPage() {
@@ -29,8 +31,7 @@ export function LoginPage() {
   }
 
   return (
-    <main className="auth-page">
-      <h1>Log in</h1>
+    <AuthLayout title="Log in">
       <form onSubmit={handleSubmit}>
         <label>
           Email or username
@@ -52,12 +53,12 @@ export function LoginPage() {
           />
         </label>
         {error && <Alert>{error}</Alert>}
-        <button type="submit" disabled={submitting}>
+        <Button type="submit" block disabled={submitting}>
           {submitting ? "Logging in…" : "Log in"}
-        </button>
+        </Button>
       </form>
       <p><Link to="/forgot-password">Forgot your password?</Link></p>
       <p>No account? <Link to="/register">Create one</Link></p>
-    </main>
+    </AuthLayout>
   );
 }

@@ -3,7 +3,7 @@
   grid-template-columns: 88px 1fr auto;
   gap: 1.25rem;
   background: var(--surface);
-  border: 2px solid var(--border);
+  border: var(--border-w-thin) solid var(--border);
   border-radius: 14px;
   padding: 1.5rem;
   margin-bottom: 1.5rem;
@@ -44,8 +44,8 @@
 .lightbox {
   background: var(--surface);
   color: var(--text);
-  border: 2px solid var(--border);
-  border-radius: 12px;
+  border: var(--border-w-thin) solid var(--border);
+  border-radius: var(--radius);
   padding: 1.25rem;
   max-width: min(90vw, 520px);
   display: flex;
@@ -66,7 +66,7 @@
   width: 240px;
   height: 240px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--pastel-lavender) 0%, var(--pastel-pink) 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--data) 100%);
   color: var(--text);
   font-size: 6rem;
   font-weight: 700;
@@ -88,7 +88,7 @@
   color: var(--btn-primary-fg);
   border: none;
   padding: 0.5rem 1rem;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   font-weight: 600;
   font-size: 0.9rem;
@@ -102,7 +102,7 @@
   color: var(--btn-danger-fg);
   border: none;
   padding: 0.5rem 1rem;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   font-weight: 600;
   font-size: 0.9rem;
@@ -114,9 +114,9 @@
 .lightboxBtnGhost {
   background: transparent;
   color: var(--text);
-  border: 2px solid var(--border);
+  border: var(--border-w-thin) solid var(--border);
   padding: 0.5rem 1rem;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   font-size: 0.9rem;
 }
@@ -240,8 +240,8 @@
 .compareSelect {
   background: var(--surface);
   color: var(--text);
-  border: 2px solid var(--border);
-  border-radius: 6px;
+  border: var(--border-w-thin) solid var(--border);
+  border-radius: var(--radius-sm);
   padding: 0.35rem 1.6rem 0.35rem 0.55rem;
   font: inherit;
   min-width: 12rem;
@@ -281,9 +281,9 @@
   padding: 0.25rem 0;
   background: var(--surface);
   color: var(--text);
-  border: 2px solid var(--border);
-  border-radius: 6px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+  border: var(--border-w-thin) solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-modal);
   max-height: 16rem;
   overflow-y: auto;
 }
@@ -334,8 +334,8 @@
 .editor select {
   background: var(--surface);
   color: var(--text);
-  border: 2px solid var(--border);
-  border-radius: 6px;
+  border: var(--border-w-thin) solid var(--border);
+  border-radius: var(--radius-sm);
   padding: 0.45rem 0.6rem;
   font: inherit;
 }

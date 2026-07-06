@@ -13,8 +13,8 @@
   background: var(--surface);
   color: var(--text);
   padding: 1.5rem;
-  border-radius: 12px;
-  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  border: var(--border-w-thin) solid var(--border);
 }
 
 .art {
@@ -50,7 +50,7 @@
 
 .pageBtn {
   padding: 0.45rem 0.9rem;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: var(--btn-secondary-bg);
   color: var(--btn-secondary-fg);
   border: 1px solid var(--btn-secondary-border);
@@ -95,7 +95,7 @@
   color: var(--btn-primary-fg);
   text-decoration: none;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-weight: 600;
   font-size: 0.9rem;
   cursor: pointer;
@@ -117,8 +117,8 @@
 .column {
   background: var(--surface);
   color: var(--text);
-  border: 2px solid var(--border);
-  border-radius: 12px;
+  border: var(--border-w-thin) solid var(--border);
+  border-radius: var(--radius);
   padding: 1rem 1.25rem;
 }
 

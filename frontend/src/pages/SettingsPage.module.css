@@ -1,115 +1,128 @@
-.page {
-  max-width: 760px;
-  margin: 2rem auto;
-  padding: 0 1rem;
-  color: var(--text);
+.pageTitle {
+  font-size: 2rem;
+  margin: 0 0 var(--space-5);
 }
 
+/* Full-width two-column: sticky tab rail + content that fills the rest. */
 .layout {
   display: grid;
-  grid-template-columns: 180px 1fr;
-  gap: 1.5rem;
+  grid-template-columns: 220px 1fr;
+  gap: var(--space-6);
   align-items: start;
-  margin-top: 1.25rem;
 }
 
-.tabs {
+.rail {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: var(--space-1);
   position: sticky;
-  top: 1rem;
+  top: calc(var(--nav-height) + var(--space-4));
 }
 
-.tab {
+.railItem {
   text-align: left;
   background: transparent;
-  border: none;
-  border-left: 3px solid transparent;
+  border: var(--border-w-thin) solid transparent;
   box-shadow: none;
-  border-radius: 0 6px 6px 0;
-  padding: 0.55rem 0.85rem;
+  border-radius: var(--radius);
+  padding: var(--space-2) var(--space-3);
   font: inherit;
-  font-weight: 600;
-  font-size: 0.95rem;
+  font-weight: 700;
+  font-size: var(--text-md);
   color: var(--text-muted);
   cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
 }
 
-.tab:hover {
+.railItem:hover {
   color: var(--text);
-  background: var(--surface-muted);
+  background: var(--hover-tint);
   transform: none;
   box-shadow: none;
 }
 
-.tabActive {
-  color: var(--text);
-  border-left-color: var(--text);
-  background: var(--surface-muted);
+.railItemActive,
+.railItemActive:hover {
+  color: var(--on-select);
+  background: var(--select);
+  border-color: var(--border);
+}
+
+.content {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
 }
 
 .panel {
-  min-width: 0;
   background: var(--surface);
-  border: 2px solid var(--border);
-  border-radius: 12px;
-  padding: 1.25rem 1.5rem;
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-5);
 }
 
-.backLink {
-  margin-top: 1.5rem;
+.panelHead {
+  margin-bottom: var(--space-4);
 }
 
-@media (max-width: 560px) {
-  .layout {
-    grid-template-columns: 1fr;
-  }
-  .tabs {
-    flex-direction: row;
-    position: static;
-    border-bottom: 2px solid var(--border);
-  }
-  .tab {
-    border-left: none;
-    border-bottom: 3px solid transparent;
-    border-radius: 6px 6px 0 0;
-  }
-  .tabActive {
-    border-left: none;
-    border-bottom-color: var(--text);
-  }
+.panelTitle {
+  font-size: var(--text-xl);
+  margin: 0;
 }
 
-.section {
-  margin: 1rem 0 1.5rem;
+.panelDesc {
+  margin: var(--space-1) 0 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
 }
 
-.section h2 {
-  font-size: 1.15rem;
-  margin: 0 0 0.6rem;
+.panel form {
+  margin: 0;
 }
 
-.section form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-}
-
-.section label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  font-size: 0.9rem;
+.panel label {
+  font-size: var(--text-sm);
+  gap: var(--space-2);
 }
 
 .email {
   color: var(--text-muted);
-  margin: 0 0 0.6rem;
+  margin: 0 0 var(--space-3);
 }
 
 .verified {
-  color: #10b981;
-  font-weight: 600;
+  color: var(--success-text);
+  font-weight: 700;
   margin: 0;
+}
+
+.themeRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.themeHint {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.backLink {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+@media (max-width: 640px) {
+  .layout {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+  .rail {
+    flex-direction: row;
+    flex-wrap: wrap;
+    position: static;
+  }
 }

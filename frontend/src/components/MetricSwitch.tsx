@@ -1,21 +1,17 @@
-import styles from "../pages/ProfileDashboardPage.module.css";
-
-interface Option<T extends string> {
-  value: T;
-  label: string;
-}
+import { Tabs, type TabOption } from "./Tabs";
+import styles from "./MetricSwitch.module.css";
 
 interface MetricSwitchProps<T extends string> {
   label: string;
-  options: [Option<T>, Option<T>];
+  options: [TabOption<T>, TabOption<T>];
   value: T;
   onChange: (value: T) => void;
 }
 
 /**
- * A two-state flip switch: both labels are always visible with the active side
- * highlighted, and a single click flips to the other option. Used for the
- * Similarity ↔ Rating metric on the dashboards.
+ * A labelled two-state segmented control (e.g. Similarity ↔ Rating on the
+ * dashboards). Both options are always visible; the active one fills with the
+ * selection color. Built on the shared rectangular Tabs.
  */
 export function MetricSwitch<T extends string>({
   label,
@@ -23,30 +19,10 @@ export function MetricSwitch<T extends string>({
   value,
   onChange,
 }: MetricSwitchProps<T>) {
-  const [first, second] = options;
-  const flip = () => onChange(value === first.value ? second.value : first.value);
-
   return (
-    <div className={styles.toggleGroup}>
-      <span className={styles.toggleLabel}>{label}</span>
-      <button
-        type="button"
-        className={styles.switch}
-        role="switch"
-        aria-checked={value === second.value}
-        onClick={flip}
-      >
-        {options.map((opt) => (
-          <span
-            key={opt.value}
-            className={`${styles.switchOption} ${
-              value === opt.value ? styles.switchActive : ""
-            }`}
-          >
-            {opt.label}
-          </span>
-        ))}
-      </button>
+    <div className={styles.group}>
+      <span className={styles.label}>{label}</span>
+      <Tabs options={options} value={value} onChange={onChange} ariaLabel={label} />
     </div>
   );
 }

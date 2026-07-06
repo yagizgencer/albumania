@@ -32,7 +32,7 @@
   display: inline-block;
   margin-top: 0.5rem;
   padding: 0.2rem 0.6rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -93,8 +93,8 @@
 
 .trackItem {
   background: var(--surface-muted);
-  border: 2px solid var(--border);
-  border-radius: 6px;
+  border: var(--border-w-thin) solid var(--border);
+  border-radius: var(--radius-sm);
   overflow: hidden;
   color: var(--text);
 }
@@ -133,7 +133,7 @@
 
 .trackBtn {
   background: transparent;
-  border: 2px solid var(--border);
+  border: var(--border-w-thin) solid var(--border);
   border-radius: 4px;
   padding: 0.2rem 0.5rem;
   font-size: 0.75rem;
@@ -152,7 +152,7 @@
 }
 
 .trackBtnRemove:hover {
-  background: rgba(239, 68, 68, 0.12);
+  background: var(--danger-tint);
 }
 
 .slotButtonRow {
@@ -166,7 +166,7 @@
   height: 1.75rem;
   padding: 0;
   border-radius: 4px;
-  border: 2px solid var(--border);
+  border: var(--border-w-thin) solid var(--border);
   background: var(--surface);
   color: var(--text);
   font-size: 0.8rem;
@@ -209,7 +209,7 @@
 }
 
 .slot {
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   border: 2px solid transparent;
   transition: border-color 0.15s, background 0.15s;
 }
@@ -225,7 +225,7 @@
   gap: 0.75rem;
   padding: 0.6rem 0.75rem;
   border: 2px dashed var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   color: var(--text-subtle);
   font-size: 0.9rem;
 }
@@ -281,7 +281,7 @@
 
 .restZoneOver {
   border-color: var(--danger-text);
-  background: rgba(239, 68, 68, 0.08);
+  background: var(--danger-tint);
 }
 
 .restPlaceholder {
@@ -299,7 +299,7 @@
   color: var(--accent);
   background: rgba(99, 102, 241, 0.12);
   padding: 0.15rem 0.5rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 .overlayCard {
@@ -310,8 +310,8 @@
   background: var(--surface);
   color: var(--text);
   border: 1px solid var(--accent);
-  border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-modal);
   font-size: 0.95rem;
   cursor: grabbing;
 }
@@ -325,7 +325,7 @@
 
 .btn {
   padding: 0.6rem 1.25rem;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
@@ -360,7 +360,7 @@
 }
 
 .actions .btnRemove:hover {
-  background: rgba(214, 69, 63, 0.1);
+  background: var(--danger-tint);
   transform: none;
   box-shadow: none;
 }
@@ -378,15 +378,15 @@
 }
 
 .actions .btnRemoveConfirm {
-  background: #dc2626;
-  color: #fff;
-  border: 1px solid #dc2626;
+  background: var(--btn-danger-bg);
+  color: var(--btn-danger-fg);
+  border: 1px solid var(--border);
   box-shadow: none;
 }
 
 .actions .btnRemoveConfirm:hover {
-  background: #b91c1c;
-  border-color: #b91c1c;
+  background: var(--btn-danger-bg-hover);
+  border-color: var(--border);
   transform: none;
   box-shadow: none;
 }

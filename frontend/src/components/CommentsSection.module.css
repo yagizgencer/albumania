@@ -1,48 +1,50 @@
 .section {
   background: var(--surface);
   color: var(--text);
-  border: 2px solid var(--border);
-  border-radius: 12px;
-  padding: 1.25rem 1.5rem;
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-5);
 }
 
 .header {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
-  gap: 1rem;
+  gap: var(--space-4);
   flex-wrap: wrap;
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-4);
 }
 
 .title {
   margin: 0;
-  font-size: 1.2rem;
+  font-size: var(--text-xl);
 }
 
 .sortControls {
   display: flex;
-  gap: 0.75rem;
-  font-size: 0.82rem;
+  gap: var(--space-3);
+}
+
+.sortField {
+  gap: var(--space-1);
+}
+
+.sortLabel {
+  font-size: var(--text-xs);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: var(--text-muted);
 }
 
-.sortControls select {
-  font: inherit;
-  padding: 0.25rem 0.4rem;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface);
-  color: var(--text);
-}
-
 .addBox {
-  margin-bottom: 1.25rem;
+  margin-bottom: var(--space-5);
 }
 
 .empty {
   color: var(--text-muted);
-  font-size: 0.9rem;
+  font-size: var(--text-md);
 }
 
 .list {
@@ -50,32 +52,45 @@
   flex-direction: column;
 }
 
-/* Once expanded, the full list scrolls internally (YouTube-style) instead of
-   growing the page. */
+/* Once expanded, the full list scrolls internally instead of growing the page. */
 .scrollList {
   display: flex;
   flex-direction: column;
   max-height: 640px;
   overflow-y: auto;
-  padding-right: 0.5rem;
+  padding-right: var(--space-2);
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-soft) transparent;
+}
+
+.scrollList::-webkit-scrollbar {
+  width: 6px;
+}
+.scrollList::-webkit-scrollbar-thumb {
+  background: var(--border-soft);
+  border-radius: var(--radius-pill);
+}
+.scrollList::-webkit-scrollbar-thumb:hover {
+  background: var(--text-subtle);
 }
 
 .showMore {
-  margin-top: 0.75rem;
+  margin-top: var(--space-3);
   background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  border: var(--border-w-thin) solid var(--border-soft);
+  border-radius: var(--radius);
   box-shadow: none;
-  padding: 0.4rem 0.9rem;
-  font-weight: 600;
-  font-size: 0.85rem;
+  padding: var(--space-2) var(--space-4);
+  font-weight: 700;
+  font-size: var(--text-sm);
   color: var(--text-muted);
   cursor: pointer;
 }
 
 .showMore:hover {
   color: var(--text);
-  background: var(--surface-muted);
+  background: var(--hover-tint);
+  border-color: var(--border);
   transform: none;
   box-shadow: none;
 }

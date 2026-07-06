@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { verifyEmail } from "../api/auth";
 import { useAuth } from "../context/AuthContext";
 import { Alert } from "../components/Alert";
+import { AuthLayout } from "../components/AuthLayout";
 import { LoadingState } from "../components/Spinner";
 
 type Status = "verifying" | "success" | "error";
@@ -32,8 +33,7 @@ export function VerifyEmailPage() {
   }, [params, refreshProfile]);
 
   return (
-    <main className="auth-page">
-      <h1>Verify email</h1>
+    <AuthLayout title="Verify email">
       {status === "verifying" && <LoadingState label="Verifying your email…" />}
       {status === "success" && (
         <>
@@ -47,6 +47,6 @@ export function VerifyEmailPage() {
           <p><Link to="/">Go to home</Link> and resend it from Settings.</p>
         </>
       )}
-    </main>
+    </AuthLayout>
   );
 }
