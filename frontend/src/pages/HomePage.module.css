@@ -15,12 +15,23 @@
   width: 100%;
   margin: 0;
   padding: 0;
-  min-height: calc(100vh - var(--nav-height));
+  min-height: calc(100dvh - var(--nav-height));
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(155deg, var(--primary) 0%, var(--data) 55%, var(--select) 100%);
   color: var(--on-primary);
+}
+
+/* Paint the gradient on a FIXED full-viewport layer behind the content. Being
+   fixed to the viewport (not sized by content), it can never leave a bare stripe
+   at the bottom no matter how tall/short the page is, in light or dark. */
+.landing::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(155deg, var(--primary) 0%, var(--data) 55%, var(--select) 100%);
 }
 
 .landingInner {
@@ -32,8 +43,8 @@
 }
 
 .landingLogo {
-  width: 172px;
-  height: 172px;
+  width: 210px;
+  height: 210px;
   display: block;
   margin: 0 auto var(--space-3);
 }
@@ -66,12 +77,19 @@
 }
 
 .landingBullet {
-  background: var(--surface);
+  /* A touch warmer/beiger than the default cream --surface (#fffaf2), so the
+     cards read a bit less stark-white against the gradient. Light mode only —
+     dark mode keeps --surface. */
+  background: #f6ead6;
   color: var(--text);
   border: var(--border-w) solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow-card);
   padding: var(--space-5);
+}
+
+[data-theme="dark"] .landingBullet {
+  background: var(--surface);
 }
 
 .landingBullet h3 {
@@ -94,23 +112,29 @@
   flex-wrap: wrap;
 }
 
-/* On the warm gradient, the coral primary would blend in — make the CTAs
-   high-contrast: a solid surface "Get started" that pops, and an inverse
-   outline "Log in". */
-.landingCtas a:first-child {
-  background: var(--surface);
-  color: var(--text);
-}
-
-.landingCtas a:last-child {
+/* CTAs: a consistent pair of frosted ghost pills, identical in both themes. The
+   gradient behind is theme-stable (always the warm one), so a transparent fill
+   with a warm-ink border + label reads the same in light and dark, and stays
+   distinct from the solid surface cards below. Just a light blur of the gradient
+   — no tint — so the interior reads frosted without darkening. */
+.landingCtas a {
+  /* Slightly larger than the default `.md` button size — these are the hero's
+     primary calls to action, so they get a touch more presence. */
+  padding: var(--space-2) var(--space-5);
+  font-size: var(--text-lg);
   background: transparent;
-  color: var(--on-primary);
-  border-color: var(--on-primary);
+  backdrop-filter: blur(1.5px);
+  color: #2e2620;
+  border-color: #2e2620;
 }
 
-.landingCtas a:last-child:hover {
-  background: rgba(46, 38, 32, 0.1);
-  color: var(--on-primary);
+/* Hover deepens the interior with a faint warm-ink wash for feedback. The extra
+   :not() matches (and beats) the Button component's own `:hover:not(...)`
+   specificity, so the two buttons don't diverge to their intent hover colors. */
+.landingCtas a:hover:not(:disabled):not([aria-disabled="true"]) {
+  background: rgba(46, 38, 32, 0.24);
+  color: #2e2620;
+  filter: none;
 }
 
 /* -- Logged-in home ----------------------------------------------------- */

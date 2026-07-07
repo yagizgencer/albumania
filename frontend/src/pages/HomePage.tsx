@@ -30,10 +30,6 @@ function PublicLanding() {
           aria-hidden
         />
         <h1 className={styles.landingHero}>Albumania</h1>
-        <p className={styles.landingTagline}>
-          Score albums out of 10, rank your top 5 tracks, and see exactly how your
-          taste lines up with your friends — and with the crowd on Spotify.
-        </p>
         <div className={styles.landingCtas}>
           <ButtonLink to="/register" intent="primary">Get started</ButtonLink>
           <ButtonLink to="/login" intent="secondary">Log in</ButtonLink>
@@ -41,24 +37,21 @@ function PublicLanding() {
 
         <ul className={styles.landingBullets}>
         <li className={styles.landingBullet}>
-          <h3>Rate &amp; rank</h3>
+          <h3>Discover &amp; Rate</h3>
           <p>
-            Give every album a score, pick your top 5 tracks, and jot notes on the
-            songs that stuck with you.
-          </p>
-        </li>
-        <li className={styles.landingBullet}>
-          <h3>Compare your taste</h3>
-          <p>
-            Your dashboard charts how closely you agree with friends and Spotify's
-            most-played — track by track.
+            Explore new albums, rate them, and highlight your favorite tracks. Log your journey in a personalized dashboard.
           </p>
         </li>
         <li className={styles.landingBullet}>
           <h3>Listen together</h3>
           <p>
-            Invite a friend to an album, rate it side by side, and unlock a shared
-            comparison once you both finish.
+            Check out your friends' recent activity. Invite them to listen to an album, and find out how they like it.
+          </p>
+        </li>
+        <li className={styles.landingBullet}>
+          <h3>Compare your taste</h3>
+          <p>
+            See how your taste lines up with your friends and the current trend on Spotify. Visualize your ratings and similarity scores as interactive graphs.
           </p>
         </li>
         </ul>

@@ -19,7 +19,12 @@ import { PageContainer } from "../components/PageContainer";
 import { Button } from "../components/Button";
 import { ConfirmButton } from "../components/ConfirmButton";
 import { Card } from "../components/Card";
-import { SearchIcon } from "../components/Icons";
+import {
+  SearchIcon,
+  FriendsHeartIcon,
+  InboxIcon,
+  PaperPlaneIcon,
+} from "../components/Icons";
 import { getErrorMessage } from "../lib/apiError";
 import { profilePath } from "../lib/paths";
 import styles from "./FriendsPage.module.css";
@@ -204,7 +209,14 @@ export function FriendsPage() {
             )}
             {results.map((u) => (
               <div key={u.username} className={styles.resultRow}>
-                <span className={styles.userInline}>
+                {/* The whole row opens the profile: this link's ::after stretches
+                    over the entire row (see .stretchLink). The action buttons
+                    below sit above it via z-index so they stay clickable. */}
+                <Link
+                  to={profilePath(u.username)}
+                  className={`${styles.userInline} ${styles.stretchLink}`}
+                  aria-label={`Open ${u.display_name}'s profile`}
+                >
                   <Avatar
                     username={u.username}
                     pictureUrl={u.profile_picture_url}
@@ -212,9 +224,7 @@ export function FriendsPage() {
                     size={36}
                   />
                   <span className={styles.userText}>
-                    <Link to={profilePath(u.username)} className={styles.userLink}>
-                      {u.display_name}
-                    </Link>
+                    <span className={styles.userLink}>{u.display_name}</span>
                     <span className={styles.userHandle}>{u.username}</span>
                   </span>
                   {u.profile_visibility !== "public" && (
@@ -222,7 +232,7 @@ export function FriendsPage() {
                       🔒 Friends
                     </span>
                   )}
-                </span>
+                </Link>
                 {(() => {
                   const s = searchState(u.username);
                   if (s.kind === "friends")
@@ -273,7 +283,7 @@ export function FriendsPage() {
       {data && tab === "friends" && (
         <FriendList
           items={data.accepted}
-          emptyIcon="🫂"
+          emptyIcon={<FriendsHeartIcon size={44} />}
           emptyText="No friends yet — search above to add some."
           render={(f) => (
             <FriendRow
@@ -297,7 +307,7 @@ export function FriendsPage() {
       {data && tab === "incoming" && (
         <FriendList
           items={data.incoming}
-          emptyIcon="📨"
+          emptyIcon={<InboxIcon size={44} />}
           emptyText="No incoming requests."
           render={(f) => (
             <FriendRow
@@ -322,7 +332,7 @@ export function FriendsPage() {
       {data && tab === "outgoing" && (
         <FriendList
           items={data.outgoing}
-          emptyIcon="✈️"
+          emptyIcon={<PaperPlaneIcon size={44} />}
           emptyText="No outgoing requests."
           render={(f) => (
             <FriendRow
@@ -367,7 +377,7 @@ function FriendRow({
 
 interface FriendListProps {
   items: Friendship[];
-  emptyIcon: string;
+  emptyIcon: React.ReactNode;
   emptyText: string;
   render: (f: Friendship) => React.ReactNode;
 }

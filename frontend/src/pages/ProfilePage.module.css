@@ -259,6 +259,7 @@
   transform: translateY(-50%);
   background: transparent;
   border: none;
+  box-shadow: none;
   color: var(--text-subtle);
   cursor: pointer;
   font-size: 1.1rem;
@@ -266,7 +267,15 @@
   padding: 0 0.2rem;
 }
 
-.comboClear:hover {
+/* Keep the vertical centering on hover/active — the global button:hover rule
+   sets `transform: translate(-1px,-1px)` + a shadow, which would knock this
+   absolutely-positioned "×" out of place. Re-assert the centering and drop the
+   nudge/shadow so it stays put. */
+.comboClear:hover:not(:disabled),
+.comboClear:active:not(:disabled) {
+  transform: translateY(-50%);
+  box-shadow: none;
+  filter: none;
   color: var(--text);
 }
 
@@ -306,6 +315,18 @@
 
 .comboItemActive {
   font-weight: 600;
+}
+
+/* "Spotify" option: label + brand glyph, aligned on the left of the row. */
+.comboSpotify {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.comboSpotifyIcon {
+  color: #1db954; /* Spotify green — a fixed brand color, same in both themes. */
+  flex-shrink: 0;
 }
 
 .comboEmpty {

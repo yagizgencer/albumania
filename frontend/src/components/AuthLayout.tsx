@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Link } from "react-router-dom";
 import styles from "./AuthLayout.module.css";
 
 /**
@@ -15,16 +16,16 @@ export function AuthLayout({
 }) {
   return (
     <main className={styles.wrap}>
-      <aside className={styles.hero} aria-hidden>
-        <div className={styles.heroBrand}>
+      <aside className={styles.hero}>
+        <Link to="/" className={styles.heroBrand} aria-label="Albumania home">
           <img src="/albumania_icon.png" alt="" className={styles.heroLogo} />
           <span className={styles.heroWordmark}>Albumania</span>
-        </div>
+        </Link>
         <div>
-          <h2 className={styles.heroTitle}>Your music taste, mapped.</h2>
+          <h2 className={styles.heroTitle}>Discover, listen, compare.</h2>
           <p className={styles.heroTagline}>
-            Rate albums, rank your top 5, and see how closely your taste lines up
-            with friends and Spotify.
+            Rate new albums, listen along with friends, and see how your taste
+            lines up with theirs and the current trend on Spotify.
           </p>
         </div>
       </aside>

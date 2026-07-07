@@ -262,3 +262,89 @@ export function CommentIcon({ size = 24, className }: IconProps) {
     </svg>
   );
 }
+
+// -- Sketchbook empty-state icons (hand-drawn line style, match nav icons) ----
+
+/** Two friends side by side — used for the empty friends list. Cozier than the
+ *  🫂 emoji, and matches the nav People icon's hand-drawn style. */
+export function FriendsHeartIcon({ size = 24, className }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={sketchStroke(size)}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <circle cx="8" cy="10" r="2.6" />
+      <path d="M3.5 19.5c0-2.9 2-4.8 4.5-4.8s4.5 1.9 4.5 4.8" />
+      <circle cx="16.5" cy="7.5" r="2.4" />
+      <path d="M13.5 15.2c.9-.5 1.9-.7 3-.7 2.3 0 4 1.8 4 4.5" />
+    </svg>
+  );
+}
+
+/** Open envelope / inbox — used for the empty incoming-requests list. */
+export function InboxIcon({ size = 24, className }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={sketchStroke(size)}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <rect x="3.5" y="5.5" width="17" height="13" rx="1.5" />
+      <path d="M4 6.5 12 12l8-5.5" />
+    </svg>
+  );
+}
+
+/** Paper plane — used for the empty outgoing-requests list. */
+export function PaperPlaneIcon({ size = 24, className }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={sketchStroke(size)}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M20.5 3.5 3.5 10.5l6.5 2.5 2.5 6.5z" />
+      <path d="M20.5 3.5 10 13" />
+    </svg>
+  );
+}
+
+/** Spotify glyph — solid circle with the three curved bars. Used inline next to
+ *  the "Spotify" comparison option. Uses fill (not the sketch stroke) so the
+ *  brand mark stays recognisable. */
+export function SpotifyIcon({ size = 24, className }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+      aria-hidden
+    >
+      <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm4.6 14.4a.75.75 0 0 1-1 .25c-2.8-1.7-6.3-2.1-10.4-1.16a.75.75 0 1 1-.33-1.46c4.5-1 8.4-.55 11.5 1.35.36.22.47.68.24 1.02zm1.2-2.7a.94.94 0 0 1-1.29.31c-3.2-2-8.1-2.55-11.9-1.4a.94.94 0 0 1-.54-1.8c4.3-1.3 9.7-.68 13.4 1.6.44.27.58.85.31 1.29zm.1-2.8C14.2 8.6 7.9 8.4 4.2 9.5a1.12 1.12 0 1 1-.65-2.15c4.3-1.3 11.2-1.05 15.4 1.45a1.12 1.12 0 1 1-1.15 1.92z" />
+    </svg>
+  );
+}

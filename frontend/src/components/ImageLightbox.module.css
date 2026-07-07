@@ -1,0 +1,82 @@
+/* The clickable thumbnail: a bare button so the page's own size/shape class on
+   the <img> region still applies. Reset default button chrome; the page-supplied
+   class controls dimensions, border, radius. */
+.thumbButton {
+  display: block;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: none;
+  box-shadow: none;
+  cursor: zoom-in;
+  line-height: 0;
+  border-radius: inherit;
+  transition: transform 0.15s ease;
+}
+
+/* Cancel the global button hover nudge/shadow (this is just an image) and give
+   a subtle zoom to signal it opens larger. `:active` keeps it from snapping
+   back to the global press-in transform on click. */
+.thumbButton:hover:not(:disabled) {
+  transform: scale(1.02);
+  box-shadow: none;
+  filter: none;
+}
+
+.thumbButton:active:not(:disabled) {
+  transform: scale(1.02);
+  box-shadow: none;
+}
+
+.thumbImg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+
+/* Full-screen overlay */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(1rem, 5vw, 3rem);
+  background: var(--overlay);
+  cursor: zoom-out;
+}
+
+.fullImg {
+  max-width: min(92vw, 720px);
+  max-height: 88vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-modal);
+  cursor: default;
+}
+
+.close {
+  position: fixed;
+  top: 1rem;
+  right: 1.25rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 1.6rem;
+  line-height: 1;
+  background: var(--surface);
+  color: var(--text);
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-soft);
+  cursor: pointer;
+}

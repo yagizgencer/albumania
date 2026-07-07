@@ -79,6 +79,7 @@
 }
 
 .resultRow {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -91,8 +92,44 @@
   background: var(--surface-muted);
 }
 
+/* Stretched link: the identity link fills the row's left area but its ::after
+   overlays the ENTIRE row, so a click anywhere on the rectangle opens the
+   profile. Trailing action buttons opt back in with .rowActions/.resultStatus
+   z-index so they remain independently clickable. */
+.stretchLink {
+  flex: 1;
+  min-width: 0;
+  text-decoration: none;
+}
+
+.stretchLink::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.stretchLink:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Name picks up the accent when the row is hovered (the row is the link now). */
+.resultRow:hover .userLink {
+  color: var(--accent);
+}
+
+/* Every direct child of the row except the stretched link sits above the
+   overlay, so the Add / Accept / Decline controls stay independently clickable. */
+.resultRow > :not(.stretchLink) {
+  position: relative;
+  z-index: 1;
+}
+
 /* Non-actionable state for a search result (e.g. "Requested", "Friends"). */
 .resultStatus {
+  position: relative;
+  z-index: 1;
   flex-shrink: 0;
   font-size: var(--text-sm);
   font-weight: 700;
@@ -269,6 +306,9 @@
 .emptyIcon {
   font-size: 2.5rem;
   line-height: 1;
+  /* The hand-drawn SVG icons inherit currentColor; a soft subtle tone keeps the
+     empty state gentle rather than shouting. */
+  color: var(--text-subtle);
 }
 
 @media (max-width: 560px) {

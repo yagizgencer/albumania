@@ -9,6 +9,22 @@
   margin-bottom: 1.5rem;
 }
 
+/* Compared usernames in the "A ↔ B" heading link to each profile. Inherit the
+   heading's color/size and carry a soft underline so they read as links without
+   the harsh default link color. */
+.headerUser {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--link-underline);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+.headerUser:hover {
+  color: var(--link-hover);
+  text-decoration-color: var(--link-underline-hover);
+}
+
 .controls {
   background: var(--surface);
   color: var(--text);

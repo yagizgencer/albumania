@@ -411,63 +411,106 @@
 .modal {
   background: var(--surface);
   color: var(--text);
-  border-radius: 12px;
-  width: min(420px, 92vw);
+  border-radius: var(--radius-lg);
+  width: min(440px, 92vw);
   max-height: 80vh;
   display: flex;
   flex-direction: column;
-  padding: 1.25rem;
-  border: 2px solid var(--border);
+  padding: 1.5rem;
+  border: var(--border-w) solid var(--border);
+  box-shadow: var(--shadow-card);
 }
 
 .modal h3 {
-  margin: 0 0 0.75rem;
+  margin: 0 0 1rem;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
 }
 
 .modal input {
   width: 100%;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--border-soft);
-  border-radius: 6px;
-  margin-bottom: 0.75rem;
+  padding: 0.55rem 0.85rem;
+  border: var(--border-w-thin) solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 1rem;
+  font: inherit;
   font-size: 0.95rem;
+  background: var(--paper);
+  color: var(--text);
 }
 
 .friendList {
   list-style: none;
-  margin: 0;
-  padding: 0;
+  margin: 0 -0.5rem;
+  padding: 0.25rem 0;
   overflow-y: auto;
   flex: 1;
-  border-top: 1px solid var(--border-soft);
+  border-top: var(--border-w-thin) solid var(--border-soft);
 }
 
 .friendItem {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.55rem 0.25rem;
-  border-bottom: 1px solid var(--border-soft);
+  gap: 0.75rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: var(--radius);
 }
 
-.friendItem button {
+.friendItem:hover {
+  background: var(--surface-muted);
+}
+
+/* Photo + name, both linking to the profile. */
+.friendIdentity {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+  flex: 1;
+  text-decoration: none;
+  color: inherit;
+}
+
+.friendText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.friendName {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.friendIdentity:hover .friendName {
+  color: var(--accent);
+}
+
+.friendInviteBtn {
+  flex-shrink: 0;
   background: var(--btn-primary-bg);
   color: var(--btn-primary-fg);
-  border: none;
-  padding: 0.3rem 0.7rem;
-  border-radius: 5px;
+  border: var(--border-w-thin) solid var(--border);
+  padding: 0.3rem 0.8rem;
+  border-radius: var(--radius);
   cursor: pointer;
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: 700;
+  box-shadow: var(--shadow-soft);
 }
 
-.friendItem button:hover:not(:disabled) {
+.friendInviteBtn:hover:not(:disabled) {
   background: var(--btn-primary-bg-hover);
 }
 
-.friendItem button:disabled {
+.friendInviteBtn:disabled {
   background: var(--btn-disabled-bg);
   color: var(--btn-disabled-fg);
+  border-color: var(--border-soft);
+  box-shadow: none;
   cursor: not-allowed;
 }
 
@@ -477,6 +520,13 @@
   color: var(--text-subtle);
   font-size: 0.8rem;
   margin-top: 0.1rem;
+}
+
+/* Loading / empty message inside the modal. */
+.friendEmpty {
+  color: var(--text-muted);
+  padding: 1rem 0.25rem;
+  margin: 0;
 }
 
 .modalFooter {

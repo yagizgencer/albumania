@@ -11,6 +11,7 @@ import { LoadingState } from "../components/Spinner";
 import { formatDate } from "../lib/date";
 import { setDashboardCompare, type DashboardBackState } from "../lib/dashboardCompare";
 import { profilePath } from "../lib/paths";
+import { ImageLightbox } from "../components/ImageLightbox";
 import styles from "./AlbumDetailPage.module.css";
 
 export function AlbumDetailPage() {
@@ -88,13 +89,11 @@ export function AlbumDetailPage() {
 
       <header className={styles.header}>
         {album.album_art_url && (
-          <a
-            href={`https://open.spotify.com/album/${album.spotify_id}`}
-            target="_blank"
-            rel="noreferrer"
-          >
-            <img src={album.album_art_url} alt="" className={styles.art} />
-          </a>
+          <ImageLightbox
+            src={album.album_art_url}
+            alt={`${album.title} cover`}
+            thumbClassName={styles.art}
+          />
         )}
         <div className={styles.meta}>
           <h1>

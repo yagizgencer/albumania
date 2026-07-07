@@ -56,7 +56,7 @@ export function ListenLaterPage() {
 
   return (
     <main className={styles.page}>
-      <h1>Listen Later</h1>
+      <h1>Listen &amp; Rate</h1>
 
       <div className={styles.layout}>
         <aside className={styles.sidebar}>

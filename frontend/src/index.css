@@ -278,7 +278,9 @@ button {
 }
 
 button:hover:not(:disabled) {
-  background: var(--btn-primary-bg-hover);
+  /* Same uniform hover as the shared Button: darken the button's own color by a
+     consistent step (not a fixed pink), plus the hand-placed nudge. */
+  filter: brightness(0.92);
   transform: translate(-1px, -1px);
   box-shadow: var(--shadow-pop);
 }

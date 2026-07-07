@@ -18,9 +18,14 @@
   transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.12s ease;
 }
 
+/* One consistent hover for every intent: darken the button's OWN color by the
+   same perceptual step (via brightness) + the hand-placed nudge. So each button
+   shifts by the same satisfying amount regardless of its resting color, instead
+   of each intent hand-picking a different (and uneven) hover shade. */
 .btn:hover:not(:disabled):not([aria-disabled="true"]) {
   transform: translate(-1px, -1px);
   box-shadow: var(--shadow-pop);
+  filter: brightness(0.92);
 }
 
 .btn:active:not(:disabled):not([aria-disabled="true"]) {
@@ -55,41 +60,30 @@
   border-radius: var(--radius-sm);
 }
 
-/* Intents — each hovers toward a darker shade of its OWN color. */
+/* Intents — resting colors only; the shared `.btn:hover` brightness step handles
+   the (uniform) hover darkening for all of them. */
 .primary {
   background: var(--btn-primary-bg);
   color: var(--btn-primary-fg);
-}
-.primary:hover:not(:disabled):not([aria-disabled="true"]) {
-  background: var(--btn-primary-bg-hover);
 }
 
 .secondary {
   background: var(--btn-secondary-bg);
   color: var(--btn-secondary-fg);
 }
-.secondary:hover:not(:disabled):not([aria-disabled="true"]) {
-  background: var(--btn-secondary-bg-hover);
-}
 
 .danger {
   background: var(--btn-danger-bg);
   color: var(--btn-danger-fg);
-}
-.danger:hover:not(:disabled):not([aria-disabled="true"]) {
-  background: var(--btn-danger-bg-hover);
 }
 
 .success {
   background: var(--btn-success-bg);
   color: var(--btn-success-fg);
 }
-.success:hover:not(:disabled):not([aria-disabled="true"]) {
-  background: var(--btn-success-bg-hover);
-}
 
-/* Ghost — a light, borderless-feeling action for navigation / tertiary use.
-   Keeps a subtle border so it still reads as a control. */
+/* Ghost — a light, borderless action. It's transparent, so the brightness step
+   has nothing to darken; give it the tint hover instead (and no nudge/shadow). */
 .ghost {
   background: transparent;
   color: var(--text);
@@ -101,6 +95,7 @@
   border-color: var(--border);
   box-shadow: none;
   transform: none;
+  filter: none;
 }
 .ghost:active:not(:disabled):not([aria-disabled="true"]) {
   box-shadow: none;

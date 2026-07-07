@@ -36,7 +36,7 @@ export function NavBar() {
 
         <NavItem
           to="/listen-later"
-          label="Listen Later"
+          label="Listen & Rate"
           badge={summary.listen_invites}
           onActivate={() => {
             if (summary.listen_invites > 0) void markSeen("listen_invites");

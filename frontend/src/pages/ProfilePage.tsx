@@ -37,6 +37,7 @@ import { PageContainer } from "../components/PageContainer";
 import { Button } from "../components/Button";
 import { ConfirmButton } from "../components/ConfirmButton";
 import { Card } from "../components/Card";
+import { SpotifyIcon } from "../components/Icons";
 import styles from "./ProfilePage.module.css";
 
 type AccessBlock = "friends-only" | null;
@@ -729,7 +730,7 @@ function FriendCombobox({
           role="combobox"
           aria-expanded={open}
           aria-controls="friend-combobox-list"
-          placeholder={selected ? selected.username : "Just Spotify"}
+          placeholder={selected ? selected.username : "Spotify"}
           value={displayValue}
           onFocus={() => setOpen(true)}
           onChange={(e) => {
@@ -759,7 +760,10 @@ function FriendCombobox({
               className={`${styles.comboItem} ${selected === null ? styles.comboItemActive : ""}`}
               onClick={() => choose(null)}
             >
-              Just Spotify
+              <span className={styles.comboSpotify}>
+                <SpotifyIcon size={16} className={styles.comboSpotifyIcon} />
+                Spotify
+              </span>
             </li>
             {filtered.length === 0 ? (
               <li className={styles.comboEmpty}>No matches</li>

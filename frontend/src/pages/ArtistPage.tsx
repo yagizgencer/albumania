@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { getArtist, type ArtistDetail } from "../api/artists";
 import { AlbumCard } from "../components/AlbumCard";
 import { Alert } from "../components/Alert";
+import { ImageLightbox } from "../components/ImageLightbox";
 import { LoadingState } from "../components/Spinner";
 import styles from "./ArtistPage.module.css";
 
@@ -38,7 +39,11 @@ export function ArtistPage() {
     <main className={styles.page}>
       <header className={styles.header}>
         {artist.image_url ? (
-          <img src={artist.image_url} alt="" className={styles.avatar} />
+          <ImageLightbox
+            src={artist.image_url}
+            alt={`${artist.name} photo`}
+            thumbClassName={styles.avatar}
+          />
         ) : (
           <div className={styles.avatarPlaceholder} aria-hidden />
         )}

@@ -13,6 +13,7 @@ import { formatDuration } from "../utils/duration";
 import { Alert } from "../components/Alert";
 import { ConfirmButton } from "../components/ConfirmButton";
 import { LoadingState } from "../components/Spinner";
+import { ImageLightbox } from "../components/ImageLightbox";
 import { formatDate } from "../lib/date";
 import { setDashboardCompare, type DashboardBackState } from "../lib/dashboardCompare";
 import { profilePath } from "../lib/paths";
@@ -120,9 +121,11 @@ export function FriendAlbumDetailPage() {
 
       <header className={styles.header}>
         {album.album_art_url && (
-          <a href={spotifyAlbumUrl} target="_blank" rel="noreferrer">
-            <img src={album.album_art_url} alt="" className={styles.art} />
-          </a>
+          <ImageLightbox
+            src={album.album_art_url}
+            alt={`${album.title} cover`}
+            thumbClassName={styles.art}
+          />
         )}
         <div className={styles.meta}>
           <h1>

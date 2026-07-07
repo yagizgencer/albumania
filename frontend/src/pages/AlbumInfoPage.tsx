@@ -28,12 +28,15 @@ import { Alert } from "../components/Alert";
 import { LoadingState } from "../components/Spinner";
 import { ScoreMeter } from "../components/ScoreMeter";
 import { CommentsSection } from "../components/CommentsSection";
+import { Avatar } from "../components/Avatar";
 import { ChevronDownIcon } from "../components/Icons";
+import { ImageLightbox } from "../components/ImageLightbox";
 import { UnsavedChangesModal } from "../components/UnsavedChangesModal";
 import { useUnsavedNavigationGuard } from "../lib/unsavedChanges";
 import { formatDate } from "../lib/date";
 import { isRateable, RATEABLE_RULE_TEXT } from "../lib/albumRules";
 import type { DashboardBackState } from "../lib/dashboardCompare";
+import { profilePath } from "../lib/paths";
 import styles from "./AlbumInfoPage.module.css";
 
 interface FriendForInvite {
@@ -225,14 +228,11 @@ export function AlbumInfoPage() {
       <section className={styles.card}>
       <div className={styles.headerTop}>
         {album.album_art_url && (
-          <a
-            href={spotifyAlbumUrl}
-            target="_blank"
-            rel="noreferrer"
-            title="Open on Spotify"
-          >
-            <img src={album.album_art_url} alt="" className={styles.art} />
-          </a>
+          <ImageLightbox
+            src={album.album_art_url}
+            alt={`${album.title} cover`}
+            thumbClassName={styles.art}
+          />
         )}
         <div className={styles.meta}>
           <h1>
@@ -564,12 +564,16 @@ function InviteModal({
       .catch(() => setFriends([]));
   }, []);
 
-  const friendUsernames = useMemo(() => {
+  const friendList = useMemo(() => {
     if (!friends) return [];
     return friends
-      .map((f) => (f.user_a_username === me ? f.user_b_username : f.user_a_username))
-      .filter((u) => u.toLowerCase().includes(filter.toLowerCase()))
-      .sort();
+      .map((f) =>
+        f.user_a_username === me
+          ? { username: f.user_b_username, pictureUrl: f.user_b_picture_url }
+          : { username: f.user_a_username, pictureUrl: f.user_a_picture_url }
+      )
+      .filter((f) => f.username.toLowerCase().includes(filter.toLowerCase()))
+      .sort((a, b) => a.username.localeCompare(b.username));
   }, [friends, me, filter]);
 
   async function handleSend(username: string) {
@@ -601,14 +605,14 @@ function InviteModal({
           autoFocus
         />
         {friends === null ? (
-          <p>Loading friends…</p>
-        ) : friendUsernames.length === 0 ? (
-          <p style={{ color: "#6b7280" }}>
+          <p className={styles.friendEmpty}>Loading friends…</p>
+        ) : friendList.length === 0 ? (
+          <p className={styles.friendEmpty}>
             {friends.length === 0 ? "You have no friends yet." : "No matches."}
           </p>
         ) : (
           <ul className={styles.friendList}>
-            {friendUsernames.map((username) => {
+            {friendList.map(({ username, pictureUrl }) => {
               const hasRated = alreadyRated.has(username);
               const listening = listeningWith.has(username);
               const theyInvitedMe = invitedMe.has(username);
@@ -639,12 +643,17 @@ function InviteModal({
                 : null;
               return (
                 <li key={username} className={styles.friendItem}>
-                  <div>
-                    <div>{username}</div>
-                    {note && <small className={styles.friendNote}>{note}</small>}
-                    {err && <small className={styles.error}>{err}</small>}
-                  </div>
+                  {/* Photo + name both link to the profile (photo not expandable). */}
+                  <Link to={profilePath(username)} className={styles.friendIdentity}>
+                    <Avatar username={username} pictureUrl={pictureUrl} size={36} />
+                    <span className={styles.friendText}>
+                      <span className={styles.friendName}>{username}</span>
+                      {note && <small className={styles.friendNote}>{note}</small>}
+                      {err && <small className={styles.error}>{err}</small>}
+                    </span>
+                  </Link>
                   <button
+                    className={styles.friendInviteBtn}
                     onClick={() => handleSend(username)}
                     disabled={disabled || sending === username}
                   >

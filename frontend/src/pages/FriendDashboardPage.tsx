@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   fetchComparison,
   type ComparisonSource,
   type FriendDashboardEntry,
   type FriendDashboardResponse,
 } from "../api/friendDashboard";
-import { comparePath } from "../lib/paths";
+import { comparePath, profilePath } from "../lib/paths";
 import { chartPalette } from "../lib/chartTheme";
 import { usePersistentState } from "../lib/usePersistentState";
 import { formatDate } from "../lib/date";
@@ -213,7 +213,13 @@ export function FriendDashboard({ source }: { source: ComparisonSource }) {
     <>
       <header className={styles.header}>
         <h2 style={{ margin: 0 }}>
-          {data.user_a_username} ↔ {data.user_b_username}
+          <Link className={styles.headerUser} to={profilePath(data.user_a_username)}>
+            {data.user_a_username}
+          </Link>{" "}
+          ↔{" "}
+          <Link className={styles.headerUser} to={profilePath(data.user_b_username)}>
+            {data.user_b_username}
+          </Link>
         </h2>
         <p>Albums you've both published a rating for.</p>
       </header>
