@@ -18,6 +18,9 @@ dist/
 .env.local
 .env.*.local
 
+# Spotipy OAuth token cache (machine-local, contains access token)
+.cache
+
 # Databases
 *.db
 *.db-journal
