@@ -100,17 +100,19 @@
 /* Rank: one consistent style for every position — a small numeral in a soft
    circular chip with a subtle coral tint (uniform, no bolder top-3, so the
    column reads evenly). */
+/* Rank chip — a neutral circle with a coral (primary) outline. Matches the album
+   page's track-number circles exactly so both pages read the same. */
 .rank {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 1.35rem;
+  height: 1.35rem;
   border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--primary) 20%, var(--surface));
+  background: var(--surface-muted);
   border: var(--border-w-thin) solid color-mix(in srgb, var(--primary) 45%, var(--border-soft));
   font-family: var(--font-display);
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   font-weight: 700;
   line-height: 1;
   color: var(--text);

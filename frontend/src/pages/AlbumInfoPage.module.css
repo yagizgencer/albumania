@@ -45,14 +45,11 @@
   background: var(--surface-muted);
 }
 
-/* Spotify green reads washed-out on the light cream surface, so light mode uses a
-   deeper green; dark mode keeps the brighter brand green (which pops on dark). */
+/* The disc is the bright Spotify brand green in both themes — as a solid filled
+   circle it has plenty of contrast on cream, and the dark bars drawn on top read
+   clearly. (A darkened disc made the dark bars-on-dark-disc vanish in light mode.) */
 .spotifyMark {
-  color: #178a40;
-}
-
-[data-theme="dark"] .spotifyMark {
-  color: #1ed760;
+  color: #1db954;
 }
 
 .spotifyArrow {
@@ -191,10 +188,13 @@ button.removeBtn:hover:not(:disabled) {
   margin-top: var(--space-4);
 }
 
-/* The score figures grouped on the left, with a vertical hairline between each. */
+/* The score figures grouped on the left, with a vertical hairline between each.
+   Top-align so both score pills sit on the same line regardless of whether a
+   stat's label carries the count chip (taller) or is plain text. */
 .statGroup {
   display: flex;
   flex-wrap: wrap;
+  align-items: flex-start;
   gap: var(--space-5);
 }
 
@@ -229,16 +229,45 @@ button.removeBtn:hover:not(:disabled) {
   white-space: nowrap;
 }
 
-/* Rater count — a quiet parenthetical to the right of "Average score", washed in
-   the teal select accent so it reads as a distinct, noticeable meta figure. */
+/* Wraps the average pill so the rater count can sit on its corner. */
+.scoreChipWrap {
+  position: relative;
+  display: inline-flex;
+}
+
+/* Rater count — a small teal badge tucked on the pill's top-right corner (friends
+   icon + number). It belongs to the average score, so it rides that pill rather
+   than being a third oval in the row. Light: deep-teal fill, white number, dark
+   ink outline. Dark: a slightly lighter green so the number stays readable. */
 .statCount {
-  font-size: var(--text-sm);
-  font-weight: 700;
-  color: var(--on-select);
-  background: color-mix(in srgb, var(--select) 55%, transparent);
+  position: absolute;
+  top: -8px;
+  right: -11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0.05rem 0.34rem 0.05rem 0.28rem;
   border-radius: var(--radius-pill);
-  padding: 0.02rem 0.4rem;
+  background: #2a7062;
+  color: #fff;
+  border: 1.5px solid var(--border);
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.3;
   font-variant-numeric: tabular-nums;
+}
+
+[data-theme="dark"] .statCount {
+  /* A bit lighter green than light mode so the light number reads on it, and a
+     dark hairline outline to lift it off the amber pill. */
+  background: #3aa088;
+  color: #04231c;
+  border-color: var(--border);
+}
+
+.statCountIcon {
+  flex-shrink: 0;
+  color: currentColor;
 }
 
 /* The amber score tag: a compact data-colored pill. Both the average and the
@@ -447,23 +476,6 @@ button.tracksToggle:active:not(:disabled) {
   font-weight: 400;
 }
 
-/* Count in a small teal pill — a tidy cue that this expands to a list. */
-.tracksCount {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 1.5rem;
-  height: 1.5rem;
-  padding: 0 0.4rem;
-  border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--select) 22%, var(--surface));
-  border: var(--border-w-thin) solid color-mix(in srgb, var(--select) 45%, var(--border-soft));
-  color: var(--text);
-  font-size: 0.8rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
 /* Chevron pushed to the far right. */
 .chevron {
   margin-left: auto;
@@ -517,20 +529,23 @@ button.tracksToggle:active:not(:disabled) {
   background: var(--surface-muted);
 }
 
-/* Rank chip for each track number — a small tinted circle, like the Home
-   trending ranks, so the list looks tidy. */
+/* Track-number circle — identical to the Home trending rank chip: a neutral
+   circle with a coral (primary) outline, in the display font. */
 .trackNum {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 1.6rem;
-  height: 1.6rem;
+  width: 1.35rem;
+  height: 1.35rem;
   border-radius: var(--radius-pill);
   background: var(--surface-muted);
-  color: var(--text-subtle);
-  font-variant-numeric: tabular-nums;
+  border: var(--border-w-thin) solid color-mix(in srgb, var(--primary) 45%, var(--border-soft));
+  font-family: var(--font-display);
   font-size: 0.82rem;
   font-weight: 700;
+  line-height: 1;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
 }
 
 .trackName {

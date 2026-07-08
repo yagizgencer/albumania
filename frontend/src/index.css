@@ -167,14 +167,23 @@
   --overlay: rgba(0, 0, 0, 0.6);
   --shadow-modal: 0 12px 32px rgba(0, 0, 0, 0.5);
 
-  /* Sticker shadows, dark-mode tuned. A near-black offset alone barely reads on a
-     near-black surface, so each pairs the hard offset with a soft ambient blur
-     (grounds the box) AND uses solid black for the offset (max contrast vs. the
-     dark surface). The result keeps the neobrutalist contour while restoring the
-     "sectioned", grounded feel light mode gets for free. */
-  --shadow-soft: 3px 3px 0 #000, 0 2px 8px rgba(0, 0, 0, 0.45);
-  --shadow-pop: 5px 5px 0 #000, 0 4px 14px rgba(0, 0, 0, 0.5);
-  --shadow-card: 5px 5px 0 #000, 0 6px 18px rgba(0, 0, 0, 0.55);
+  /* Sticker shadows, dark-mode tuned ("E2 — warm bevel"). A near-black offset
+     alone barely reads on a near-black surface, so each box gets a full bevel:
+     a warm light inner edge top-left (as if lit from above) + a dark inner edge
+     bottom-right, plus the hard black offset. This moulds the box out of the dark
+     ground and restores the grounded, sectioned feel light mode gets for free. */
+  --shadow-soft:
+    inset 1.5px 1.5px 0 rgba(255, 235, 210, 0.28),
+    3px 3px 0 #000;
+  --shadow-pop:
+    inset 2px 2px 0 rgba(255, 235, 210, 0.3),
+    5px 5px 0 #000,
+    0 4px 12px rgba(0, 0, 0, 0.45);
+  --shadow-card:
+    inset 2px 2px 0 rgba(255, 230, 200, 0.2),
+    inset -1px -1px 0 rgba(0, 0, 0, 0.35),
+    5px 5px 0 #000,
+    0 4px 12px rgba(0, 0, 0, 0.4);
 
   --btn-secondary-bg: var(--surface-muted);
   --btn-secondary-bg-hover: #433a32;

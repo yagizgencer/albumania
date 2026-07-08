@@ -28,7 +28,7 @@ import { Alert } from "../components/Alert";
 import { LoadingState } from "../components/Spinner";
 import { CommentsSection } from "../components/CommentsSection";
 import { Avatar } from "../components/Avatar";
-import { ChevronDownIcon, ExternalLinkIcon, SpotifyIcon } from "../components/Icons";
+import { ChevronDownIcon, ExternalLinkIcon, PeopleIcon, SpotifyIcon } from "../components/Icons";
 import { ImageLightbox } from "../components/ImageLightbox";
 import { UnsavedChangesModal } from "../components/UnsavedChangesModal";
 import { useUnsavedNavigationGuard } from "../lib/unsavedChanges";
@@ -253,7 +253,7 @@ export function AlbumInfoPage() {
                   title="Open on Spotify"
                 >
                   <ExternalLinkIcon size={14} className={styles.spotifyArrow} />
-                  <SpotifyIcon size={16} className={styles.spotifyMark} />
+                  <SpotifyIcon size={19} className={styles.spotifyMark} />
                 </a>
               </h1>
               <h2>
@@ -278,14 +278,19 @@ export function AlbumInfoPage() {
             <div className={styles.statGroup}>
               {stats && stats.num_raters > 0 && stats.mean_score !== null ? (
                 <div className={styles.statItem}>
-                  <span className={styles.scoreChip}>
-                    {stats.mean_score.toFixed(1)}
-                    <span className={styles.scoreChipOut}>/10</span>
+                  {/* Score pill with the rater count tucked on its corner as a
+                      small badge (it belongs to this average, not a third stat). */}
+                  <span className={styles.scoreChipWrap}>
+                    <span className={styles.scoreChip}>
+                      {stats.mean_score.toFixed(1)}
+                      <span className={styles.scoreChipOut}>/10</span>
+                    </span>
+                    <span className={styles.statCount} title={`${stats.num_raters} ratings`}>
+                      <PeopleIcon size={11} className={styles.statCountIcon} />
+                      {stats.num_raters}
+                    </span>
                   </span>
-                  <span className={styles.statLabel}>
-                    Average score
-                    <span className={styles.statCount}>({stats.num_raters})</span>
-                  </span>
+                  <span className={styles.statLabel}>Average score</span>
                 </div>
               ) : (
                 <div className={styles.statItem}>
@@ -388,7 +393,6 @@ export function AlbumInfoPage() {
           aria-label={`Tracks (${album.tracks.length})`}
         >
           <span className={styles.tracksLabel}>Tracks</span>
-          <span className={styles.tracksCount}>{album.tracks.length}</span>
           <ChevronDownIcon
             size={20}
             className={`${styles.chevron} ${tracksOpen ? styles.chevronOpen : ""}`}

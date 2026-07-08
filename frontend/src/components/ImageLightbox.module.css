@@ -49,7 +49,18 @@
   cursor: zoom-out;
 }
 
+/* Wraps the image so the close button can sit on the photo's own corner. Shrinks
+   to the image's rendered size (inline-block + the image as a block child). */
+.figure {
+  position: relative;
+  display: inline-block;
+  margin: 0;
+  line-height: 0;
+  cursor: default;
+}
+
 .fullImg {
+  display: block;
   max-width: min(92vw, 720px);
   max-height: 88vh;
   width: auto;
@@ -58,25 +69,38 @@
   border: var(--border-w) solid var(--border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-modal);
-  cursor: default;
 }
 
+/* Close pinned to the photo's top-right corner, nudged slightly outward so it
+   straddles the edge — visible but subtle: a small translucent dark disc that
+   firms up on hover. */
 .close {
-  position: fixed;
-  top: 1rem;
-  right: 1.25rem;
-  width: 2.5rem;
-  height: 2.5rem;
+  position: absolute;
+  top: -0.6rem;
+  right: -0.6rem;
+  width: 2rem;
+  height: 2rem;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
-  font-size: 1.6rem;
+  font-size: 1.3rem;
   line-height: 1;
-  background: var(--surface);
-  color: var(--text);
-  border: var(--border-w) solid var(--border);
+  background: rgba(20, 16, 12, 0.72);
+  color: #fff;
+  border: var(--border-w-thin) solid rgba(255, 255, 255, 0.55);
   border-radius: var(--radius-pill);
-  box-shadow: var(--shadow-soft);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
   cursor: pointer;
+  backdrop-filter: blur(2px);
+  transition: background 0.12s ease, transform 0.12s ease, border-color 0.12s ease;
+}
+
+.close:hover:not(:disabled),
+button.close:hover:not(:disabled) {
+  background: rgba(20, 16, 12, 0.9);
+  border-color: #fff;
+  transform: scale(1.06);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  filter: none;
 }

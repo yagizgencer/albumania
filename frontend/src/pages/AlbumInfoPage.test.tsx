@@ -128,9 +128,9 @@ describe("AlbumInfoPage", () => {
       "https://open.spotify.com/album/alb1"
     );
 
-    // Global mean (value + count) and our score.
+    // Global mean (value + rater count) and our score.
     expect(screen.getByText("7.8")).toBeInTheDocument();
-    expect(screen.getByText("(98)")).toBeInTheDocument();
+    expect(screen.getByText("98")).toBeInTheDocument();
     expect(screen.getByText(/your score/i)).toBeInTheDocument();
     expect(screen.getByText("9.0")).toBeInTheDocument();
   });

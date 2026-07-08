@@ -46,21 +46,19 @@ export function ImageLightbox({
           aria-label={alt || "Expanded image"}
           onClick={() => setOpen(false)}
         >
-          <button
-            type="button"
-            className={styles.close}
-            aria-label="Close"
-            onClick={() => setOpen(false)}
-          >
-            ×
-          </button>
-          {/* Stop the image itself from closing the overlay when clicked. */}
-          <img
-            src={src}
-            alt={alt}
-            className={styles.fullImg}
-            onClick={(e) => e.stopPropagation()}
-          />
+          {/* Figure wraps the image so the close button anchors to the photo's
+              corner (not the page). Stop clicks inside from closing the overlay. */}
+          <figure className={styles.figure} onClick={(e) => e.stopPropagation()}>
+            <img src={src} alt={alt} className={styles.fullImg} />
+            <button
+              type="button"
+              className={styles.close}
+              aria-label="Close"
+              onClick={() => setOpen(false)}
+            >
+              ×
+            </button>
+          </figure>
         </div>
       )}
     </>

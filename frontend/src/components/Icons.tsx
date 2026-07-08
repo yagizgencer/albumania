@@ -307,20 +307,31 @@ export function PaperPlaneIcon({ size = 24, className }: IconProps) {
   );
 }
 
-/** Spotify glyph — solid circle with the three curved bars. Used inline next to
- *  the "Spotify" comparison option. Uses fill (not the sketch stroke) so the
- *  brand mark stays recognisable. */
+/** Spotify glyph — a solid green disc with three curved bars drawn ON TOP in a
+ *  contrasting colour (rather than carved out of the disc as transparent gaps,
+ *  which blended into light backgrounds). `currentColor` fills the disc; the bars
+ *  use a fixed dark ink that reads on Spotify green in any theme. */
 export function SpotifyIcon({ size = 24, className }: IconProps) {
   return (
     <svg
       width={size}
       height={size}
       viewBox="0 0 24 24"
-      fill="currentColor"
+      fill="none"
       className={className}
       aria-hidden
     >
-      <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm4.6 14.4a.75.75 0 0 1-1 .25c-2.8-1.7-6.3-2.1-10.4-1.16a.75.75 0 1 1-.33-1.46c4.5-1 8.4-.55 11.5 1.35.36.22.47.68.24 1.02zm1.2-2.7a.94.94 0 0 1-1.29.31c-3.2-2-8.1-2.55-11.9-1.4a.94.94 0 0 1-.54-1.8c4.3-1.3 9.7-.68 13.4 1.6.44.27.58.85.31 1.29zm.1-2.8C14.2 8.6 7.9 8.4 4.2 9.5a1.12 1.12 0 1 1-.65-2.15c4.3-1.3 11.2-1.05 15.4 1.45a1.12 1.12 0 1 1-1.15 1.92z" />
+      <circle cx="12" cy="12" r="10" fill="currentColor" />
+      <g
+        fill="none"
+        stroke="#0b3d1e"
+        strokeLinecap="round"
+        opacity="0.92"
+      >
+        <path d="M6.8 15.4c3.1-.9 6.9-.6 9.6 1.05" strokeWidth="1.5" />
+        <path d="M6.2 12.2c3.7-1 8.1-.6 11.2 1.3" strokeWidth="1.8" />
+        <path d="M5.7 8.9c4.3-1.15 9.6-.7 13 1.55" strokeWidth="2.1" />
+      </g>
     </svg>
   );
 }
