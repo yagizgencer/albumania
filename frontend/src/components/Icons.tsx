@@ -265,30 +265,6 @@ export function CommentIcon({ size = 24, className }: IconProps) {
 
 // -- Sketchbook empty-state icons (hand-drawn line style, match nav icons) ----
 
-/** Two friends side by side — used for the empty friends list. Cozier than the
- *  🫂 emoji, and matches the nav People icon's hand-drawn style. */
-export function FriendsHeartIcon({ size = 24, className }: IconProps) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={sketchStroke(size)}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden
-    >
-      <circle cx="8" cy="10" r="2.6" />
-      <path d="M3.5 19.5c0-2.9 2-4.8 4.5-4.8s4.5 1.9 4.5 4.8" />
-      <circle cx="16.5" cy="7.5" r="2.4" />
-      <path d="M13.5 15.2c.9-.5 1.9-.7 3-.7 2.3 0 4 1.8 4 4.5" />
-    </svg>
-  );
-}
-
 /** Open envelope / inbox — used for the empty incoming-requests list. */
 export function InboxIcon({ size = 24, className }: IconProps) {
   return (
@@ -345,6 +321,113 @@ export function SpotifyIcon({ size = 24, className }: IconProps) {
       aria-hidden
     >
       <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm4.6 14.4a.75.75 0 0 1-1 .25c-2.8-1.7-6.3-2.1-10.4-1.16a.75.75 0 1 1-.33-1.46c4.5-1 8.4-.55 11.5 1.35.36.22.47.68.24 1.02zm1.2-2.7a.94.94 0 0 1-1.29.31c-3.2-2-8.1-2.55-11.9-1.4a.94.94 0 0 1-.54-1.8c4.3-1.3 9.7-.68 13.4 1.6.44.27.58.85.31 1.29zm.1-2.8C14.2 8.6 7.9 8.4 4.2 9.5a1.12 1.12 0 1 1-.65-2.15c4.3-1.3 11.2-1.05 15.4 1.45a1.12 1.12 0 1 1-1.15 1.92z" />
+    </svg>
+  );
+}
+
+/** External-link / pop-out glyph — a box with an arrow leaving its top-right
+ *  corner. Shown next to a title that opens off-site. */
+export function ExternalLinkIcon({ size = 24, className }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M14 4h6v6" />
+      <path d="M20 4 11 13" />
+      <path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4" />
+    </svg>
+  );
+}
+
+/** Sign-out: a door with an arrow leaving it. Outline style for menu items. */
+export function LogoutIcon({ size = 24, className }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M9 4.5H5.5c-.6 0-1 .4-1 1v13c0 .6.4 1 1 1H9" />
+      <path d="M15 8l4 4-4 4" />
+      <path d="M19 12H9.5" />
+    </svg>
+  );
+}
+
+/** Horizontal "…" — three dots, for a more-actions menu trigger. */
+export function MoreIcon({ size = 24, className }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+      aria-hidden
+    >
+      <circle cx="5" cy="12" r="1.6" />
+      <circle cx="12" cy="12" r="1.6" />
+      <circle cx="19" cy="12" r="1.6" />
+    </svg>
+  );
+}
+
+/** Pencil — edit action. Outline style for menu items. */
+export function PencilIcon({ size = 24, className }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M4 20h4L18.5 9.5a2 2 0 0 0-2.83-2.83L5 17v3z" />
+      <path d="M13.5 6.5l3.99 4" />
+    </svg>
+  );
+}
+
+/** Trash can — delete action. Outline style for menu items. */
+export function TrashIcon({ size = 24, className }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M4 7h16" />
+      <path d="M9 7V5c0-.6.4-1 1-1h4c.6 0 1 .4 1 1v2" />
+      <path d="M6 7l1 12c0 .6.4 1 1 1h8c.6 0 1-.4 1-1l1-12" />
+      <path d="M10 11v6M14 11v6" />
     </svg>
   );
 }

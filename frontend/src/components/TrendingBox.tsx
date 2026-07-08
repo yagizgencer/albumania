@@ -97,7 +97,13 @@ export function TrendingArtistRow({ artist }: { artist: TrendingArtist }) {
   return (
     <Link to={`/artists/${artist.artist_spotify_id}`} className={styles.row}>
       <span className={styles.rank}>{artist.rank}</span>
-      <Avatar username={artist.name} pictureUrl={artist.image_url} displayName={artist.name} size={40} />
+      <Avatar
+        username={artist.name}
+        pictureUrl={artist.image_url}
+        displayName={artist.name}
+        size={40}
+        className={styles.avatar}
+      />
       <span className={styles.info}>
         <span className={styles.rowTitle}>{artist.name}</span>
       </span>

@@ -75,9 +75,18 @@ describe("CommentItem", () => {
     });
   });
 
-  it("exposes edit/remove only for the viewer's own comment", () => {
+  it("exposes edit/delete via the actions menu only for the viewer's own comment", () => {
     renderItem({ is_mine: true });
-    expect(screen.getByRole("button", { name: "Edit" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Remove" })).toBeInTheDocument();
+    // Edit/Delete live behind a "…" menu, not inline.
+    expect(screen.queryByRole("menuitem", { name: "Edit" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Comment actions" }));
+    expect(screen.getByRole("menuitem", { name: "Edit" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Delete" })).toBeInTheDocument();
+  });
+
+  it("hides the actions menu for comments that aren't the viewer's", () => {
+    renderItem({ is_mine: false });
+    expect(screen.queryByRole("button", { name: "Comment actions" })).not.toBeInTheDocument();
   });
 });

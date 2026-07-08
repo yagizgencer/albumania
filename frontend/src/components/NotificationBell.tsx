@@ -69,17 +69,17 @@ export function NotificationBell() {
         className={styles.item}
         onClick={handleToggle}
         aria-label="Notifications"
+        title="Notifications"
         aria-expanded={open}
       >
         <span className={styles.itemIcon}>
-          <BellIcon size={30} />
+          <BellIcon size={33} />
           {summary.bell > 0 && (
             <span className={styles.badge}>
               {summary.bell > 99 ? "99+" : summary.bell}
             </span>
           )}
         </span>
-        <span className={styles.itemLabel}>Notifications</span>
       </button>
 
       {open && (

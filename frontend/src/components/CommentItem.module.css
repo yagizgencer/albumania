@@ -1,10 +1,42 @@
+/* Comment rows echo the Home activity feed: calm and borderless at rest with a
+   hairline between rows, lifting onto a subtle surface card on hover. */
 .item {
-  padding: 0.85rem 0;
-  border-bottom: 1px solid var(--surface-muted);
+  position: relative;
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  transition: background 0.12s ease, box-shadow 0.12s ease, transform 0.12s ease;
 }
 
-.item:last-child {
-  border-bottom: none;
+/* Hairline between adjacent rows (not a full box), drawn via ::before so a
+   hovered row's lift reads cleanly. */
+.item + .item::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: var(--space-4);
+  right: var(--space-4);
+  height: 1px;
+  background: var(--border-soft);
+}
+
+.item:hover {
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+  transform: translate(-1px, -1px);
+}
+
+/* While its "…" menu is open, lift the whole row's stacking context above the
+   sibling rows below, so the popover overlays them instead of the next comment's
+   date showing through. */
+.itemMenuOpen {
+  position: relative;
+  z-index: 5;
+}
+
+/* Hide the divider adjoining a hovered row so the lifted card reads cleanly. */
+.item:hover::before,
+.item:hover + .item::before {
+  background: transparent;
 }
 
 .header {
@@ -75,7 +107,8 @@
 }
 
 .text :global(a) {
-  color: var(--btn-primary-bg);
+  color: var(--link);
+  text-underline-offset: 2px;
 }
 
 .text :global(code) {
@@ -129,13 +162,14 @@
   align-items: center;
   justify-content: center;
   gap: 0.3rem;
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 0.25rem 0.6rem;
+  background: var(--surface);
+  border: var(--border-w-thin) solid var(--border-soft);
+  border-radius: var(--radius-pill);
+  padding: 0.15rem 0.55rem;
   color: var(--text-muted);
   cursor: pointer;
   box-shadow: none;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
 }
 
 .count {
@@ -145,17 +179,22 @@
   line-height: 1;
 }
 
-.reactBtn:hover {
+.reactBtn:hover,
+button.reactBtn:hover:not(:disabled) {
   color: var(--text);
   background: var(--surface-muted);
+  border-color: var(--border);
   transform: none;
   box-shadow: none;
+  filter: none;
 }
 
-.reactActive {
-  color: var(--btn-primary-fg);
-  background: var(--btn-primary-bg);
-  border-color: var(--btn-primary-bg);
+/* Liked: filled coral pill (the primary accent). */
+.reactActive,
+.reactActive:hover {
+  color: var(--on-primary);
+  background: var(--primary);
+  border-color: var(--border);
 }
 
 .ownActions {
@@ -171,38 +210,154 @@
 }
 
 .ghostBtn {
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0.25rem 0.6rem;
+  background: var(--surface);
+  border: var(--border-w-thin) solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  padding: 0.25rem 0.7rem;
   font-size: 0.82rem;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-muted);
   cursor: pointer;
   box-shadow: none;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
 }
 
-.ghostBtn:hover {
+.ghostBtn:hover,
+button.ghostBtn:hover:not(:disabled) {
   color: var(--text);
   background: var(--surface-muted);
+  border-color: var(--border);
   transform: none;
   box-shadow: none;
+  filter: none;
 }
 
 .dangerBtn {
   background: var(--btn-danger-bg);
-  border: 1px solid var(--border);
+  border: var(--border-w-thin) solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 0.25rem 0.6rem;
+  padding: 0.25rem 0.7rem;
   font-size: 0.82rem;
   font-weight: 700;
   color: var(--btn-danger-fg);
   cursor: pointer;
   box-shadow: none;
+  transition: background 0.12s ease;
 }
 
-.dangerBtn:hover {
+.dangerBtn:hover,
+button.dangerBtn:hover:not(:disabled) {
   background: var(--btn-danger-bg-hover);
   transform: none;
   box-shadow: none;
+  filter: none;
+}
+
+/* --- "…" more-actions menu (Edit / Delete) ------------------------------- */
+.menuWrap {
+  position: relative;
+  display: inline-flex;
+}
+
+/* A quiet round icon button; fills softly on hover/open. */
+.menuTrigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-pill);
+  color: var(--text-subtle);
+  cursor: pointer;
+  box-shadow: none;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.menuTrigger:hover,
+button.menuTrigger:hover:not(:disabled),
+.menuTriggerOpen {
+  background: var(--hover-tint);
+  color: var(--text);
+  transform: none;
+  box-shadow: none;
+  filter: none;
+}
+
+/* Popover: a small elevated card, right-aligned under the trigger. */
+.menu {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 9rem;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-1);
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-modal);
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  border-radius: var(--radius);
+  padding: 0.4rem 0.55rem;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.menuItem:hover,
+button.menuItem:hover:not(:disabled) {
+  background: var(--hover-tint);
+  transform: none;
+  box-shadow: none;
+  filter: none;
+}
+
+.menuIcon {
+  flex-shrink: 0;
+  color: var(--text-subtle);
+}
+
+.menuItem:hover .menuIcon {
+  color: var(--text);
+}
+
+/* Delete reads as destructive. --danger-bg (a mid coral-red) stays legible in
+   both light and dark, unlike near-black --danger-text in dark mode. */
+.menuItemDanger,
+.menuItemDanger .menuIcon {
+  color: var(--danger-text);
+}
+
+.menuItemDanger:hover,
+button.menuItemDanger:hover:not(:disabled) {
+  background: var(--danger-tint);
+  color: var(--danger-text);
+}
+
+.menuItemDanger:hover .menuIcon {
+  color: var(--danger-text);
+}
+
+[data-theme="dark"] .menuItemDanger,
+[data-theme="dark"] .menuItemDanger .menuIcon,
+[data-theme="dark"] .menuItemDanger:hover,
+[data-theme="dark"] .menuItemDanger:hover .menuIcon {
+  color: var(--danger-bg);
 }

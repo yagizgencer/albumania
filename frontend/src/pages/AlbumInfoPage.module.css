@@ -1,49 +1,174 @@
+/* Identical width/margins to the Home page (see HomePage `.page`) so the two
+   line up at the same left/right edges. Sections below fill this full width. */
 .page {
-  padding: 0 var(--page-pad);
-  max-width: var(--page-max);
+  max-width: min(93vw, 1560px);
   margin: 2rem auto;
+  padding: 0 0.35rem;
+  color: var(--text);
 }
 
+/* Album card — the retro "sticker" look from the Home Trending boxes: chunky
+   inked border, large radius, hard offset shadow. Holds the header + the tracks
+   collapsible. */
 .card {
-  margin-bottom: 1.5rem;
+  position: relative;
+  margin-bottom: var(--space-5);
   background: var(--surface);
   color: var(--text);
-  padding: 1.5rem;
-  border-radius: 12px;
-  border: 2px solid var(--border);
+  padding: var(--space-5) var(--space-6);
+  border-radius: var(--radius-lg);
+  border: var(--border-w) solid var(--border);
+  box-shadow: var(--shadow-card);
 }
 
+/* Spotify pop-out link — an external-link arrow + the Spotify mark, sitting as a
+   small superscript at the top-right of the album title. Coloured by default
+   (arrow = text ink, mark = Spotify green); hover lifts it and adds a faint
+   surface chip rather than recolouring. */
+.spotifyLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 0.4rem;
+  padding: 2px 3px;
+  border-radius: var(--radius-sm);
+  /* Ride near the top of the title's cap height (a superscript "opens off-site"
+     badge), not down on its baseline. `top` pins the icon box to the top of the
+     line box; the small nudge drops it to sit level with the letter tops. */
+  vertical-align: top;
+  margin-top: 0.15em;
+  transition: transform 0.12s ease, background 0.12s ease;
+}
+
+.spotifyLink:hover {
+  transform: translateY(-1px);
+  background: var(--surface-muted);
+}
+
+/* Spotify green reads washed-out on the light cream surface, so light mode uses a
+   deeper green; dark mode keeps the brighter brand green (which pops on dark). */
+.spotifyMark {
+  color: #178a40;
+}
+
+[data-theme="dark"] .spotifyMark {
+  color: #1ed760;
+}
+
+.spotifyArrow {
+  color: var(--text-muted);
+}
+
+/* "Remove rating" — a solid red danger pill by default (inked border, hard offset
+   shadow), so it reads clearly as a destructive action. --danger-bg is a mid
+   coral-red that carries dark on-fill ink legibly in both light and dark. */
+.removeBtn {
+  flex-shrink: 0;
+  background: var(--danger-bg);
+  color: var(--on-primary);
+  border: var(--border-w-thin) solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 0.4rem 0.95rem;
+  font-weight: 800;
+  font-size: var(--text-sm);
+  cursor: pointer;
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+}
+
+/* Hover: the app's standard, subtle button feedback — a small hand-placed nudge,
+   the popped shadow, and a consistent darken step (no color swap). */
+.removeBtn:hover:not(:disabled),
+button.removeBtn:hover:not(:disabled) {
+  filter: brightness(0.94);
+  transform: translate(-1px, -1px);
+  box-shadow: var(--shadow-pop);
+}
+
+.removeBtn:active:not(:disabled) {
+  transform: translate(1px, 1px);
+  box-shadow: none;
+}
+
+/* Cover + meta share one row. `stretch` makes the meta column drive the row
+   height and the cover match it, so the art ends level with the content bottom. */
 .headerTop {
   display: grid;
   grid-template-columns: 200px 1fr;
-  gap: 1.5rem;
-  align-items: center;
+  gap: var(--space-6);
+  align-items: stretch;
+}
+
+/* Meta column: title/artist + details, then the scores row flowing directly
+   below with a generous gap — sized so the content ends roughly level with the
+   cover's bottom without being forcibly pushed to the very bottom edge. */
+.meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  min-width: 0;
 }
 
 .art {
   width: 100%;
-  border-radius: 8px;
+  border-radius: var(--radius);
+  border: var(--border-w-thin) solid var(--border);
+  box-shadow: var(--shadow-soft);
   display: block;
-  transition: transform 0.15s ease;
+  align-self: start;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .art:hover {
-  transform: scale(1.02);
+  transform: translate(-1px, -1px);
+  box-shadow: var(--shadow-pop);
 }
 
+/* Headline row: the title/artist block on the left, the album details floated to
+   the top-right (where the remove control used to sit). */
+.headline {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-5);
+  min-width: 0;
+}
+
+.titleBlock {
+  min-width: 0;
+}
+
+/* Album title in the hand-drawn display font (like the Trending box titles). */
 .meta h1 {
   margin: 0;
-}
-
-.meta h2 {
-  margin: 0.25rem 0 0.5rem;
+  font-family: var(--font-display);
   font-weight: 400;
-  color: var(--text-muted);
+  font-size: clamp(2.1rem, 3.6vw, 2.9rem);
+  line-height: 1.06;
 }
 
-.meta p {
+/* Artist: the body font (not display), a touch bolder and in the primary text
+   color, so it reads as a clear, readable subtitle sitting close under the
+   display title. */
+.meta h2 {
+  margin: var(--space-1) 0 0;
+  font-weight: 700;
+  font-size: 1.3rem;
+  color: var(--text);
+}
+
+/* Album details (released / tracks / runtime) — top-right of the header, quiet
+   and tabular, right-aligned so it reads as a neat metadata block. */
+.details {
+  flex-shrink: 0;
+  margin: 0;
+  padding-top: 0.35rem;
+  text-align: right;
   color: var(--text-muted);
-  margin: 0 0 1rem;
+  font-size: var(--text-md);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
 }
 
 .headerLink {
@@ -55,29 +180,111 @@
   text-decoration: underline;
 }
 
+/* Scores row: the labelled score figures on the left, the remove control on the
+   right — aligned to the bottom so it sits level with the score labels. */
 .stats {
   display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
   flex-wrap: wrap;
-  gap: 1.75rem;
-  align-items: flex-start;
-  margin: 0 0 1rem;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
 }
 
+/* The score figures grouped on the left, with a vertical hairline between each. */
+.statGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-5);
+}
+
+/* Each stat centers its score box over its label, so the pill sits in the middle
+   of the label's horizontal space rather than flush-left under it. */
 .statItem {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  align-items: center;
+  gap: var(--space-2);
 }
 
+/* Vertical divider between adjacent stat sections. Extra left padding keeps the
+   negatively-offset score pill clear of the divider border. */
+.statItem + .statItem {
+  padding-left: var(--space-5);
+  border-left: var(--border-w-thin) solid var(--border-soft);
+}
+
+/* Caption below its score: bold, left-anchored at x=0 to line up directly under
+   the score digit (the pill is pulled left by its own inset so the digit also
+   sits at x=0 — see .scoreChip). */
 .statLabel {
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-muted);
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  padding-left: 0;
+  font-size: var(--text-md);
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+/* Rater count — a quiet parenthetical to the right of "Average score", washed in
+   the teal select accent so it reads as a distinct, noticeable meta figure. */
+.statCount {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--on-select);
+  background: color-mix(in srgb, var(--select) 55%, transparent);
+  border-radius: var(--radius-pill);
+  padding: 0.02rem 0.4rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The amber score tag: a compact data-colored pill. Both the average and the
+   viewer's own score use it. Centered over its label (see .statItem). */
+.scoreChip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  padding: 0.2rem 0.7rem;
+  border-radius: var(--radius-pill);
+  background: var(--data);
+  color: var(--on-data);
+  border: var(--border-w-thin) solid var(--border);
+  box-shadow: var(--shadow-soft);
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.scoreChipOut {
+  font-size: 0.75rem;
+  opacity: 0.7;
 }
 
 .statEmpty {
+  display: inline-flex;
+  align-items: center;
   color: var(--text-muted);
+  font-size: var(--text-md);
+  font-style: italic;
+}
+
+/* Narrow cards: stack the title and details, and let the details align left so
+   they don't crowd the title. */
+@media (max-width: 720px) {
+  .headline {
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+  .details {
+    text-align: left;
+    padding-top: 0;
+    white-space: normal;
+  }
 }
 
 .top5 {
@@ -94,26 +301,11 @@
   vertical-align: middle;
 }
 
-.artistLinkRow {
-  margin: 0 0 var(--space-3);
-}
-
-.artistLink {
-  font-weight: 700;
-  color: var(--link);
-  text-decoration: none;
-}
-
-.artistLink:hover {
-  color: var(--link-hover);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
 .actions {
   display: flex;
   gap: var(--space-3);
   flex-wrap: wrap;
+  margin-top: var(--space-2);
 }
 
 /* Buttons follow the shared Warm Peach look: chunky ink border, --radius, offset
@@ -161,26 +353,36 @@
   cursor: not-allowed;
 }
 
-/* Remove-rating control — mirrors the rating editor's inline confirm. */
-.btnRemove {
-  background: transparent;
-  color: var(--danger-text);
-  border-color: var(--danger-text);
-}
-.btnRemove:hover:not(:disabled) {
-  background: var(--danger-tint);
-}
-
+/* Inline confirm shown in the card corner after "Remove rating" is clicked. */
 .confirm {
   display: inline-flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.5rem;
   flex-wrap: wrap;
+  justify-content: flex-end;
+  padding: 0.4rem 0.6rem;
+  background: var(--surface);
+  border: var(--border-w-thin) solid var(--border-soft);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
 }
 
 .confirmText {
-  font-size: 0.9rem;
+  font-size: var(--text-sm);
   color: var(--text-muted);
+}
+
+/* Compact buttons for the corner confirm (override the chunky .btn sizing). */
+.confirm .btn {
+  padding: 0.3rem 0.7rem;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  border-width: var(--border-w-thin);
+  box-shadow: none;
+}
+.confirm .btn:hover:not(:disabled) {
+  transform: none;
+  box-shadow: none;
 }
 
 .btnRemoveConfirm {
@@ -192,98 +394,143 @@
 }
 
 .btnCancel {
-  background: transparent;
+  background: var(--surface);
   color: var(--text);
 }
 .btnCancel:hover:not(:disabled) {
   background: var(--surface-muted);
 }
 
+/* Tracks: built into the album card. A subtle divider sets it off from the
+   header above; no separate box/border of its own. */
 .tracksBlock {
-  margin-top: 1.25rem;
-  padding-top: 1rem;
-  border-top: 2px solid var(--border);
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: var(--border-w-thin) solid var(--border-soft);
 }
 
-/* A clear, clickable header bar so it reads as expandable (not just text).
-   Kept light so it doesn't compete with the card — a quiet divider-style row. */
+/* The toggle reads clearly as a dropdown: a label + a teal count pill + a
+   rotating chevron, on a full-width row that highlights on hover. */
 .tracksToggle {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-3);
   width: 100%;
   background: transparent;
   border: none;
-  border-radius: var(--radius-sm);
   box-shadow: none;
-  padding: var(--space-2) 0;
-  font-size: var(--text-lg);
-  font-weight: 800;
+  border-radius: var(--radius);
+  padding: var(--space-2) var(--space-3);
   color: var(--text);
   cursor: pointer;
-  transition: color 0.12s ease;
+  transition: background 0.12s ease;
 }
 
-.tracksToggle:hover {
-  color: var(--link);
-  background: transparent;
+.tracksToggle:hover,
+button.tracksToggle:hover:not(:disabled) {
+  background: var(--surface-muted);
+  color: var(--text);
+  transform: none;
+  box-shadow: none;
+  filter: none;
+}
+
+.tracksToggle:active,
+button.tracksToggle:active:not(:disabled) {
   transform: none;
   box-shadow: none;
 }
 
-/* The chevron sits in a small accent pill — the "expand me" cue. */
-.chevronChip {
+.tracksLabel {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 400;
+}
+
+/* Count in a small teal pill — a tidy cue that this expands to a list. */
+.tracksCount {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  flex-shrink: 0;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 0.4rem;
   border-radius: var(--radius-pill);
-  background: var(--select);
-  border: var(--border-w-thin) solid var(--border);
-  color: var(--on-select);
+  background: color-mix(in srgb, var(--select) 22%, var(--surface));
+  border: var(--border-w-thin) solid color-mix(in srgb, var(--select) 45%, var(--border-soft));
+  color: var(--text);
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
+/* Chevron pushed to the far right. */
 .chevron {
-  transition: transform 0.18s ease;
-  color: inherit;
+  margin-left: auto;
+  color: var(--text-muted);
+  transition: transform 0.18s ease, color 0.12s ease;
+}
+
+.tracksToggle:hover .chevron {
+  color: var(--text);
 }
 
 .chevronOpen {
   transform: rotate(180deg);
 }
 
+/* Open list: rows flow directly under the toggle — no outer border, just
+   hairlines. Long lists scroll internally. */
 .trackList {
   list-style: none;
-  margin: 0.75rem 0 0;
+  margin: var(--space-1) 0 0;
   padding: 0;
-  /* Long track lists scroll internally instead of growing the page (like the
-     dashboard table). We currently fetch up to 50 tracks per album. */
-  max-height: 600px;
+  max-height: 460px;
   overflow-y: auto;
-  /* Keep the scrollbar clear of the track durations on the right. */
-  padding-right: 0.75rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-soft) transparent;
+}
+
+.trackList::-webkit-scrollbar {
+  width: 6px;
+}
+.trackList::-webkit-scrollbar-thumb {
+  background: var(--border-soft);
+  border-radius: var(--radius-pill);
 }
 
 .trackRow {
   display: grid;
-  grid-template-columns: 2.25rem 1fr auto;
-  align-items: baseline;
-  gap: 0.75rem;
-  padding: 0.4rem 0;
-  border-bottom: 1px solid var(--surface-muted);
+  grid-template-columns: 1.75rem 1fr auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0.45rem 0.75rem;
+  border-radius: var(--radius-sm);
+  transition: background 0.1s ease;
 }
 
-.trackRow:last-child {
-  border-bottom: none;
+.trackRow + .trackRow {
+  border-top: var(--border-w-thin) solid var(--border-soft);
 }
 
+.trackRow:hover {
+  background: var(--surface-muted);
+}
+
+/* Rank chip for each track number — a small tinted circle, like the Home
+   trending ranks, so the list looks tidy. */
 .trackNum {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: var(--radius-pill);
+  background: var(--surface-muted);
   color: var(--text-subtle);
-  text-align: right;
   font-variant-numeric: tabular-nums;
+  font-size: 0.82rem;
+  font-weight: 700;
 }
 
 .trackName {
@@ -294,7 +541,7 @@
 .trackDuration {
   color: var(--text-subtle);
   font-variant-numeric: tabular-nums;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
 .trackName a {
@@ -304,7 +551,8 @@
 }
 
 .trackName a:hover {
-  border-bottom-color: var(--link-underline-hover);
+  color: var(--accent);
+  border-bottom-color: var(--accent);
 }
 
 .error {

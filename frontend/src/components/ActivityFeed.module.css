@@ -8,7 +8,7 @@
   gap: 0.5rem;
   margin-bottom: 1.1rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid var(--surface-muted);
+  border-bottom: var(--border-w-thin) solid var(--border-soft);
 }
 
 .filterLabel {
@@ -24,6 +24,8 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
+  /* Unselected: a plain neutral outline chip. Understated on purpose — the amber
+     date pills and coral trending ranks carry the color, so the filters stay quiet. */
   background: var(--surface);
   color: var(--text-muted);
   border: var(--border-w-thin) solid var(--border-soft);
@@ -40,23 +42,22 @@
 .chip:not(.chipOn):hover {
   color: var(--text);
   border-color: var(--border);
-  background: var(--hover-tint);
+  background: var(--surface-muted);
   transform: none;
   box-shadow: none;
 }
 
 .chipIcon {
-  opacity: 0.65;
+  opacity: 0.7;
 }
 
+/* Selected: a soft teal tint fill with dark text and a teal-inked border — reads
+   clearly as "on" but stays gentle (not a solid slab). Teal = the app's
+   selection role. */
 .chipOn {
-  background: var(--selected-bg);
-  color: var(--selected-fg);
-  border-color: var(--border);
-}
-
-.chipOn .chipIcon {
-  opacity: 1;
+  background: color-mix(in srgb, var(--select) 22%, var(--surface));
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--select) 55%, var(--border));
 }
 
 .chipOn .chipIcon {
@@ -68,72 +69,89 @@
   flex-direction: column;
 }
 
-/* --- Grouped activity list ---------------------------------------------- */
-/* Discrete events (not a connected sequence), so: no spine. Structure comes
-   from grouped, sticky date headers + calm whitespace + a faint inset divider
-   between rows — the pattern GitHub / Linear / Twitter use for activity. */
+/* --- Timeline ------------------------------------------------------------ */
+/* A flowing vertical timeline: a soft spine runs down the avatar column and each
+   avatar sits ON it as a node. Rows are calm and borderless at rest (no stacked
+   boxes) and lift onto a subtle surface card on hover — modern activity-feed feel
+   (GitHub / Linear) kept coherent with the warm theme. */
 .group {
   display: flex;
   flex-direction: column;
 }
 
 .group + .group {
-  margin-top: var(--space-4);
+  margin-top: var(--space-5);
 }
 
-/* Sticky date-bucket header (Today / This week / June 2026) that stays pinned
-   while its group scrolls past. */
+/* Sticky date-bucket header (Today / This week / June 2026). Reads as a small
+   inked pill so it stands apart from the timeline while scrolling past. The feed
+   now sits directly on the page, so the sticky backdrop is --paper. */
 .groupHeader {
   position: sticky;
   top: 0;
-  z-index: 2;
-  margin: 0 0 var(--space-1);
-  padding: var(--space-1) 0;
+  z-index: 3;
+  align-self: flex-start;
+  margin: 0 0 var(--space-2);
+  padding: 0.15rem 0.75rem;
   font-family: var(--font-display);
-  font-size: var(--text-lg);
-  color: var(--text-muted);
-  background: var(--surface);
+  font-size: var(--text-md);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  /* A subtle amber wash — enough to give the date pills some life without
+     shouting. Amber (the theme's data/time accent) keeps them distinct from the
+     teal "Show" filter chips so the feed column isn't monotone. */
+  color: var(--text);
+  background: color-mix(in srgb, var(--data) 22%, var(--surface));
+  border: var(--border-w-thin) solid color-mix(in srgb, var(--data) 55%, var(--border-soft));
+  border-radius: var(--radius-pill);
 }
 
 .timeline {
   display: flex;
   flex-direction: column;
+  gap: var(--space-1);
 }
 
+/* No spine, no boxes: each entry is a calm 2-column row (anchor | body). Rhythm
+   comes from the colored type medallion on each actor avatar and the generous
+   spacing; a soft surface lift on hover keeps it interactive. */
 .row {
+  position: relative;
   display: grid;
   grid-template-columns: 40px 1fr;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-2);
-  border-radius: var(--radius);
-  transition: background 0.12s ease;
+  align-items: center;
+  column-gap: var(--space-4);
+  padding: var(--space-3) var(--space-3);
+  border-radius: var(--radius-lg);
+  transition: background 0.12s ease, box-shadow 0.12s ease, transform 0.12s ease;
 }
 
-/* Faint hairline between rows, inset so it doesn't cut under the avatar. */
-.row + .row {
-  position: relative;
-}
-
+/* Subtle hairline between adjacent entries (no full boxes) — inset so it doesn't
+   run under the avatar column. */
 .row + .row::before {
   content: "";
   position: absolute;
-  left: calc(40px + var(--space-3) + var(--space-2));
-  right: var(--space-2);
   top: 0;
+  left: calc(40px + var(--space-4));
+  right: var(--space-3);
   height: 1px;
   background: var(--border-soft);
 }
 
 .row:hover {
-  background: var(--hover-tint);
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+  transform: translate(-1px, -1px);
 }
 
-.row:hover + .row::before,
-.row:hover::before {
+/* Hide the divider adjoining a hovered row so the lifted chip reads cleanly. */
+.row:hover::before,
+.row:hover + .row::before {
   background: transparent;
 }
 
-.avatarCol {
+/* Actor avatar + a small type medallion clipped to its corner. */
+.anchor {
   position: relative;
   width: 40px;
   height: 40px;
@@ -141,31 +159,48 @@
 
 .typeBadge {
   position: absolute;
-  right: -4px;
-  bottom: -4px;
-  width: 18px;
-  height: 18px;
+  right: -5px;
+  bottom: -5px;
+  width: 21px;
+  height: 21px;
   border-radius: var(--radius-pill);
-  background: var(--select);
-  color: var(--on-select);
-  border: 2px solid var(--surface);
+  border: 2px solid var(--paper);
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
 
-.body {
-  min-width: 0;
+.row:hover .typeBadge {
+  border-color: var(--surface);
 }
 
-.line {
+/* Per-event-type accent so the feed reads with color rhythm down the column:
+   amber for ratings, teal for friends, coral for comments (the theme's three
+   accent hues). */
+.badgeRating {
+  background: var(--data);
+  color: var(--on-data);
+}
+
+.badgeFriend {
+  background: var(--select);
+  color: var(--on-select);
+}
+
+.badgeComment {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.body {
+  min-width: 0;
+  align-self: center;
   display: flex;
-  align-items: baseline;
-  gap: 0.6rem;
+  flex-direction: column;
+  gap: 0.15rem;
 }
 
 .text {
-  flex: 1;
   min-width: 0;
   line-height: 1.45;
   font-size: var(--text-md);
@@ -177,23 +212,27 @@
 
 .link {
   color: var(--text);
-  font-weight: 600;
+  font-weight: 700;
   text-decoration: none;
+  text-underline-offset: 2px;
 }
 
 .link:hover {
   text-decoration: underline;
+  text-decoration-color: var(--link-underline);
 }
 
+/* Date sits as a small, quiet meta line under the sentence. */
 .date {
-  flex-shrink: 0;
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
   color: var(--text-subtle);
   font-variant-numeric: tabular-nums;
 }
 
+/* Comment excerpt: a quiet quote so a comment entry reads distinctly from a bare
+   rating/friend line (the text is already wrapped in curly quotes). */
 .excerpt {
-  margin: 0.35rem 0 0;
+  margin: 0.3rem 0 0.1rem;
   color: var(--text-muted);
   font-size: 0.9rem;
   overflow-wrap: anywhere;
@@ -203,23 +242,53 @@
   overflow: hidden;
 }
 
+/* --- Score (inline, right after the sentence, ratings only) -------------- */
+/* A small amber chip that flows inline at the end of the rating line (amber =
+   the theme's data/score color), so the score reads with the text rather than
+   floating off to the far right. */
+.score {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 1px;
+  padding: 0.05rem 0.45rem;
+  border-radius: var(--radius-pill);
+  background: var(--data);
+  color: var(--on-data);
+  border: var(--border-w-thin) solid var(--border);
+  font-family: var(--font-display);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.scoreValue {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.scoreOut {
+  font-size: 0.68rem;
+  opacity: 0.75;
+}
+
 .loadMore {
-  margin-top: 0.85rem;
-  align-self: flex-start;
+  margin-top: var(--space-4);
+  align-self: center;
   background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  border: var(--border-w-thin) solid var(--border-soft);
+  border-radius: var(--radius-pill);
   box-shadow: none;
-  padding: 0.4rem 0.9rem;
-  font-weight: 600;
+  padding: 0.45rem 1.4rem;
+  font-weight: 700;
   font-size: 0.85rem;
   color: var(--text-muted);
   cursor: pointer;
+  transition: color 0.12s ease, background 0.12s ease, border-color 0.12s ease;
 }
 
 .loadMore:hover {
   color: var(--text);
-  background: var(--surface-muted);
+  background: var(--surface);
+  border-color: var(--border);
   transform: none;
   box-shadow: none;
 }

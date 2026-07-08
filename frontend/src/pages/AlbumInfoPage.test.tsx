@@ -109,26 +109,26 @@ describe("AlbumInfoPage", () => {
     vi.mocked(listFriendships).mockResolvedValue({ accepted: [] });
   });
 
-  it("shows Spotify links, the artist-page button, stats and our score", async () => {
+  it("links the title/artist to their Albumania pages, links Spotify separately, and shows stats + our score", async () => {
     renderPage();
 
-    // Title links to the Spotify album.
+    // Title links to the album's page on Albumania.
     const titleLink = await screen.findByRole("link", { name: "Test Album" });
-    expect(titleLink).toHaveAttribute("href", "https://open.spotify.com/album/alb1");
+    expect(titleLink).toHaveAttribute("href", "/albums/alb1");
 
-    // Artist name links to the Spotify artist.
+    // Artist name links to the artist's page on Albumania.
     expect(screen.getByRole("link", { name: "The Artist" })).toHaveAttribute(
-      "href",
-      "https://open.spotify.com/artist/art1"
-    );
-
-    // View artist page → Albumania artist route.
-    expect(screen.getByRole("link", { name: /view artist page/i })).toHaveAttribute(
       "href",
       "/artists/art1"
     );
 
-    // Global mean (stars + value + count) and our score.
+    // A dedicated Spotify icon link opens the album on Spotify.
+    expect(screen.getByRole("link", { name: /open on spotify/i })).toHaveAttribute(
+      "href",
+      "https://open.spotify.com/album/alb1"
+    );
+
+    // Global mean (value + count) and our score.
     expect(screen.getByText("7.8")).toBeInTheDocument();
     expect(screen.getByText("(98)")).toBeInTheDocument();
     expect(screen.getByText(/your score/i)).toBeInTheDocument();

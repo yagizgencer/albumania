@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import Markdown from "react-markdown";
 import {
@@ -11,7 +11,7 @@ import { formatDate } from "../lib/date";
 import { profilePath } from "../lib/paths";
 import { Avatar } from "./Avatar";
 import { CommentComposer } from "./CommentComposer";
-import { ThumbDownIcon, ThumbUpIcon, UserIcon } from "./Icons";
+import { MoreIcon, PencilIcon, ThumbDownIcon, ThumbUpIcon, TrashIcon, UserIcon } from "./Icons";
 import styles from "./CommentItem.module.css";
 
 interface CommentItemProps {
@@ -23,10 +23,31 @@ interface CommentItemProps {
 export function CommentItem({ comment, onUpdated, onDeleted }: CommentItemProps) {
   const [editing, setEditing] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [overflowing, setOverflowing] = useState(false);
   const textRef = useRef<HTMLDivElement | null>(null);
+  const menuWrapRef = useRef<HTMLDivElement | null>(null);
+
+  // Close the "…" menu on outside click or Escape.
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onDoc(e: MouseEvent) {
+      if (menuWrapRef.current && !menuWrapRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setMenuOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
 
   // Decide whether the "Show more" toggle is needed (text exceeds ~10 lines).
   useLayoutEffect(() => {
@@ -68,7 +89,7 @@ export function CommentItem({ comment, onUpdated, onDeleted }: CommentItemProps)
   }
 
   return (
-    <article className={styles.item}>
+    <article className={`${styles.item} ${menuOpen ? styles.itemMenuOpen : ""}`}>
       <div className={styles.header}>
         {comment.author ? (
           <Link to={profilePath(comment.author.username)} className={styles.authorLink}>
@@ -163,14 +184,40 @@ export function CommentItem({ comment, onUpdated, onDeleted }: CommentItemProps)
                   </button>
                 </>
               ) : (
-                <>
-                  <button className={styles.ghostBtn} onClick={() => setEditing(true)}>
-                    Edit
+                <div className={styles.menuWrap} ref={menuWrapRef}>
+                  <button
+                    type="button"
+                    className={`${styles.menuTrigger} ${menuOpen ? styles.menuTriggerOpen : ""}`}
+                    onClick={() => setMenuOpen((o) => !o)}
+                    aria-haspopup="menu"
+                    aria-expanded={menuOpen}
+                    aria-label="Comment actions"
+                  >
+                    <MoreIcon size={18} />
                   </button>
-                  <button className={styles.ghostBtn} onClick={() => setConfirming(true)}>
-                    Remove
-                  </button>
-                </>
+                  {menuOpen && (
+                    <div className={styles.menu} role="menu">
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className={styles.menuItem}
+                        onClick={() => { setMenuOpen(false); setEditing(true); }}
+                      >
+                        <PencilIcon size={15} className={styles.menuIcon} />
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className={`${styles.menuItem} ${styles.menuItemDanger}`}
+                        onClick={() => { setMenuOpen(false); setConfirming(true); }}
+                      >
+                        <TrashIcon size={15} className={styles.menuIcon} />
+                        Delete
+                      </button>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           )}

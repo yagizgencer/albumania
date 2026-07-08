@@ -5,7 +5,14 @@ import { useNotifications } from "../context/NotificationsContext";
 import { Avatar } from "./Avatar";
 import { NotificationBell } from "./NotificationBell";
 import { TopSearch } from "./TopSearch";
-import { HeadphonesIcon, HomeIcon, PeopleIcon } from "./Icons";
+import {
+  HeadphonesIcon,
+  HomeIcon,
+  LogoutIcon,
+  PeopleIcon,
+  SettingsIcon,
+  UserIcon,
+} from "./Icons";
 import { profilePath } from "../lib/paths";
 import styles from "./NavBar.module.css";
 
@@ -29,7 +36,7 @@ export function NavBar() {
 
       <div className={styles.center}>
         <NavItem to="/" label="Home">
-          <HomeIcon size={30} />
+          <HomeIcon size={33} />
         </NavItem>
 
         <TopSearch />
@@ -42,7 +49,7 @@ export function NavBar() {
             if (summary.listen_invites > 0) void markSeen("listen_invites");
           }}
         >
-          <HeadphonesIcon size={30} />
+          <HeadphonesIcon size={33} />
         </NavItem>
       </div>
 
@@ -57,7 +64,7 @@ export function NavBar() {
             if (summary.friend_requests > 0) void markSeen("friend_requests");
           }}
         >
-          <PeopleIcon size={30} />
+          <PeopleIcon size={33} />
         </NavItem>
 
         <ProfileMenu
@@ -129,12 +136,17 @@ function ProfileMenu({
 
       {open && (
         <div className={styles.menu} role="menu">
+          <div className={styles.menuHeader}>
+            <span className={styles.menuName}>{displayName}</span>
+            <span className={styles.menuHandle}>@{username}</span>
+          </div>
           <button
             type="button"
             role="menuitem"
             className={styles.menuItem}
             onClick={() => go(profilePath(username))}
           >
+            <UserIcon size={17} className={styles.menuIcon} />
             Profile
           </button>
           <button
@@ -143,17 +155,20 @@ function ProfileMenu({
             className={styles.menuItem}
             onClick={() => go("/settings")}
           >
+            <SettingsIcon size={17} className={styles.menuIcon} />
             Settings
           </button>
+          <div className={styles.menuDivider} role="separator" />
           <button
             type="button"
             role="menuitem"
-            className={styles.menuItem}
+            className={`${styles.menuItem} ${styles.menuItemDanger}`}
             onClick={() => {
               setOpen(false);
               void onLogout();
             }}
           >
+            <LogoutIcon size={17} className={styles.menuIcon} />
             Log out
           </button>
         </div>
@@ -183,6 +198,10 @@ function NavItem({
         `${styles.item} ${isActive ? styles.itemActive : ""}`
       }
       onClick={onActivate}
+      // Icons only now; `title` gives the browser hover tooltip, `aria-label`
+      // keeps the accessible name that the removed visible label provided.
+      title={label}
+      aria-label={label}
     >
       <span className={styles.itemIcon}>
         {children}
@@ -190,7 +209,6 @@ function NavItem({
           <span className={styles.badge}>{badge > 99 ? "99+" : badge}</span>
         ) : null}
       </span>
-      <span className={styles.itemLabel}>{label}</span>
     </NavLink>
   );
 }

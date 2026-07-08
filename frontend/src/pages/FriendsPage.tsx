@@ -21,7 +21,7 @@ import { ConfirmButton } from "../components/ConfirmButton";
 import { Card } from "../components/Card";
 import {
   SearchIcon,
-  FriendsHeartIcon,
+  PeopleIcon,
   InboxIcon,
   PaperPlaneIcon,
 } from "../components/Icons";
@@ -283,7 +283,7 @@ export function FriendsPage() {
       {data && tab === "friends" && (
         <FriendList
           items={data.accepted}
-          emptyIcon={<FriendsHeartIcon size={44} />}
+          emptyIcon={<PeopleIcon size={44} />}
           emptyText="No friends yet — search above to add some."
           render={(f) => (
             <FriendRow

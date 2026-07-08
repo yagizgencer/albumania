@@ -67,24 +67,18 @@ export function CommentsSection({ spotifyId }: { spotifyId: string }) {
       <div className={styles.header}>
         <h2 className={styles.title}>Comments ({count})</h2>
         <div className={styles.sortControls}>
-          <label className={styles.sortField}>
-            <span className={styles.sortLabel}>Sort by</span>
-            <Select
-              value={sort}
-              options={SORT_OPTIONS}
-              onChange={setSort}
-              ariaLabel="Sort comments by"
-            />
-          </label>
-          <label className={styles.sortField}>
-            <span className={styles.sortLabel}>Order</span>
-            <Select
-              value={order}
-              options={ORDER_OPTIONS}
-              onChange={setOrder}
-              ariaLabel="Sort order"
-            />
-          </label>
+          <Select
+            value={sort}
+            options={SORT_OPTIONS}
+            onChange={setSort}
+            ariaLabel="Sort comments by"
+          />
+          <Select
+            value={order}
+            options={ORDER_OPTIONS}
+            onChange={setOrder}
+            ariaLabel="Sort order"
+          />
         </div>
       </div>
 

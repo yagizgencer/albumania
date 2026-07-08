@@ -1,7 +1,11 @@
 .page {
-  max-width: var(--page-max-wide);
+  /* Use most of the viewport width (small side margins) rather than capping at
+     the standard 1320px, so the content sits closer to the screen edges. The
+     left edge (~3.5vw in) is matched by the NavBar's left padding so the
+     "Welcome back" W lines up under the logo. Capped on very large monitors. */
+  max-width: min(93vw, 1560px);
   margin: 2rem auto;
-  padding: 0 clamp(1rem, 3vw, 2rem);
+  padding: 0 0.35rem;
   color: var(--text);
 }
 
@@ -139,68 +143,50 @@
 
 /* -- Logged-in home ----------------------------------------------------- */
 
+/* Greeting as a plain page header (no box) — sits directly on the paper, with a
+   hand-drawn sketch underline for warmth. */
 .welcome {
-  background: var(--surface);
-  border: var(--border-w) solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-card);
-  padding: var(--space-4) var(--space-5);
-  margin-bottom: var(--space-5);
+  margin: var(--space-2) 0 var(--space-6);
 }
 
-.welcome h1 {
+.welcomeTitle {
   margin: 0;
-  font-size: 2rem;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(1.45rem, 2.6vw, 1.85rem);
+  line-height: 1.1;
+  color: var(--text);
+}
+
+.welcomeName {
+  color: var(--accent);
 }
 
 .welcomeUnderline {
-  max-width: 220px;
+  max-width: 210px;
+  margin-top: var(--space-1);
 }
 
-.welcome p {
-  margin: var(--space-1) 0 0;
-  color: var(--text-muted);
-  font-size: var(--text-md);
-}
-
-/* Two-column body: activity feed (left) + trending sidebar (right, sticky). */
+/* Two-column body: trending sidebar (left, sticky) + activity feed (right). */
 .content {
   display: grid;
-  grid-template-columns: 1fr 420px;
+  grid-template-columns: 390px 1fr;
   gap: var(--space-6);
   align-items: start;
-}
-
-.colHeading {
-  margin: 0 0 var(--space-4);
-  font-size: 1.6rem;
 }
 
 .feedCol {
   min-width: 0;
 }
 
-.feedCard {
-  background: var(--surface);
-  border: var(--border-w) solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-card);
-  padding: var(--space-5) var(--space-6);
-}
-
-/* Pinned right rail: page scrolls, sidebar stays put below the sticky nav. */
+/* Pinned left rail: page scrolls, sidebar stays put below the sticky nav. Sizes
+   to its content (each box is exactly 5 rows tall), not the viewport. */
 .sideCol {
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
   position: sticky;
   top: calc(var(--nav-height) + var(--space-3));
-  height: calc(100vh - var(--nav-height) - var(--space-6));
-}
-
-.sideCol > * {
-  flex: 1 1 0;
-  min-height: 0;
 }
 
 @media (max-width: 860px) {
@@ -209,9 +195,5 @@
   }
   .sideCol {
     position: static;
-    height: auto;
-  }
-  .sideCol > * {
-    flex: none;
   }
 }

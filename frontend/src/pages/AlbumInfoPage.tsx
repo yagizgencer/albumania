@@ -26,10 +26,9 @@ import { listFriendships, type Friendship } from "../api/friendships";
 import { formatDuration } from "../utils/duration";
 import { Alert } from "../components/Alert";
 import { LoadingState } from "../components/Spinner";
-import { ScoreMeter } from "../components/ScoreMeter";
 import { CommentsSection } from "../components/CommentsSection";
 import { Avatar } from "../components/Avatar";
-import { ChevronDownIcon } from "../components/Icons";
+import { ChevronDownIcon, ExternalLinkIcon, SpotifyIcon } from "../components/Icons";
 import { ImageLightbox } from "../components/ImageLightbox";
 import { UnsavedChangesModal } from "../components/UnsavedChangesModal";
 import { useUnsavedNavigationGuard } from "../lib/unsavedChanges";
@@ -235,88 +234,108 @@ export function AlbumInfoPage() {
           />
         )}
         <div className={styles.meta}>
-          <h1>
-            <a
-              className={styles.headerLink}
-              href={spotifyAlbumUrl}
-              target="_blank"
-              rel="noreferrer"
-            >
-              {album.title}
-            </a>
-          </h1>
-          <h2>
-            {album.artist_spotify_id ? (
-              <a
-                className={styles.headerLink}
-                href={`https://open.spotify.com/artist/${album.artist_spotify_id}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                {album.artist}
-              </a>
-            ) : (
-              album.artist
-            )}
-          </h2>
-          <p>
-            Released {formatDate(album.release_date)} · {album.total_songs} tracks
-            {hasAnyDuration && <> · {formatDuration(totalMs)}</>}
-          </p>
-          {album.artist_spotify_id && (
-            <p className={styles.artistLinkRow}>
-              <Link className={styles.artistLink} to={`/artists/${album.artist_spotify_id}`}>
-                View artist page →
-              </Link>
+          {/* Title + artist on the left; the album details (released / tracks /
+              runtime) float to the top-right. */}
+          <div className={styles.headline}>
+            <div className={styles.titleBlock}>
+              <h1>
+                <Link className={styles.headerLink} to={`/albums/${album.spotify_id}`}>
+                  {album.title}
+                </Link>
+                {/* Pop-out link to the album on Spotify: a small Spotify mark + an
+                    external-link arrow, sitting just after the title. */}
+                <a
+                  className={styles.spotifyLink}
+                  href={spotifyAlbumUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="Open on Spotify"
+                  title="Open on Spotify"
+                >
+                  <ExternalLinkIcon size={14} className={styles.spotifyArrow} />
+                  <SpotifyIcon size={16} className={styles.spotifyMark} />
+                </a>
+              </h1>
+              <h2>
+                {album.artist_spotify_id ? (
+                  <Link className={styles.headerLink} to={`/artists/${album.artist_spotify_id}`}>
+                    {album.artist}
+                  </Link>
+                ) : (
+                  album.artist
+                )}
+              </h2>
+            </div>
+            <p className={styles.details}>
+              Released {formatDate(album.release_date)} · {album.total_songs} tracks
+              {hasAnyDuration && <> · {formatDuration(totalMs)}</>}
             </p>
-          )}
+          </div>
 
+          {/* Scores row: the labelled amber figures on the left, and the owner's
+              remove control on the right — aligned with the score boxes. */}
           <div className={styles.stats}>
-            {stats && stats.num_raters > 0 && stats.mean_score !== null ? (
-              <span className={styles.statItem}>
-                <span className={styles.statLabel}>Average</span>
-                <ScoreMeter score={stats.mean_score} count={stats.num_raters} />
-              </span>
-            ) : (
-              <span className={styles.statEmpty}>No ratings yet</span>
-            )}
-            {isPublished && rating?.score != null && (
-              <span className={styles.statItem}>
-                <span className={styles.statLabel}>Your score</span>
-                <ScoreMeter score={rating.score} />
-              </span>
+            <div className={styles.statGroup}>
+              {stats && stats.num_raters > 0 && stats.mean_score !== null ? (
+                <div className={styles.statItem}>
+                  <span className={styles.scoreChip}>
+                    {stats.mean_score.toFixed(1)}
+                    <span className={styles.scoreChipOut}>/10</span>
+                  </span>
+                  <span className={styles.statLabel}>
+                    Average score
+                    <span className={styles.statCount}>({stats.num_raters})</span>
+                  </span>
+                </div>
+              ) : (
+                <div className={styles.statItem}>
+                  <span className={styles.statEmpty}>No ratings yet</span>
+                  <span className={styles.statLabel}>Average score</span>
+                </div>
+              )}
+              {isPublished && rating?.score != null && (
+                <div className={styles.statItem}>
+                  <span className={styles.scoreChip}>
+                    {rating.score.toFixed(1)}
+                    <span className={styles.scoreChipOut}>/10</span>
+                  </span>
+                  <span className={styles.statLabel}>Your score</span>
+                </div>
+              )}
+            </div>
+
+            {isPublished && (
+              !confirmingRemove ? (
+                <button
+                  className={styles.removeBtn}
+                  onClick={() => { setConfirmingRemove(true); setActionError(null); setActionInfo(null); }}
+                  disabled={busy}
+                >
+                  Remove rating
+                </button>
+              ) : (
+                <div className={styles.confirm}>
+                  <span className={styles.confirmText}>Remove this rating?</span>
+                  <button
+                    className={`${styles.btn} ${styles.btnRemoveConfirm}`}
+                    onClick={handleRemoveRating}
+                    disabled={busy}
+                  >
+                    {busy ? "Removing…" : "Yes, remove"}
+                  </button>
+                  <button
+                    className={`${styles.btn} ${styles.btnCancel}`}
+                    onClick={() => setConfirmingRemove(false)}
+                    disabled={busy}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )
             )}
           </div>
 
           <div className={styles.actions}>
-            {isPublished && !confirmingRemove && (
-              <button
-                className={`${styles.btn} ${styles.btnRemove}`}
-                onClick={() => { setConfirmingRemove(true); setActionError(null); setActionInfo(null); }}
-                disabled={busy}
-              >
-                Remove rating
-              </button>
-            )}
-            {isPublished && confirmingRemove && (
-              <div className={styles.confirm}>
-                <span className={styles.confirmText}>Remove this rating?</span>
-                <button
-                  className={`${styles.btn} ${styles.btnRemoveConfirm}`}
-                  onClick={handleRemoveRating}
-                  disabled={busy}
-                >
-                  {busy ? "Removing…" : "Yes, remove"}
-                </button>
-                <button
-                  className={`${styles.btn} ${styles.btnCancel}`}
-                  onClick={() => setConfirmingRemove(false)}
-                  disabled={busy}
-                >
-                  Cancel
-                </button>
-              </div>
-            )}
             {/* Anything not yet published shows a single "Rate" action (the
                 editor creates the draft on arrival if needed). "Listen Later" is
                 a fresh solo add, so only when there's no rating/invite yet. */}
@@ -359,26 +378,27 @@ export function AlbumInfoPage() {
         </div>
       </div>
 
+      {/* Tracks: a collapsible built into the card, set off by a subtle divider. */}
       <div className={styles.tracksBlock}>
         <button
           type="button"
-          className={styles.tracksToggle}
+          className={`${styles.tracksToggle} ${tracksOpen ? styles.tracksToggleOpen : ""}`}
           onClick={() => setTracksOpen((o) => !o)}
           aria-expanded={tracksOpen}
+          aria-label={`Tracks (${album.tracks.length})`}
         >
-          <span>Tracks ({album.tracks.length})</span>
-          <span className={styles.chevronChip} aria-hidden>
-            <ChevronDownIcon
-              size={18}
-              className={`${styles.chevron} ${tracksOpen ? styles.chevronOpen : ""}`}
-            />
-          </span>
+          <span className={styles.tracksLabel}>Tracks</span>
+          <span className={styles.tracksCount}>{album.tracks.length}</span>
+          <ChevronDownIcon
+            size={20}
+            className={`${styles.chevron} ${tracksOpen ? styles.chevronOpen : ""}`}
+          />
         </button>
         {tracksOpen && (
           <ul className={styles.trackList}>
             {album.tracks.map((t) => (
               <li key={t.index} className={styles.trackRow}>
-                <span className={styles.trackNum}>{t.index}.</span>
+                <span className={styles.trackNum}>{t.index}</span>
                 <span className={styles.trackName}>
                   {t.spotify_url ? (
                     <a href={t.spotify_url} target="_blank" rel="noreferrer">

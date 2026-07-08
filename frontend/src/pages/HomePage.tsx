@@ -67,38 +67,34 @@ function PublicLanding() {
 function LoggedInHome({ displayName }: { displayName: string }) {
   return (
     <main className={styles.page}>
-      <section className={styles.welcome}>
-        <h1>Welcome back, {displayName}.</h1>
+      <header className={styles.welcome}>
+        <h1 className={styles.welcomeTitle}>
+          Welcome back, <span className={styles.welcomeName}>{displayName}</span>
+        </h1>
         <div className={styles.welcomeUnderline}>
           <SketchUnderline color="var(--accent)" />
         </div>
-        <p>What did you listen to today?</p>
-      </section>
+      </header>
 
       <div className={styles.content}>
-        <section className={styles.feedCol}>
-          <h2 className={styles.colHeading}>Recent activity</h2>
-          <div className={styles.feedCard}>
-            <ActivityFeed />
-          </div>
-        </section>
-
         <aside className={styles.sideCol}>
           <TrendingBox
             title="Trending Albums"
             fetchItems={getTrendingAlbums}
             keyOf={(a) => a.spotify_id}
             renderRow={(a) => <TrendingAlbumRow album={a} />}
-            fill
           />
           <TrendingBox
             title="Trending Artists"
             fetchItems={getTrendingArtists}
             keyOf={(a) => a.artist_spotify_id}
             renderRow={(a) => <TrendingArtistRow artist={a} />}
-            fill
           />
         </aside>
+
+        <section className={styles.feedCol}>
+          <ActivityFeed />
+        </section>
       </div>
     </main>
   );

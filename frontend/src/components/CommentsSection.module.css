@@ -1,10 +1,9 @@
+/* The comments block sits directly on the page paper (no card/box) — the same
+   open, borderless feel as the Home activity feed. A display-font heading with a
+   hairline rule sets it off from the album card above. */
 .section {
-  background: var(--surface);
   color: var(--text);
-  border: var(--border-w) solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-card);
-  padding: var(--space-5);
+  padding: 0;
 }
 
 .header {
@@ -14,28 +13,21 @@
   gap: var(--space-4);
   flex-wrap: wrap;
   margin-bottom: var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: var(--border-w-thin) solid var(--border-soft);
 }
 
 .title {
   margin: 0;
-  font-size: var(--text-xl);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.5rem;
+  line-height: 1.1;
 }
 
 .sortControls {
   display: flex;
-  gap: var(--space-3);
-}
-
-.sortField {
-  gap: var(--space-1);
-}
-
-.sortLabel {
-  font-size: var(--text-xs);
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-muted);
+  gap: var(--space-2);
 }
 
 .addBox {

@@ -15,33 +15,41 @@
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-3);
+  gap: var(--space-2);
   width: 100%;
   font: inherit;
   font-weight: 700;
   font-size: var(--text-sm);
-  color: var(--text);
-  background: var(--surface);
-  border: var(--border-w-thin) solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-soft);
-  padding: var(--space-2) var(--space-3);
+  color: var(--text-muted);
+  /* Subtle ghost pill: no fill or hard shadow at rest — just a hairline outline,
+     so the control reads quiet and professional rather than as a chunky box. It
+     fills softly on hover/open. Consistent across every Select. */
+  background: transparent;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-pill);
+  box-shadow: none;
+  padding: var(--space-1) var(--space-3);
   cursor: pointer;
-  transition: background 0.12s ease;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
 }
 
 .trigger:hover {
-  background: var(--surface-muted);
+  color: var(--text);
+  background: var(--hover-tint);
+  border-color: var(--border);
+  box-shadow: none;
+  transform: none;
 }
 
 .trigger:focus-visible {
   outline: none;
+  border-color: var(--border);
   box-shadow: var(--focus-ring);
 }
 
 .chevron {
-  color: var(--text-muted);
-  font-size: 0.6rem;
+  color: var(--text-subtle);
+  font-size: 0.55rem;
   transition: transform 0.15s ease;
 }
 
@@ -59,8 +67,8 @@
   margin: 0;
   padding: var(--space-1);
   background: var(--surface);
-  border: var(--border-w-thin) solid var(--border);
-  border-radius: var(--radius);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-modal);
 }
 

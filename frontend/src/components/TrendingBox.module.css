@@ -1,34 +1,43 @@
 .section {
+  --row-h: 56px;
   background: var(--surface);
   color: var(--text);
   border: var(--border-w) solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
-  padding: var(--space-4) var(--space-5);
+  padding: var(--space-4) var(--space-4) var(--space-3);
 }
 
-/* Title left, the subtle period toggle right, on one row. */
+/* Title left, the subtle period toggle right, on one row. A short accent rule
+   under the title gives the header a bit more character than plain text. */
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
   margin-bottom: var(--space-3);
+  padding-bottom: var(--space-2);
+  border-bottom: var(--border-w-thin) solid var(--border);
 }
 
 .title {
+  position: relative;
   margin: 0;
-  font-size: var(--text-xl);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.3rem;
+  line-height: 1.1;
+  color: var(--text);
 }
 
-/* Fits ~5 rows; the rest (up to 20) scroll inside so the box stays compact and
-   the sidebar can fit on screen. Thin, unobtrusive scrollbar. */
+/* Exactly 5 rows visible (5 × --row-h); any further rows scroll within. Thin,
+   unobtrusive scrollbar. */
 .list {
   display: flex;
   flex-direction: column;
-  max-height: 296px;
+  height: calc(var(--row-h) * 5);
   overflow-y: auto;
-  padding-right: var(--space-2);
+  padding-right: var(--space-1);
   scrollbar-width: thin;
   scrollbar-color: var(--border-soft) transparent;
 }
@@ -68,14 +77,16 @@
 
 .row {
   display: grid;
-  grid-template-columns: 1.4rem 40px 1fr auto;
+  grid-template-columns: 1.5rem 40px 1fr auto;
   align-items: center;
-  gap: 0.6rem;
-  padding: 0.45rem 0.25rem;
-  border-radius: 8px;
+  gap: 0.65rem;
+  height: var(--row-h);
+  padding: 0 0.35rem;
+  border-radius: var(--radius);
   text-decoration: none;
   color: inherit;
-  border-bottom: 1px solid var(--surface-muted);
+  border-bottom: var(--border-w-thin) solid var(--border-soft);
+  transition: background 0.12s ease;
 }
 
 .row:last-child {
@@ -86,24 +97,44 @@
   background: var(--surface-muted);
 }
 
+/* Rank: one consistent style for every position — a small numeral in a soft
+   circular chip with a subtle coral tint (uniform, no bolder top-3, so the
+   column reads evenly). */
 .rank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--primary) 20%, var(--surface));
+  border: var(--border-w-thin) solid color-mix(in srgb, var(--primary) 45%, var(--border-soft));
+  font-family: var(--font-display);
+  font-size: 0.9rem;
   font-weight: 700;
-  color: var(--text-subtle);
+  line-height: 1;
+  color: var(--text);
   font-variant-numeric: tabular-nums;
-  text-align: center;
 }
 
 .art,
 .artPlaceholder {
   width: 40px;
   height: 40px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   object-fit: cover;
   flex-shrink: 0;
+  border: var(--border-w-thin) solid var(--border);
 }
 
 .artPlaceholder {
   background: var(--surface-muted);
+}
+
+/* Artist avatar: same inked ring as album art for a consistent row rhythm. */
+.avatar {
+  border: var(--border-w-thin) solid var(--border);
+  flex-shrink: 0;
 }
 
 .info {
@@ -113,12 +144,17 @@
 }
 
 .rowTitle {
-  font-weight: 600;
-  font-size: 0.9rem;
+  font-weight: 700;
+  font-size: 0.92rem;
   line-height: 1.2;
+  color: var(--text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.row:hover .rowTitle {
+  color: var(--accent);
 }
 
 .rowSub {

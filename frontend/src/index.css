@@ -29,10 +29,10 @@
 
   /* ---- Neutrals (LIGHT) ---------------------------------------------------- */
   --paper: #f7e7d3;            /* page background */
-  --surface: #fffaf2;          /* cards / panels */
-  --surface-muted: #f4e4cf;    /* hover wash / muted panels */
+  --surface: #fbf1e2;          /* cards / panels — warm off-cream, not stark white */
+  --surface-muted: #f2e2cc;    /* hover wash / muted panels */
   --border: #2e2620;           /* warm near-black — the 3px sketch border */
-  --border-soft: #d8c4a8;      /* faint inner dividers */
+  --border-soft: #cbb493;      /* faint inner dividers (a touch deeper so they read) */
   --text: #2e2620;
   --text-muted: #6f6155;
   --text-subtle: #9a8b7b;
@@ -140,7 +140,7 @@
   --surface-muted: #38302a;
   --border: #0f0b08;           /* deep line so the sticker shadow still reads */
   --border-soft: #4a4038;
-  --text: #f5ece0;
+  --text: #ece0cf;             /* warm broken white — not a stark pure white */
   --text-muted: #bcaf9f;
   --text-subtle: #8a7d6e;
 
@@ -166,6 +166,15 @@
   --paper-dot: rgba(245, 236, 224, 0.04);
   --overlay: rgba(0, 0, 0, 0.6);
   --shadow-modal: 0 12px 32px rgba(0, 0, 0, 0.5);
+
+  /* Sticker shadows, dark-mode tuned. A near-black offset alone barely reads on a
+     near-black surface, so each pairs the hard offset with a soft ambient blur
+     (grounds the box) AND uses solid black for the offset (max contrast vs. the
+     dark surface). The result keeps the neobrutalist contour while restoring the
+     "sectioned", grounded feel light mode gets for free. */
+  --shadow-soft: 3px 3px 0 #000, 0 2px 8px rgba(0, 0, 0, 0.45);
+  --shadow-pop: 5px 5px 0 #000, 0 4px 14px rgba(0, 0, 0, 0.5);
+  --shadow-card: 5px 5px 0 #000, 0 6px 18px rgba(0, 0, 0, 0.55);
 
   --btn-secondary-bg: var(--surface-muted);
   --btn-secondary-bg-hover: #433a32;

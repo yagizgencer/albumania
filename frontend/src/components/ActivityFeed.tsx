@@ -4,7 +4,6 @@ import { getFeed, type FeedCategory, type FeedItem } from "../api/home";
 import { formatDate } from "../lib/date";
 import { profilePath } from "../lib/paths";
 import { Avatar } from "./Avatar";
-import { ScoreMeter } from "./ScoreMeter";
 import { CommentIcon, PeopleIcon, StarIcon } from "./Icons";
 import { Alert } from "./Alert";
 import { LoadingState } from "./Spinner";
@@ -228,32 +227,49 @@ function ActorLink({ actor }: { actor: FeedItem["actor"] }) {
   );
 }
 
+/** Visual kind of an event → the type badge's icon + color accent. */
+function eventKind(type: FeedItem["type"]): {
+  Icon: typeof StarIcon;
+  badgeClass: string;
+} {
+  if (type === "new_friend") return { Icon: PeopleIcon, badgeClass: styles.badgeFriend };
+  if (type.endsWith("commented")) return { Icon: CommentIcon, badgeClass: styles.badgeComment };
+  return { Icon: StarIcon, badgeClass: styles.badgeRating };
+}
+
 function FeedRow({ item }: { item: FeedItem }) {
-  const Icon =
-    item.type === "new_friend" ? PeopleIcon : item.type.endsWith("commented") ? CommentIcon : StarIcon;
+  const { Icon, badgeClass } = eventKind(item.type);
+  const isRating = item.type === "you_rated" || item.type === "friend_rated";
 
   return (
     <article className={styles.row}>
-      <span className={styles.avatarCol}>
+      <span className={styles.anchor}>
         <Avatar
           username={item.actor.username}
           pictureUrl={item.actor.picture_url}
           displayName={item.actor.display_name}
           size={40}
         />
-        <span className={styles.typeBadge} aria-hidden>
+        <span className={`${styles.typeBadge} ${badgeClass}`} aria-hidden>
           <Icon size={12} />
         </span>
       </span>
 
       <div className={styles.body}>
-        <div className={styles.line}>
-          <span className={styles.text}>
-            <Sentence item={item} />
-          </span>
-          <span className={styles.date}>{formatDate(item.created_at)}</span>
-        </div>
-        {item.excerpt && <p className={styles.excerpt}>{item.excerpt}</p>}
+        <span className={styles.text}>
+          <Sentence item={item} />
+          {isRating && item.score != null && (
+            <span
+              className={styles.score}
+              aria-label={`Score ${item.score.toFixed(1)} out of 10`}
+            >
+              <span className={styles.scoreValue}>{item.score.toFixed(1)}</span>
+              <span className={styles.scoreOut}>/10</span>
+            </span>
+          )}
+        </span>
+        {item.excerpt && <p className={styles.excerpt}>“{item.excerpt}”</p>}
+        <span className={styles.date}>{formatDate(item.created_at)}</span>
       </div>
     </article>
   );
@@ -262,17 +278,11 @@ function FeedRow({ item }: { item: FeedItem }) {
 function Sentence({ item }: { item: FeedItem }) {
   switch (item.type) {
     case "you_rated":
-      return (
-        <>
-          You rated {item.album && <AlbumLink album={item.album} />}{" "}
-          {item.score != null && <ScoreMeter score={item.score} />}
-        </>
-      );
+      return <>You rated {item.album && <AlbumLink album={item.album} />}</>;
     case "friend_rated":
       return (
         <>
-          <ActorLink actor={item.actor} /> rated {item.album && <AlbumLink album={item.album} />}{" "}
-          {item.score != null && <ScoreMeter score={item.score} />}
+          <ActorLink actor={item.actor} /> rated {item.album && <AlbumLink album={item.album} />}
         </>
       );
     case "you_commented":
