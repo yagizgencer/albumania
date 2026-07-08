@@ -1,5 +1,7 @@
-/* Custom dropdown — a trigger button + our own popup list. No native <select>,
-   so the OS never draws its own (unstyleable, often dark) menu. Fully themed. */
+/* Custom dropdown — a trigger button + our own popup list. No native <select>.
+   Styled to match the "search for a friend" combobox (ProfilePage FriendCombobox):
+   a crisp surface field for the trigger, and a popup of clean full-width rows
+   whose hover is an edge-to-edge strip (not a boxy inset highlight). */
 
 .wrap {
   position: relative;
@@ -11,6 +13,8 @@
   width: 100%;
 }
 
+/* Trigger — a normal, visible dropdown: surface fill + a clean hairline contour
+   and a chevron, so it clearly reads as a control. Flat (no shadow). */
 .trigger {
   display: inline-flex;
   align-items: center;
@@ -18,60 +22,88 @@
   gap: var(--space-2);
   width: 100%;
   font: inherit;
-  font-weight: 700;
+  font-weight: 600;
   font-size: var(--text-sm);
-  color: var(--text-muted);
-  /* Subtle ghost pill: no fill or hard shadow at rest — just a hairline outline,
-     so the control reads quiet and professional rather than as a chunky box. It
-     fills softly on hover/open. Consistent across every Select. */
-  background: transparent;
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-pill);
+  color: var(--text);
+  background: var(--surface);
+  border: var(--border-w-thin) solid var(--border-soft);
+  border-radius: var(--radius-sm);
   box-shadow: none;
-  padding: var(--space-1) var(--space-3);
+  padding: 0.32rem 0.5rem 0.32rem 0.7rem;
   cursor: pointer;
-  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+  transition: background 0.12s ease, border-color 0.12s ease;
 }
 
-.trigger:hover {
-  color: var(--text);
-  background: var(--hover-tint);
-  border-color: var(--border);
-  box-shadow: none;
+/* Hover: darken the contour + a subtle wash. Also kill the global `button:hover`
+   nudge/pop-shadow (`:not(:disabled)` out-specifies it) so it never jumps or
+   casts a shadow. */
+.trigger:hover:not(:disabled),
+.trigger:active:not(:disabled) {
   transform: none;
+  filter: none;
+  box-shadow: none;
+  background: var(--surface-muted);
+  border-color: var(--border);
 }
 
 .trigger:focus-visible {
   outline: none;
-  border-color: var(--border);
   box-shadow: var(--focus-ring);
 }
 
+.value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .chevron {
+  width: 15px;
+  height: 15px;
   color: var(--text-subtle);
-  font-size: 0.55rem;
-  transition: transform 0.15s ease;
+  flex-shrink: 0;
+  transition: transform 0.18s ease, color 0.12s ease;
+}
+
+.trigger:hover .chevron {
+  color: var(--text-muted);
 }
 
 .chevronOpen {
   transform: rotate(180deg);
 }
 
+/* Popup — flat: full-width rows, only vertical padding so hovers reach the edges,
+   a clean hairline border and NO drop shadow (the solid surface + border is enough
+   to separate it from the page). */
 .menu {
   position: absolute;
   z-index: 40;
-  top: calc(100% + 6px);
   left: 0;
+  top: calc(100% + 4px);
+  /* Size to the widest option (not clamped to the narrow trigger) so labels
+     never get clipped, but never narrower than the trigger. */
   min-width: 100%;
+  width: max-content;
+  max-width: 18rem;
   list-style: none;
   margin: 0;
-  padding: var(--space-1);
+  padding: 0.25rem 0;
   background: var(--surface);
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-modal);
+  color: var(--text);
+  border: var(--border-w-thin) solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: none;
+  max-height: 16rem;
+  overflow-y: auto;
 }
 
+/* Dark: warm hairline border so the flat panel's edge still reads. */
+[data-theme="dark"] .menu {
+  border-color: var(--border-soft);
+}
+
+/* Full-width row; the hover/selected wash spans the whole strip (no inset box). */
 .option {
   display: flex;
   align-items: center;
@@ -80,27 +112,45 @@
   text-align: left;
   white-space: nowrap;
   font: inherit;
-  font-size: var(--text-sm);
+  font-size: 0.9rem;
   color: var(--text);
   background: transparent;
   border: none;
-  border-radius: var(--radius-sm);
-  padding: var(--space-2) var(--space-3);
+  border-radius: 0;
+  /* The global `button` base gives every button a hard offset shadow — remove it
+     so options are flat rows, not little boxes with a black shadow underneath. */
+  box-shadow: none;
+  padding: 0.4rem 0.7rem;
   cursor: pointer;
+  transition: background 0.1s ease;
 }
 
-.option:hover {
-  background: var(--hover-tint);
+/* Full-width hover strip; also neutralise the global button nudge/pop-shadow so
+   rows highlight flat and clean (like the friend combobox rows). */
+.option:hover:not(:disabled),
+.option:active:not(:disabled) {
+  background: var(--surface-muted);
+  transform: none;
+  filter: none;
+  box-shadow: none;
 }
 
 .optionActive {
   background: var(--surface-muted);
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .check {
-  width: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 0.95rem;
   flex-shrink: 0;
   color: var(--select-hover);
-  font-size: 0.8rem;
+}
+
+.check svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
 }

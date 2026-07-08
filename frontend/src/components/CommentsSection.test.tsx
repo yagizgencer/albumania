@@ -45,14 +45,16 @@ describe("CommentsSection", () => {
 
   it("lists comments with a count", async () => {
     renderSection();
-    expect(await screen.findByText("Comments (1)")).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: /comments \(1\)/i })
+    ).toBeInTheDocument();
     expect(screen.getByText("great record")).toBeInTheDocument();
     expect(listComments).toHaveBeenCalledWith("sid1", "recent", "desc");
   });
 
   it("re-queries when the sort changes", async () => {
     renderSection();
-    await screen.findByText("Comments (1)");
+    await screen.findByRole("heading", { name: /comments \(1\)/i });
     // Custom dropdown: open it, then pick "Most liked".
     fireEvent.click(screen.getByRole("button", { name: /sort comments by/i }));
     fireEvent.click(screen.getByRole("button", { name: /most liked/i }));
@@ -61,7 +63,7 @@ describe("CommentsSection", () => {
 
   it("posts a new comment and refreshes", async () => {
     renderSection();
-    await screen.findByText("Comments (1)");
+    await screen.findByRole("heading", { name: /comments \(1\)/i });
     fireEvent.change(screen.getByLabelText("Comment text"), { target: { value: "nice!" } });
     fireEvent.click(screen.getByRole("button", { name: /post comment/i }));
     await waitFor(() => {

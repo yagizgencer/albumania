@@ -59,6 +59,7 @@ export interface AlbumFriendRating {
   display_name: string;
   profile_picture_url: string | null;
   friendship_id: number;
+  score: number | null;
 }
 
 export async function getAlbumFriendRatings(

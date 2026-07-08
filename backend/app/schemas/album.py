@@ -27,6 +27,7 @@ class AlbumFriendRating(BaseModel):
     display_name: str
     profile_picture_url: str | None
     friendship_id: int
+    score: float | None
 
 
 class TrackOut(BaseModel):

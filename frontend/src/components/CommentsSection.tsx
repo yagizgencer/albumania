@@ -65,7 +65,9 @@ export function CommentsSection({ spotifyId }: { spotifyId: string }) {
   return (
     <section className={styles.section}>
       <div className={styles.header}>
-        <h2 className={styles.title}>Comments ({count})</h2>
+        <h2 className={styles.title}>
+          Comments <span className={styles.count}>({count})</span>
+        </h2>
         <div className={styles.sortControls}>
           <Select
             value={sort}

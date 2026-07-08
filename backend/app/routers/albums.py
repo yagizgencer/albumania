@@ -103,7 +103,7 @@ def get_album_friend_ratings(
         return []
 
     rows = db.execute(
-        select(User.username, User.display_name, User.profile_picture_key)
+        select(User.username, User.display_name, User.profile_picture_key, Rating.score)
         .join(Rating, Rating.username == User.username)
         .where(
             Rating.album_id == album.id,
@@ -119,8 +119,9 @@ def get_album_friend_ratings(
             display_name=display_name,
             profile_picture_url=picture_url(storage, key),
             friendship_id=friendship_by_friend[username],
+            score=score,
         )
-        for username, display_name, key in rows
+        for username, display_name, key, score in rows
     ]
 
 

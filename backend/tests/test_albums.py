@@ -266,6 +266,8 @@ def test_friend_ratings_lists_only_published_friends(authed_client: TestClient) 
         assert isinstance(entry["friendship_id"], int)
         assert entry["profile_picture_url"] is None
         assert entry["display_name"] == entry["username"].capitalize()
+    # Each entry carries the friend's own score for this album.
+    assert {d["username"]: d["score"] for d in data} == {"alice": 8.0, "bob": 6.0}
 
 
 def test_friend_ratings_empty_when_album_not_imported(authed_client: TestClient) -> None:

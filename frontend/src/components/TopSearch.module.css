@@ -12,17 +12,24 @@
   width: 100%;
   padding: 0.5rem 0.9rem;
   font-size: 0.95rem;
-  border: 2px solid var(--border);
+  /* Soft resting contour; hover/focus darken it subtly (no glow). */
+  border: 2px solid var(--border-soft);
   border-radius: 999px;
   box-sizing: border-box;
   background: var(--surface-muted);
   color: var(--text);
+  transition: border-color 0.14s ease, background 0.14s ease;
+}
+
+.input:hover {
+  border-color: var(--text-subtle);
 }
 
 .input:focus {
   outline: none;
   border-color: var(--text);
   background: var(--surface);
+  box-shadow: none;
 }
 
 .panel {

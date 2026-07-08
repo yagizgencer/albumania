@@ -160,14 +160,14 @@ describe("AlbumInfoPage", () => {
     expect(within(track2Row).queryByText(/^#\d+$/)).toBeNull();
   });
 
-  it("omits the 'Average' label when the album has no ratings", async () => {
+  it("shows a 'no ratings yet' line (no score boxes) when the album has none", async () => {
     vi.mocked(getAlbumStats).mockResolvedValue({ mean_score: null, num_raters: 0 });
     vi.mocked(getMyRatingForAlbum).mockRejectedValue(new Error("no rating"));
     renderPage();
     await screen.findByRole("link", { name: "Test Album" });
 
-    expect(screen.getByText("No ratings yet")).toBeInTheDocument();
-    expect(screen.queryByText("Average")).not.toBeInTheDocument();
+    expect(screen.getByText(/no ratings for this album yet/i)).toBeInTheDocument();
+    expect(screen.queryByText(/average score/i)).not.toBeInTheDocument();
   });
 
   it("removes the rating only after confirming", async () => {
@@ -183,8 +183,8 @@ describe("AlbumInfoPage", () => {
     // Confirm → deletes and the page returns to an unrated state.
     fireEvent.click(screen.getByRole("button", { name: /yes, remove/i }));
     await waitFor(() => expect(deleteRating).toHaveBeenCalledWith(9));
-    expect(await screen.findByText(/your rating was removed/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /^rate$/i })).toBeInTheDocument();
+    // Removal drops back to an unrated state (the Rate action returns).
+    expect(await screen.findByRole("button", { name: /^rate$/i })).toBeInTheDocument();
   });
 
   it("shows no disabled 'Rated' button for a published album", async () => {
@@ -423,12 +423,19 @@ describe("AlbumInfoPage", () => {
     display_name: "Bob",
     profile_picture_url: null,
     friendship_id: 42,
+    score: 8.5,
   };
 
-  it("hides the friend picker when no friends have rated the album", async () => {
+  it("shows the compare searchbar with an empty message when no friends have rated", async () => {
     renderPage();
     await screen.findByRole("link", { name: "Test Album" });
-    expect(screen.queryByText(/see a friend's ratings/i)).not.toBeInTheDocument();
+    // The searchbar is always present (discoverable); opening it explains that
+    // nobody has rated yet.
+    const input = screen.getByPlaceholderText(/compare a friend/i);
+    fireEvent.focus(input);
+    expect(
+      screen.getByText(/none of your friends have rated this yet/i)
+    ).toBeInTheDocument();
   });
 
   it("opens the pair comparison when you've rated the album and pick a friend", async () => {
@@ -436,7 +443,7 @@ describe("AlbumInfoPage", () => {
     renderPage();
     await screen.findByRole("link", { name: "Test Album" });
 
-    fireEvent.focus(screen.getByPlaceholderText(/search friends/i));
+    fireEvent.focus(screen.getByPlaceholderText(/compare a friend/i));
     fireEvent.click(screen.getByRole("option", { name: /bob/i }));
 
     expect(navSpy).toHaveBeenCalledWith("/friendships/42/albums/alb1", {
@@ -455,7 +462,8 @@ describe("AlbumInfoPage", () => {
     renderPage();
     await screen.findByRole("link", { name: "Test Album" });
 
-    fireEvent.focus(screen.getByPlaceholderText(/search friends/i));
+    // Not rated → the label invites viewing their rating (not a comparison).
+    fireEvent.focus(screen.getByPlaceholderText(/see a friend's rating/i));
     fireEvent.click(screen.getByRole("option", { name: /bob/i }));
 
     expect(navSpy).toHaveBeenCalledWith("/users/bob/albums/alb1", {

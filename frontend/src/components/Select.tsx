@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
+import { CheckIcon, ChevronDownIcon } from "./Icons";
 import styles from "./Select.module.css";
 
 export interface SelectOption<T extends string> {
@@ -103,10 +104,11 @@ export function Select<T extends string>({
         onClick={() => (open ? setOpen(false) : openMenu())}
         onKeyDown={onKeyDown}
       >
-        {current?.label ?? ""}
-        <span className={`${styles.chevron} ${open ? styles.chevronOpen : ""}`} aria-hidden>
-          ▼
-        </span>
+        <span className={styles.value}>{current?.label ?? ""}</span>
+        <ChevronDownIcon
+          size={15}
+          className={`${styles.chevron} ${open ? styles.chevronOpen : ""}`}
+        />
       </button>
       {open && (
         <ul className={styles.menu} role="listbox" id={listId}>
@@ -123,7 +125,7 @@ export function Select<T extends string>({
                   onClick={() => commit(i)}
                 >
                   <span className={styles.check} aria-hidden>
-                    {isSelected ? "✓" : ""}
+                    {isSelected && <CheckIcon size={15} />}
                   </span>
                   {o.label}
                 </button>

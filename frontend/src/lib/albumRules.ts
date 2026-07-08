@@ -8,4 +8,4 @@ export function isRateable(totalSongs: number): boolean {
   return totalSongs >= MIN_ALBUM_SONGS && totalSongs <= MAX_ALBUM_SONGS;
 }
 
-export const RATEABLE_RULE_TEXT = `Only albums with ${MIN_ALBUM_SONGS}–${MAX_ALBUM_SONGS} tracks can be rated, added to Listen Later, or shared.`;
+export const RATEABLE_RULE_TEXT = `Only albums with ${MIN_ALBUM_SONGS}–${MAX_ALBUM_SONGS} tracks can be rated.`;

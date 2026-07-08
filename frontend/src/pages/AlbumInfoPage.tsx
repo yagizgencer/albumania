@@ -28,7 +28,19 @@ import { Alert } from "../components/Alert";
 import { LoadingState } from "../components/Spinner";
 import { CommentsSection } from "../components/CommentsSection";
 import { Avatar } from "../components/Avatar";
-import { ChevronDownIcon, ExternalLinkIcon, PeopleIcon, SpotifyIcon } from "../components/Icons";
+import {
+  ChevronDownIcon,
+  DiscIcon,
+  ExternalLinkIcon,
+  HeadphonesIcon,
+  HourglassIcon,
+  PaperPlaneIcon,
+  PeopleIcon,
+  SearchIcon,
+  SpotifyIcon,
+  StarIcon,
+  TrashIcon,
+} from "../components/Icons";
 import { ImageLightbox } from "../components/ImageLightbox";
 import { UnsavedChangesModal } from "../components/UnsavedChangesModal";
 import { useUnsavedNavigationGuard } from "../lib/unsavedChanges";
@@ -63,7 +75,6 @@ export function AlbumInfoPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [actionInfo, setActionInfo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [tracksOpen, setTracksOpen] = useState(false);
@@ -153,11 +164,10 @@ export function AlbumInfoPage() {
 
   async function handleAddToListenLater() {
     if (!album) return;
-    setBusy(true); setActionError(null); setActionInfo(null);
+    setBusy(true); setActionError(null);
     try {
       const r = await createRating(album.id);
       setRating(r);
-      setActionInfo("Added to your Listen Later.");
     } catch (e: unknown) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- axios error
       setActionError((e as any)?.response?.data?.detail ?? "Could not add to Listen Later.");
@@ -178,12 +188,11 @@ export function AlbumInfoPage() {
 
   async function handleRemoveRating() {
     if (!rating) return;
-    setBusy(true); setActionError(null); setActionInfo(null);
+    setBusy(true); setActionError(null);
     try {
       await deleteRating(rating.id);
       setRating(null);
       setConfirmingRemove(false);
-      setActionInfo("Your rating was removed.");
       // The album's average no longer includes our score — refresh it.
       if (spotifyId) {
         try { setStats(await getAlbumStats(spotifyId)); } catch { /* keep prior stats */ }
@@ -222,6 +231,48 @@ export function AlbumInfoPage() {
   const spotifyAlbumUrl = `https://open.spotify.com/album/${album.spotify_id}`;
   const rateable = isRateable(album.total_songs);
 
+  // Owner actions for the top-right icon bar, in one fixed intrinsic order
+  // (listen → rate → invite → remove). Only the ones valid for the current state
+  // render; the rest are omitted. Layout is otherwise identical across states.
+  const iconActions = [
+    {
+      key: "listen",
+      show: !isPublished && !rating && !hasActiveInvite,
+      className: styles.iconListen,
+      tip: "Listen Later",
+      icon: <HeadphonesIcon size={26} />,
+      onClick: handleAddToListenLater,
+      disabled: busy || !rateable,
+    },
+    {
+      key: "rate",
+      show: !isPublished,
+      className: styles.iconRate,
+      tip: "Rate",
+      icon: <StarIcon size={26} />,
+      onClick: handleRate,
+      disabled: busy || !rateable,
+    },
+    {
+      key: "invite",
+      show: true,
+      className: styles.iconInvite,
+      tip: "Invite a friend",
+      icon: <PaperPlaneIcon size={26} />,
+      onClick: () => { setInviteModalOpen(true); setActionError(null); },
+      disabled: busy || !rateable,
+    },
+    {
+      key: "remove",
+      show: isPublished,
+      className: styles.iconRemove,
+      tip: "Remove rating",
+      icon: <TrashIcon size={26} />,
+      onClick: () => { setConfirmingRemove(true); setActionError(null); },
+      disabled: busy,
+    },
+  ].filter((a) => a.show);
+
   return (
     <main className={styles.page}>
       <section className={styles.card}>
@@ -234,10 +285,10 @@ export function AlbumInfoPage() {
           />
         )}
         <div className={styles.meta}>
-          {/* Title + artist on the left; the album details (released / tracks /
-              runtime) float to the top-right. */}
+          {/* Title (+ Spotify pop-out) on the left; icon actions on the right,
+              centred on the album-name line. Artist and metadata chips below. */}
           <div className={styles.headline}>
-            <div className={styles.titleBlock}>
+            <div className={styles.titleRow}>
               <h1>
                 <Link className={styles.headerLink} to={`/albums/${album.spotify_id}`}>
                   {album.title}
@@ -256,27 +307,60 @@ export function AlbumInfoPage() {
                   <SpotifyIcon size={19} className={styles.spotifyMark} />
                 </a>
               </h1>
-              <h2>
-                {album.artist_spotify_id ? (
-                  <Link className={styles.headerLink} to={`/artists/${album.artist_spotify_id}`}>
-                    {album.artist}
-                  </Link>
-                ) : (
-                  album.artist
-                )}
-              </h2>
+              {/* Owner actions as indicative icon chips — the state-appropriate
+                  ones only, in a fixed order. */}
+              {iconActions.length > 0 && (
+                <div className={styles.iconBar}>
+                  {iconActions.map((a) => (
+                    <button
+                      key={a.key}
+                      type="button"
+                      className={`${styles.iconBtn} ${a.className}`}
+                      onClick={a.onClick}
+                      disabled={a.disabled}
+                      aria-label={a.tip}
+                      data-tip={a.tip}
+                    >
+                      {a.icon}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-            <p className={styles.details}>
-              Released {formatDate(album.release_date)} · {album.total_songs} tracks
-              {hasAnyDuration && <> · {formatDuration(totalMs)}</>}
-            </p>
+            <h2>
+              {album.artist_spotify_id ? (
+                <Link className={styles.headerLink} to={`/artists/${album.artist_spotify_id}`}>
+                  {album.artist}
+                </Link>
+              ) : (
+                album.artist
+              )}
+            </h2>
+            {/* Release date + runtime as quiet chips (track count lives in the
+                Tracks toggle below). */}
+            <div className={styles.metaChips}>
+              <span className={styles.metaChip}>
+                <DiscIcon size={14} className={styles.metaChipIcon} />
+                <span className={styles.metaChipText}>{formatDate(album.release_date)}</span>
+              </span>
+              {hasAnyDuration && (
+                <span className={styles.metaChip}>
+                  <HourglassIcon size={14} className={styles.metaChipIcon} />
+                  <span className={styles.metaChipText}>{formatDuration(totalMs)}</span>
+                </span>
+              )}
+            </div>
           </div>
 
-          {/* Scores row: the labelled amber figures on the left, and the owner's
-              remove control on the right — aligned with the score boxes. */}
+          {/* Scores row: the labelled amber figures on the left, the compare
+              searchbar on the right. Pushed to the bottom of the meta column. */}
           <div className={styles.stats}>
-            <div className={styles.statGroup}>
-              {stats && stats.num_raters > 0 && stats.mean_score !== null ? (
+            {!rateable ? (
+              // Un-rateable albums can't be rated/saved/shared, so no scores and
+              // no compare — just the rule, in the scores' place.
+              <p className={styles.noRatings}>{RATEABLE_RULE_TEXT}</p>
+            ) : stats && stats.num_raters > 0 && stats.mean_score !== null ? (
+              <div className={styles.statGroup}>
                 <div className={styles.statItem}>
                   {/* Score pill with the rater count tucked on its corner as a
                       small badge (it belongs to this average, not a third stat). */}
@@ -292,94 +376,55 @@ export function AlbumInfoPage() {
                   </span>
                   <span className={styles.statLabel}>Average score</span>
                 </div>
-              ) : (
-                <div className={styles.statItem}>
-                  <span className={styles.statEmpty}>No ratings yet</span>
-                  <span className={styles.statLabel}>Average score</span>
-                </div>
-              )}
-              {isPublished && rating?.score != null && (
-                <div className={styles.statItem}>
-                  <span className={styles.scoreChip}>
-                    {rating.score.toFixed(1)}
-                    <span className={styles.scoreChipOut}>/10</span>
-                  </span>
-                  <span className={styles.statLabel}>Your score</span>
-                </div>
-              )}
-            </div>
-
-            {isPublished && (
-              !confirmingRemove ? (
-                <button
-                  className={styles.removeBtn}
-                  onClick={() => { setConfirmingRemove(true); setActionError(null); setActionInfo(null); }}
-                  disabled={busy}
-                >
-                  Remove rating
-                </button>
-              ) : (
-                <div className={styles.confirm}>
-                  <span className={styles.confirmText}>Remove this rating?</span>
-                  <button
-                    className={`${styles.btn} ${styles.btnRemoveConfirm}`}
-                    onClick={handleRemoveRating}
-                    disabled={busy}
-                  >
-                    {busy ? "Removing…" : "Yes, remove"}
-                  </button>
-                  <button
-                    className={`${styles.btn} ${styles.btnCancel}`}
-                    onClick={() => setConfirmingRemove(false)}
-                    disabled={busy}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              )
-            )}
-          </div>
-
-          <div className={styles.actions}>
-            {/* Anything not yet published shows a single "Rate" action (the
-                editor creates the draft on arrival if needed). "Listen Later" is
-                a fresh solo add, so only when there's no rating/invite yet. */}
-            {!isPublished && (
-              <>
-                {!rating && !hasActiveInvite && (
-                  <button
-                    className={`${styles.btn} ${styles.btnSecondary}`}
-                    onClick={handleAddToListenLater}
-                    disabled={busy || !rateable}
-                  >
-                    Listen Later
-                  </button>
+                {/* Your score only when you've published one — no empty box. */}
+                {isPublished && rating?.score != null && (
+                  <div className={styles.statItem}>
+                    <span className={styles.scoreChip}>
+                      {rating.score.toFixed(1)}
+                      <span className={styles.scoreChipOut}>/10</span>
+                    </span>
+                    <span className={styles.statLabel}>Your score</span>
+                  </div>
                 )}
-                <button
-                  className={`${styles.btn} ${styles.btnPrimary}`}
-                  onClick={handleRate}
-                  disabled={busy || !rateable}
-                >
-                  Rate
-                </button>
-              </>
+              </div>
+            ) : (
+              <p className={styles.noRatings}>No ratings for this album yet</p>
             )}
-            {!isPublished && (
-              <button
-                className={`${styles.btn} ${styles.btnSecondary}`}
-                onClick={() => { setInviteModalOpen(true); setActionError(null); setActionInfo(null); }}
-                disabled={busy || !rateable}
-              >
-                Invite a friend
-              </button>
+
+            {/* Shown for any rateable album (even with no friends yet) so the
+                compare feature is discoverable; the dropdown explains when nobody
+                has rated. The label differs by whether we've rated. */}
+            {rateable && (
+              <FriendRatingsPicker
+                friends={friendRatings}
+                onPick={handlePickFriend}
+                placeholder={isPublished ? "Compare a friend…" : "See a friend's rating…"}
+              />
             )}
           </div>
-          {friendRatings.length > 0 && (
-            <FriendRatingsPicker friends={friendRatings} onPick={handlePickFriend} />
+
+          {/* Inline confirm shown after the Remove icon is clicked. */}
+          {isPublished && confirmingRemove && (
+            <div className={styles.confirm}>
+              <span className={styles.confirmText}>Remove this rating?</span>
+              <button
+                className={`${styles.btn} ${styles.btnRemoveConfirm}`}
+                onClick={handleRemoveRating}
+                disabled={busy}
+              >
+                {busy ? "Removing…" : "Yes, remove"}
+              </button>
+              <button
+                className={`${styles.btn} ${styles.btnCancel}`}
+                onClick={() => setConfirmingRemove(false)}
+                disabled={busy}
+              >
+                Cancel
+              </button>
+            </div>
           )}
-          {!rateable && <p className={styles.ruleNote}>{RATEABLE_RULE_TEXT}</p>}
+
           {actionError && <Alert>{actionError}</Alert>}
-          {actionInfo && <p className={styles.info}>{actionInfo}</p>}
         </div>
       </div>
 
@@ -392,7 +437,9 @@ export function AlbumInfoPage() {
           aria-expanded={tracksOpen}
           aria-label={`Tracks (${album.tracks.length})`}
         >
-          <span className={styles.tracksLabel}>Tracks</span>
+          <span className={styles.tracksLabel}>
+            Tracks <span className={styles.tracksCount}>({album.tracks.length})</span>
+          </span>
           <ChevronDownIcon
             size={20}
             className={`${styles.chevron} ${tracksOpen ? styles.chevronOpen : ""}`}
@@ -442,8 +489,7 @@ export function AlbumInfoPage() {
           }
           alreadyRated={new Set(friendRatings.map((f) => f.username))}
           onClose={() => setInviteModalOpen(false)}
-          onSent={(friend: FriendForInvite) => {
-            setActionInfo(`Invite sent to ${friend.username}.`);
+          onSent={() => {
             // Keep the modal open so the friend shows as "Invited"; refresh the
             // page's invite state so the action buttons update too.
             void loadInviteState(album.id);
@@ -463,9 +509,11 @@ export function AlbumInfoPage() {
 function FriendRatingsPicker({
   friends,
   onPick,
+  placeholder,
 }: {
   friends: AlbumFriendRating[];
   onPick: (friend: AlbumFriendRating) => void;
+  placeholder: string;
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -498,16 +546,18 @@ function FriendRatingsPicker({
   }, [friends, query]);
 
   return (
-    <div className={styles.friendRatings} ref={wrapRef}>
-      <span className={styles.friendRatingsLabel}>See a friend's ratings</span>
-      <div className={styles.combobox}>
+    <div className={styles.friendRatings} ref={wrapRef} data-open={open}>
+      {/* An always-on subtle searchbar (search icon · input · friend count ·
+          chevron). Click and type to filter; picking a friend opens the compare. */}
+      <div className={styles.searchBar} onClick={() => setOpen(true)}>
+        <SearchIcon size={16} className={styles.searchIcon} />
         <input
-          className={styles.friendRatingsInput}
+          className={styles.searchInput}
           type="text"
           role="combobox"
           aria-expanded={open}
           aria-controls="album-friend-ratings-list"
-          placeholder="Search friends…"
+          placeholder={placeholder}
           value={query}
           onFocus={() => setOpen(true)}
           onChange={(e) => {
@@ -515,35 +565,61 @@ function FriendRatingsPicker({
             setOpen(true);
           }}
         />
-        {open && (
-          <ul
-            id="album-friend-ratings-list"
-            role="listbox"
-            className={styles.comboList}
-          >
-            {filtered.length === 0 ? (
-              <li className={styles.comboEmpty}>No matches</li>
-            ) : (
-              filtered.map((f) => (
-                <li
-                  key={f.friendship_id}
-                  role="option"
-                  aria-selected={false}
-                  className={styles.comboItem}
-                  onClick={() => {
-                    onPick(f);
-                    setOpen(false);
-                    setQuery("");
-                  }}
-                >
-                  {f.display_name}
-                  <span className={styles.comboUser}>@{f.username}</span>
-                </li>
-              ))
-            )}
-          </ul>
-        )}
+        <span
+          className={styles.friendCount}
+          title={`${friends.length} friend${friends.length === 1 ? "" : "s"} rated this album`}
+        >
+          <PeopleIcon size={11} className={styles.statCountIcon} />
+          {friends.length}
+        </span>
+        <ChevronDownIcon size={17} className={styles.searchChevron} />
       </div>
+      {open && (
+        <ul
+          id="album-friend-ratings-list"
+          role="listbox"
+          className={styles.comboList}
+        >
+          {filtered.length === 0 ? (
+            <li className={styles.comboEmpty}>
+              {friends.length === 0
+                ? "None of your friends have rated this yet."
+                : "No matches"}
+            </li>
+          ) : (
+            filtered.map((f) => (
+              <li
+                key={f.friendship_id}
+                role="option"
+                aria-selected={false}
+                className={styles.comboItem}
+                onClick={() => {
+                  onPick(f);
+                  setOpen(false);
+                  setQuery("");
+                }}
+              >
+                <Avatar
+                  username={f.username}
+                  pictureUrl={f.profile_picture_url}
+                  displayName={f.display_name}
+                  size={32}
+                />
+                <span className={styles.comboText}>
+                  <span className={styles.comboName}>{f.display_name}</span>
+                  <span className={styles.comboUser}>@{f.username}</span>
+                </span>
+                {f.score != null && (
+                  <span className={styles.friendScore}>
+                    {f.score.toFixed(1)}
+                    <span className={styles.friendScoreOut}>/10</span>
+                  </span>
+                )}
+              </li>
+            ))
+          )}
+        </ul>
+      )}
     </div>
   );
 }

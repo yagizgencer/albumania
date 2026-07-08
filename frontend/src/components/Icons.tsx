@@ -111,6 +111,52 @@ export function HeadphonesIcon({ size = 24, className }: IconProps) {
   );
 }
 
+/** Disc / vinyl record — concentric circles with a centre spindle dot. Used as a
+ *  small "release" glyph next to an album's date. */
+export function DiscIcon({ size = 24, className }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={sketchStroke(size)}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="3.2" />
+      <circle cx="12" cy="12" r="0.6" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+/** Hourglass — an album's total runtime glyph. */
+export function HourglassIcon({ size = 24, className }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={sketchStroke(size)}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M6 3.5h12" />
+      <path d="M6 20.5h12" />
+      <path d="M7.5 3.5c.2 4.5 2 6.3 4.5 8.5 2.5-2.2 4.3-4 4.5-8.5" />
+      <path d="M7.5 20.5c.2-4.5 2-6.3 4.5-8.5 2.5 2.2 4.3 4 4.5 8.5" />
+    </svg>
+  );
+}
+
 export function BellIcon({ size = 24, className }: IconProps) {
   return (
     <svg
