@@ -69,7 +69,7 @@ export function NotificationBell() {
         className={styles.item}
         onClick={handleToggle}
         aria-label="Notifications"
-        title="Notifications"
+        data-tip="Notifications"
         aria-expanded={open}
       >
         <span className={styles.itemIcon}>

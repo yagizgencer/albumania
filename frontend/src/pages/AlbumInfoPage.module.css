@@ -37,6 +37,7 @@
    (arrow = text ink, mark = Spotify green); hover lifts it and adds a faint
    surface chip rather than recolouring. */
 .spotifyLink {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 3px;
@@ -249,27 +250,8 @@
    inverse of the surface (dark chip in light mode, light chip in dark) so it's
    always high-contrast and readable — the old near-black border colour was
    invisible on the dark-mode page. */
-.iconBtn[data-tip]::after {
-  content: attr(data-tip);
-  position: absolute;
-  top: calc(100% + 7px);
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--text);
-  color: var(--surface);
-  font-size: var(--text-xs);
-  font-weight: 700;
-  white-space: nowrap;
-  padding: 0.2rem 0.5rem;
-  border-radius: 6px;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.12s ease;
-  z-index: 5;
-}
-.iconBtn[data-tip]:hover::after {
-  opacity: 1;
-}
+/* The icon button's hover tooltip now comes from the global `[data-tip]` rule
+   in index.css (drawn on ::before), so no module-local tooltip is needed. */
 
 /* Metadata chips (release date + runtime) — small outlined pills under the
    artist. Track count lives in the Tracks toggle instead. */

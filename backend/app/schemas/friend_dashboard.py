@@ -25,4 +25,8 @@ class FriendDashboardResponse(BaseModel):
     friendship_id: int | None
     user_a_username: str
     user_b_username: str
+    # Profile picture URLs for the two compared users (None when unset). Used by
+    # the comparison page's similarity tiles to show each user's avatar.
+    user_a_picture_url: str | None
+    user_b_picture_url: str | None
     entries: list[FriendDashboardEntryOut]

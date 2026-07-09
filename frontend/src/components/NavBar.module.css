@@ -170,6 +170,18 @@ button.item:active:not(:disabled) {
   border-color: var(--border);
 }
 
+/* Thinner ring than the shared Avatar default, matching the comparison-page
+   avatars. */
+.profileBtn > span {
+  border-width: 1px;
+}
+/* The profile avatar carries an ink ring in light mode (its own border), but in
+   dark mode that near-black ring vanishes against the navbar — lift it to the
+   album/artist name text colour (--text), matching the comparison-page avatars. */
+[data-theme="dark"] .profileBtn > span {
+  border-color: var(--text);
+}
+
 .menu {
   position: absolute;
   top: calc(100% + 8px);

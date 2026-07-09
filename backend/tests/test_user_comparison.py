@@ -130,6 +130,9 @@ def test_public_non_friends_compare_live(client: TestClient) -> None:
     # The viewer is always user A, so their "you" column is stable.
     assert data["user_a_username"] == "alice"
     assert data["user_b_username"] == "bob"
+    # Picture-URL fields are always present (None when the user has no avatar).
+    assert "user_a_picture_url" in data
+    assert "user_b_picture_url" in data
     assert len(data["entries"]) == 2
 
     by_id = {e["album"]["spotify_id"]: e for e in data["entries"]}

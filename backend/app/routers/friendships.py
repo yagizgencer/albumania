@@ -235,6 +235,7 @@ def get_friend_dashboard(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
     spotify: Annotated[SpotifyClient, Depends(get_spotify_client)],
+    storage: Annotated[Storage, Depends(get_storage)],
 ) -> FriendDashboardResponse:
     friendship = _get_for_user(db, friendship_id, current_user.username)
     if friendship.status != FriendshipStatus.accepted:
@@ -292,10 +293,15 @@ def get_friend_dashboard(
             )
         )
 
+    urls = picture_url_map(
+        db, storage, [friendship.user_a_username, friendship.user_b_username]
+    )
     return FriendDashboardResponse(
         friendship_id=friendship.id,
         user_a_username=friendship.user_a_username,
         user_b_username=friendship.user_b_username,
+        user_a_picture_url=urls.get(friendship.user_a_username),
+        user_b_picture_url=urls.get(friendship.user_b_username),
         entries=entries,
     )
 

@@ -1,156 +1,615 @@
+/* Comparison / result page — shared by AlbumDetailPage (you vs Spotify) and
+   FriendAlbumDetailPage (you vs a friend vs Spotify). The header copies the
+   album-info box exactly (see AlbumInfoPage.module.css: sticker card, cover +
+   meta row, display title, Spotify pop-out, metadata chips); the scores and
+   top-5 columns below adopt the same Warm Peach component styling. */
+
+/* Same width/margins as the Home + Album Info pages so all three line up. */
 .page {
-  padding: 0 var(--page-pad);
-  max-width: var(--page-max);
+  max-width: min(93vw, 1560px);
   margin: 2rem auto;
+  padding: 0 0.35rem;
+  color: var(--text);
+  /* Dark-mode ring for the similarity-tile avatars + Spotify circle: the same
+     warm broken-white as the album/artist name text (--text in dark), so the
+     outline reads clearly on the dark surface. */
+  --avatar-ring-dark: var(--text);
 }
 
-.header {
-  display: grid;
-  grid-template-columns: 200px 1fr;
-  gap: 1.5rem;
+/* Back-to-dashboard: a breadcrumb pill sitting OUTSIDE (above) the card — quiet
+   navigation, not the page's loud primary action. Muted text that firms up on
+   hover, with the sticker offset-shadow nudge shared across the app. */
+.backLink {
+  display: inline-flex;
   align-items: center;
-  margin-bottom: 2rem;
+  gap: 0.45rem;
+  margin-bottom: var(--space-3);
+  padding: 0.42rem 0.95rem 0.42rem 0.72rem;
+  border-radius: var(--radius-pill);
+  border: var(--border-w-thin) solid var(--border);
+  box-shadow: var(--shadow-soft);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-weight: 700;
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.12s ease,
+    color 0.12s ease;
+}
+.backLink:hover:not(:disabled) {
+  background: var(--surface-muted);
+  color: var(--text);
+  transform: translate(-1px, -1px);
+  box-shadow: var(--shadow-pop);
+}
+.backLink:active:not(:disabled) {
+  transform: translate(1px, 1px);
+  box-shadow: none;
+}
+[data-theme="dark"] .backLink {
+  border-color: var(--border-soft);
+}
+
+/* Album card — the retro "sticker" look, identical to the Album Info box:
+   chunky inked border, large radius, hard offset shadow. */
+.card {
+  position: relative;
+  margin-bottom: var(--space-5);
   background: var(--surface);
   color: var(--text);
-  padding: 1.5rem;
-  border-radius: var(--radius);
-  border: var(--border-w-thin) solid var(--border);
+  padding: var(--space-5) var(--space-6);
+  border-radius: var(--radius-lg);
+  border: var(--border-w) solid var(--border);
+  box-shadow: var(--shadow-card);
+}
+
+[data-theme="dark"] .card {
+  box-shadow:
+    inset 0 0 0 1.5px rgba(255, 233, 208, 0.16),
+    5px 5px 0 #000,
+    0 6px 16px rgba(0, 0, 0, 0.45);
+}
+
+/* Cover + meta share one row (matches the Album Info header). */
+.headerTop {
+  display: grid;
+  grid-template-columns: 242px 1fr;
+  gap: var(--space-6);
+  align-items: stretch;
+}
+
+.meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
 }
 
 .art {
   width: 100%;
-  border-radius: 8px;
+  border-radius: var(--radius);
+  border: var(--border-w-thin) solid var(--border);
+  box-shadow: var(--shadow-soft);
+  display: block;
+  align-self: start;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.meta h1 {
-  margin: 0;
+.art:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: var(--shadow-pop);
 }
 
-.meta h2 {
-  margin: 0.25rem 0 1rem;
-  font-weight: 400;
+/* Headline: title row (title + Spotify pop-out), artist, then metadata chips. */
+.headline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+/* Icon action bar (top-right of the title row) — here just the Remove chip,
+   copied verbatim from the Album Info box so it matches exactly. */
+.iconBar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-shrink: 0;
+}
+
+.iconBtn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-pill);
+  border: var(--border-w-thin) solid var(--border);
+  box-shadow: var(--shadow-soft);
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease,
+    color 0.12s ease;
+}
+
+.iconBtn:hover:not(:disabled) {
+  transform: translate(-1px, -1px);
+  box-shadow: var(--shadow-pop);
+}
+
+.iconBtn:active:not(:disabled) {
+  transform: translate(1px, 1px);
+  box-shadow: none;
+}
+
+.iconBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.iconBtn svg {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.iconRemove {
+  background: #f4d8d3;
+  color: #c2554e;
+}
+.iconRemove:hover:not(:disabled) {
+  background: #c2554e;
+  color: #fbf1e2;
+}
+[data-theme="dark"] .iconRemove {
+  background: #4a2f2c;
+  color: #e0938c;
+}
+[data-theme="dark"] .iconRemove:hover:not(:disabled) {
+  background: #d06a63;
+  color: #211b16;
+}
+
+/* The icon button's hover tooltip now comes from the global `[data-tip]` rule
+   in index.css (drawn on ::before), so no module-local tooltip is needed here. */
+
+/* Inline confirm shown after the Remove chip is clicked (copied from the Album
+   Info box). */
+.confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  padding: 0.4rem 0.6rem;
+  background: var(--surface);
+  border: var(--border-w-thin) solid var(--border-soft);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+}
+
+.confirmText {
+  font-size: var(--text-sm);
   color: var(--text-muted);
 }
 
+.confirm .btn {
+  padding: 0.3rem 0.7rem;
+  border-radius: var(--radius);
+  border: var(--border-w-thin) solid var(--border);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btnRemoveConfirm {
+  background: var(--btn-danger-bg);
+  color: var(--btn-danger-fg);
+}
+.btnRemoveConfirm:hover:not(:disabled) {
+  background: var(--btn-danger-bg-hover);
+}
+
+.btnCancel {
+  background: var(--surface);
+  color: var(--text);
+}
+.btnCancel:hover:not(:disabled) {
+  background: var(--surface-muted);
+}
+
+/* Album title in the hand-drawn display font (matches the Album Info title). */
+.meta h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(2.1rem, 3.6vw, 2.9rem);
+  line-height: 1.06;
+}
+
+.meta h2 {
+  margin: var(--space-1) 0 0;
+  font-weight: 700;
+  font-size: 1.3rem;
+  color: var(--text);
+}
+
+/* Album title + artist are the only navigation now (the old page buttons are
+   gone): the title text links to the album page, the artist text to the artist
+   page. Inherit colour; underline on hover. */
 .headerLink {
   color: inherit;
   text-decoration: none;
 }
-
 .headerLink:hover {
   text-decoration: underline;
 }
 
-.pageButtons {
-  display: flex;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-  margin-bottom: 1rem;
-}
-
-.pageBtn {
-  padding: 0.45rem 0.9rem;
+/* Spotify pop-out — external-link arrow + Spotify mark, a small superscript at
+   the top-right of the title. Copied verbatim from the Album Info box. */
+.spotifyLink {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 0.4rem;
+  padding: 2px 3px;
   border-radius: var(--radius-sm);
-  background: var(--btn-secondary-bg);
-  color: var(--btn-secondary-fg);
-  border: 1px solid var(--btn-secondary-border);
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 0.9rem;
+  vertical-align: top;
+  margin-top: 0.15em;
+  transition: transform 0.12s ease, background 0.12s ease;
+}
+.spotifyLink:hover {
+  transform: translateY(-1px);
+  background: var(--surface-muted);
+}
+.spotifyMark {
+  color: #1db954;
+}
+.spotifyArrow {
+  color: var(--text-muted);
 }
 
-.pageBtn:hover {
-  background: var(--btn-secondary-bg-hover);
-}
-
-.metricRow {
+/* Metadata chips (release date + runtime) — outlined pills under the artist. */
+.metaChips {
   display: flex;
-  gap: 1.5rem;
-  margin-top: 0.5rem;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
 }
 
-.metric {
-  font-size: 0.9rem;
-}
-
-.metric strong {
-  display: block;
-  font-size: 1.05rem;
+.metaChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: var(--radius-pill);
+  background: var(--surface-muted);
+  border: var(--border-w-thin) solid var(--border);
   color: var(--text);
-  font-weight: 600;
-  line-height: 1.5;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
+.metaChipIcon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.metaChipText {
+  position: relative;
+  top: 1px;
+}
+
+[data-theme="dark"] .metaChip {
+  border-color: var(--border-soft);
+}
+[data-theme="dark"] .metaChipIcon {
+  color: #d0c3ae;
+}
+
+/* Similarity Scores block (layout C — scoreboard columns) — pushed to the
+   bottom of the meta column. The section header is a broken rule with the title
+   sitting in the gap; then equal columns split by hairlines. No boxes. */
+.simBlock {
+  margin-top: auto;
+}
+
+/* Broken-rule header: a faint line, the title text in the gap, another faint
+   line — a fieldset-legend style divider that sets the block off without a twin
+   pill. */
+.simHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.simRule {
+  flex: 1;
+  height: var(--border-w-thin);
+  background: var(--border-soft);
+}
+
+/* Title text sitting in the break — a quiet muted uppercase caption (NOT the
+   hand display font and NOT the teal of the values). */
+.simTitle {
+  flex-shrink: 0;
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* Row of equal columns, split by hairline dividers (the album-info divider
+   language). Wraps on very narrow cards. Always centered — including the
+   single-pairing (you vs Spotify) case. */
+.simTiles {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* One pairing column — value on top, avatar pair beneath. No border/box. */
+.simTile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1;
+  min-width: 6.5rem;
+  padding: 0 var(--space-4);
+}
+.simTile + .simTile {
+  border-left: var(--border-w-thin) solid var(--border-soft);
+}
+
+/* Single-pairing case (you vs Spotify): a lone tile shouldn't stretch full
+   width — size it to its content and let .simTiles center it. */
+.simBlockSingle .simTile {
+  flex: 0 0 auto;
+}
+
+/* Bare teal numeral — no pill, no box. Smaller than before. */
+.simPill {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  line-height: 1;
+  color: #1d5348;
+  font-variant-numeric: tabular-nums;
+}
+[data-theme="dark"] .simPill {
+  color: #7fd3bd;
+}
+
+/* The two participants: [avatar] <-> [avatar]. */
+.simPair {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* Clickable avatar link — no underline (the global `a` rule would draw one
+   under the round avatar), subtle lift on hover. */
+.simAvatarLink,
+.simAvatarLink:hover {
+  text-decoration: none;
+}
+.simAvatarLink {
+  position: relative;
+  display: inline-flex;
+  border-radius: 50%;
+  transition: transform 0.12s ease;
+}
+.simAvatarLink:hover {
+  transform: translateY(-1px);
+}
+
+/* Thinner ring than the shared Avatar's default, scoped to the similarity
+   tiles. Targets the Avatar's root <span>. */
+.simAvatarLink > span {
+  border-width: 1px;
+}
+/* Dark mode: lift the outline to the album/artist name text colour so it reads
+   against the dark surface (the default near-black --border vanishes there). */
+[data-theme="dark"] .simAvatarLink > span {
+  border-color: var(--avatar-ring-dark);
+}
+
+.simDash {
+  color: var(--text-subtle);
+  font-weight: 800;
+  font-size: 0.8rem;
+}
+
+/* Spotify's avatar in a pairing — the green Spotify mark filling the whole
+   circle (same footprint as a profile avatar), with the same ink outline the
+   profile avatars carry. The SVG's green disc is the fill. */
+.simSpotify {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  /* Green fills the whole inner circle regardless of the glyph's own margin;
+     the SVG sits on top carrying only the sound-wave bars. */
+  background: #1db954;
+  color: #1db954;
+  flex-shrink: 0;
+}
+[data-theme="dark"] .simSpotify {
+  border-color: var(--avatar-ring-dark);
+}
+.simSpotify svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Narrow cards: cover + meta stack. */
+@media (max-width: 720px) {
+  .headerTop {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Top-5 comparison columns — each a sticker-lite panel matching the card look
+   (ink border, radius, soft shadow), auto-fitting across the width. */
 .columns {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1.5rem;
-}
-
-.backLink {
-  display: inline-block;
-  margin-bottom: 1rem;
-  padding: 0.4rem 0.9rem;
-  background: var(--btn-primary-bg);
-  color: var(--btn-primary-fg);
-  text-decoration: none;
-  border: none;
-  border-radius: var(--radius-sm);
-  font-weight: 600;
-  font-size: 0.9rem;
-  cursor: pointer;
-}
-
-.backLink:hover {
-  background: var(--btn-primary-bg-hover);
-}
-
-.art {
-  cursor: pointer;
-  transition: transform 0.15s ease;
-}
-
-.art:hover {
-  transform: scale(1.02);
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-5);
 }
 
 .column {
   background: var(--surface);
   color: var(--text);
-  border: var(--border-w-thin) solid var(--border);
-  border-radius: var(--radius);
-  padding: 1rem 1.25rem;
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-4) var(--space-5);
 }
 
-.column h3 {
-  margin: 0 0 0.75rem;
+[data-theme="dark"] .column {
+  box-shadow:
+    inset 0 0 0 1.5px rgba(255, 233, 208, 0.16),
+    5px 5px 0 #000,
+    0 6px 16px rgba(0, 0, 0, 0.45);
+}
+
+/* Column header row: the "<who>'s top 5" title on the left, the album score on
+   the top-right. The whole row carries the underline divider. */
+.columnHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-2);
+  border-bottom: var(--border-w-thin) solid var(--border-soft);
+}
+
+.columnHead h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.4rem;
+}
+
+/* The username in a top-5 card heading links to that profile; underline on
+   hover only, so it reads as a title until you reach for it. */
+.columnNameLink {
+  color: inherit;
+  text-decoration: none;
+}
+.columnNameLink:hover {
+  text-decoration: underline;
+}
+
+/* Album score on the top-right of a top-5 card — the amber data pill, same as
+   the Album Info score chip. Spotify's card has no score, so it's omitted. */
+.columnScore {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  flex-shrink: 0;
+  padding: 0.15rem 0.6rem;
+  border-radius: var(--radius-pill);
+  background: var(--data);
+  color: var(--on-data);
+  border: var(--border-w-thin) solid var(--border);
+  box-shadow: var(--shadow-soft);
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  line-height: 1.1;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.columnScoreOut {
+  font-size: 0.7rem;
+  opacity: 0.7;
 }
 
 .column ol {
   margin: 0;
-  padding-left: 1.5rem;
+  padding: 0;
+  list-style: none;
+  counter-reset: rank;
 }
 
 .column li {
-  padding: 0.25rem 0;
+  counter-increment: rank;
 }
 
+/* Each track row: a display-font rank chip (matches the Album Info track
+   number), the track name, then the #index · duration meta on the right. */
 .trackRowInner {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.5rem;
-  width: calc(100% - 0.25rem);
+  display: grid;
+  grid-template-columns: 1.35rem 1fr auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0.45rem 0.5rem;
+  border-radius: var(--radius-sm);
+  transition: background 0.1s ease;
+}
+
+.column li + li .trackRowInner {
+  border-top: var(--border-w-thin) solid var(--border-soft);
+}
+
+.trackRowInner:hover {
+  background: var(--surface-muted);
+}
+
+/* Rank circle — neutral fill with a coral (primary) outline, display font,
+   filled from the `rank` counter. */
+.trackRowInner::before {
+  content: counter(rank);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: var(--radius-pill);
+  background: var(--surface-muted);
+  border: var(--border-w-thin) solid color-mix(in srgb, var(--primary) 45%, var(--border-soft));
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
 }
 
 .trackRowName {
-  flex: 1;
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .trackRowMeta {
   color: var(--text-subtle);
   font-size: 0.85rem;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .column a {
@@ -160,5 +619,6 @@
 }
 
 .column a:hover {
-  border-bottom-color: var(--link-underline-hover);
+  color: var(--accent);
+  border-bottom-color: var(--accent);
 }

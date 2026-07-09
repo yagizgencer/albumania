@@ -301,7 +301,7 @@ export function AlbumInfoPage() {
                   target="_blank"
                   rel="noreferrer"
                   aria-label="Open on Spotify"
-                  title="Open on Spotify"
+                  data-tip="Open on Spotify"
                 >
                   <ExternalLinkIcon size={14} className={styles.spotifyArrow} />
                   <SpotifyIcon size={19} className={styles.spotifyMark} />

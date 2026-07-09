@@ -259,6 +259,7 @@ def get_user_comparison(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
     spotify: Annotated[SpotifyClient, Depends(get_spotify_client)],
+    storage: Annotated[Storage, Depends(get_storage)],
 ) -> FriendDashboardResponse:
     """Live pair comparison between the current user (A) and any *viewable* user
     (B) — no friendship required. Same shape as the friend dashboard, computed on
@@ -330,6 +331,8 @@ def get_user_comparison(
         friendship_id=None,
         user_a_username=a,
         user_b_username=b,
+        user_a_picture_url=picture_url(storage, current_user.profile_picture_key),
+        user_b_picture_url=picture_url(storage, target.profile_picture_key),
         entries=entries,
     )
 

@@ -136,6 +136,9 @@ def test_accept_seeds_entries_for_mutual_albums(client: TestClient) -> None:
     data = r.json()
     assert data["user_a_username"] == "alice"
     assert data["user_b_username"] == "bob"
+    # Picture-URL fields are always present (None when the user has no avatar).
+    assert "user_a_picture_url" in data
+    assert "user_b_picture_url" in data
     assert len(data["entries"]) == 2
 
     by_id = {e["album"]["spotify_id"]: e for e in data["entries"]}

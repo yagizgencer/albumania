@@ -20,6 +20,10 @@ export interface FriendDashboardResponse {
   friendship_id: number | null;
   user_a_username: string;
   user_b_username: string;
+  // Profile picture URLs for the compared users (null when unset) — used by the
+  // similarity tiles' avatars.
+  user_a_picture_url: string | null;
+  user_b_picture_url: string | null;
   entries: FriendDashboardEntry[];
 }
 

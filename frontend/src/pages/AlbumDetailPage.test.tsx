@@ -8,6 +8,9 @@ import { getDashboard } from "../api/dashboard";
 
 vi.mock("../api/albums", () => ({ getAlbum: vi.fn() }));
 vi.mock("../api/dashboard", () => ({ getDashboard: vi.fn() }));
+// The page fetches the profile owner's avatar (best-effort) for the similarity
+// tile; stub it so the test doesn't hit the network.
+vi.mock("../api/users", () => ({ getUser: vi.fn().mockResolvedValue({ profile_picture_url: null }) }));
 vi.mock("../api/ratings", () => ({
   getMyRatingForAlbum: vi.fn(),
   deleteRating: vi.fn(),
@@ -61,7 +64,9 @@ describe("AlbumDetailPage — remove rating", () => {
 
   it("shows Remove rating on my own album detail", async () => {
     renderAt("me");
-    expect(await screen.findByRole("link", { name: /go to album page/i })).toBeInTheDocument();
+    // The album title now links to the album page (the old "Go to album page"
+    // button was removed).
+    expect(await screen.findByRole("link", { name: /test album/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /remove rating/i })).toBeInTheDocument();
   });
 
@@ -69,7 +74,7 @@ describe("AlbumDetailPage — remove rating", () => {
     currentUser = "me";
     vi.mocked(getDashboard).mockResolvedValue({ username: "bob", entries: [ENTRY] } as never);
     renderAt("bob");
-    await screen.findByRole("link", { name: /go to album page/i });
+    await screen.findByRole("link", { name: /test album/i });
     expect(screen.queryByRole("button", { name: /remove rating/i })).not.toBeInTheDocument();
   });
 });

@@ -11,8 +11,9 @@ import { deleteRating, getMyRatingForAlbum } from "../api/ratings";
 import { useAuth } from "../context/AuthContext";
 import { formatDuration } from "../utils/duration";
 import { Alert } from "../components/Alert";
-import { ConfirmButton } from "../components/ConfirmButton";
 import { LoadingState } from "../components/Spinner";
+import { Avatar } from "../components/Avatar";
+import { ExternalLinkIcon, SpotifyIcon, TrashIcon } from "../components/Icons";
 import { ImageLightbox } from "../components/ImageLightbox";
 import { formatDate } from "../lib/date";
 import { setDashboardCompare, type DashboardBackState } from "../lib/dashboardCompare";
@@ -53,6 +54,7 @@ export function FriendAlbumDetailPage() {
   // then leave — this detail view no longer exists, so go to my profile.
   async function handleRemoveRating() {
     if (!album || !me) return;
+    setRemoving(true);
     const mine = await getMyRatingForAlbum(album.id);
     await deleteRating(mine.id);
     navigate(profilePath(me));
@@ -61,6 +63,8 @@ export function FriendAlbumDetailPage() {
   const [pair, setPair] = useState<FriendDashboardResponse | null>(null);
   const [entry, setEntry] = useState<FriendDashboardEntry | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [confirmingRemove, setConfirmingRemove] = useState(false);
+  const [removing, setRemoving] = useState(false);
 
   const sourceKey =
     source?.kind === "friendship"
@@ -108,6 +112,21 @@ export function FriendAlbumDetailPage() {
       .filter((t): t is AlbumTrack => t !== undefined);
 
   const spotifyAlbumUrl = `https://open.spotify.com/album/${album.spotify_id}`;
+  // I can remove my rating whichever slot I'm in — user_a is just the
+  // alphabetically-first username, not necessarily me.
+  const isMine = me === pair.user_a_username || me === pair.user_b_username;
+
+  // The three participants a similarity pairing can reference, resolved to an
+  // avatar. Spotify is a special "party" rendered as the Spotify mark.
+  const userA: SimParty = {
+    username: pair.user_a_username,
+    pictureUrl: pair.user_a_picture_url,
+  };
+  const userB: SimParty = {
+    username: pair.user_b_username,
+    pictureUrl: pair.user_b_picture_url,
+  };
+  const spotify: SimParty = "spotify";
 
   return (
     <main className={styles.page}>
@@ -116,107 +135,128 @@ export function FriendAlbumDetailPage() {
         onClick={goBackToDashboard}
         className={styles.backLink}
       >
-        ← Back to dashboard
+        ‹ Dashboard
       </button>
 
-      <header className={styles.header}>
-        {album.album_art_url && (
-          <ImageLightbox
-            src={album.album_art_url}
-            alt={`${album.title} cover`}
-            thumbClassName={styles.art}
-          />
-        )}
-        <div className={styles.meta}>
-          <h1>
-            <a className={styles.headerLink} href={spotifyAlbumUrl} target="_blank" rel="noreferrer">
-              {album.title}
-            </a>
-          </h1>
-          <h2>
-            {album.artist_spotify_id ? (
-              <a
-                className={styles.headerLink}
-                href={`https://open.spotify.com/artist/${album.artist_spotify_id}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                {album.artist}
-              </a>
-            ) : (
-              album.artist
-            )}
-          </h2>
-          <p>
-            <strong>Release date:</strong> {formatDate(album.release_date)}
-            <br />
-            <strong>Rated:</strong> {formatDate(entry.mutual_date)}
-            <br />
-            <strong>Total songs:</strong> {album.total_songs}
-            {album.tracks.some((t) => t.duration_ms != null) && (
-              <>
-                <br />
-                <strong>Total duration:</strong>{" "}
-                {formatDuration(album.tracks.reduce((s, t) => s + (t.duration_ms ?? 0), 0))}
-              </>
-            )}
-          </p>
-
-          <div className={styles.pageButtons}>
-            <Link className={styles.pageBtn} to={`/albums/${album.spotify_id}`}>
-              Go to album page
-            </Link>
-            {album.artist_spotify_id && (
-              <Link className={styles.pageBtn} to={`/artists/${album.artist_spotify_id}`}>
-                Go to artist page
-              </Link>
-            )}
-            {pair.user_a_username === me && (
-              <ConfirmButton
-                label="Remove my rating"
-                prompt="Remove your rating?"
-                confirmLabel="Yes, remove"
-                onConfirm={handleRemoveRating}
-              />
-            )}
-          </div>
-
-          <div className={styles.metricRow}>
-            <div className={styles.metric}>
-              Scores
-              <strong>
-                {pair.user_a_username}: {entry.user_a_score.toFixed(1)}
-                <br />
-                {pair.user_b_username}: {entry.user_b_score.toFixed(1)}
-                <br />
-                Mean: {entry.mean_score.toFixed(2)}
-              </strong>
+      <section className={styles.card}>
+        <div className={styles.headerTop}>
+          {album.album_art_url && (
+            <ImageLightbox
+              src={album.album_art_url}
+              alt={`${album.title} cover`}
+              thumbClassName={styles.art}
+            />
+          )}
+          <div className={styles.meta}>
+            <div className={styles.headline}>
+              <div className={styles.titleRow}>
+                <h1>
+                  <Link className={styles.headerLink} to={`/albums/${album.spotify_id}`}>
+                    {album.title}
+                  </Link>
+                  <a
+                    className={styles.spotifyLink}
+                    href={spotifyAlbumUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Open on Spotify"
+                    data-tip="Open on Spotify"
+                  >
+                    <ExternalLinkIcon size={14} className={styles.spotifyArrow} />
+                    <SpotifyIcon size={19} className={styles.spotifyMark} />
+                  </a>
+                </h1>
+                {/* Remove rating (only when I'm in the comparison) — the same
+                    circular trash chip as the album page. */}
+                {isMine && (
+                  <div className={styles.iconBar}>
+                    <button
+                      type="button"
+                      className={`${styles.iconBtn} ${styles.iconRemove}`}
+                      onClick={() => setConfirmingRemove(true)}
+                      disabled={removing}
+                      aria-label="Remove my rating"
+                      data-tip="Remove my rating"
+                    >
+                      <TrashIcon size={26} />
+                    </button>
+                  </div>
+                )}
+              </div>
+              <h2>
+                {album.artist_spotify_id ? (
+                  <Link className={styles.headerLink} to={`/artists/${album.artist_spotify_id}`}>
+                    {album.artist}
+                  </Link>
+                ) : (
+                  album.artist
+                )}
+              </h2>
+              {/* Metadata slot now carries just "Rated on" (release date +
+                  album length removed). */}
+              <div className={styles.metaChips}>
+                <span className={styles.metaChip}>
+                  <span className={styles.metaChipText}>
+                    Rated on {formatDate(entry.mutual_date)}
+                  </span>
+                </span>
+              </div>
             </div>
-            <div className={styles.metric}>
-              Similarity
-              <strong>
-                {pair.user_a_username} ↔ {pair.user_b_username}: {fmt(entry.similarity_users)}
-                <br />
-                {pair.user_a_username} ↔ Spotify: {fmt(entry.similarity_a_vs_spotify)}
-                <br />
-                {pair.user_b_username} ↔ Spotify: {fmt(entry.similarity_b_vs_spotify)}
-              </strong>
+
+            {/* Similarity Scores — one teal tile per pairing (score on top, the
+                two avatars below). Album scores live on the top-5 cards. */}
+            <div className={styles.simBlock}>
+              <div className={styles.simHead}>
+                <span className={styles.simRule} />
+                <span className={styles.simTitle}>Similarity Scores</span>
+                <span className={styles.simRule} />
+              </div>
+              <div className={styles.simTiles}>
+                <SimTile left={userA} right={userB} value={entry.similarity_users} />
+                <SimTile left={userA} right={spotify} value={entry.similarity_a_vs_spotify} />
+                <SimTile left={userB} right={spotify} value={entry.similarity_b_vs_spotify} />
+              </div>
             </div>
+
+            {/* Inline confirm shown after the Remove chip is clicked. */}
+            {isMine && confirmingRemove && (
+              <div className={styles.confirm}>
+                <span className={styles.confirmText}>Remove your rating?</span>
+                <button
+                  className={`${styles.btn} ${styles.btnRemoveConfirm}`}
+                  onClick={handleRemoveRating}
+                  disabled={removing}
+                >
+                  {removing ? "Removing…" : "Yes, remove"}
+                </button>
+                <button
+                  className={`${styles.btn} ${styles.btnCancel}`}
+                  onClick={() => setConfirmingRemove(false)}
+                  disabled={removing}
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
           </div>
         </div>
-      </header>
+      </section>
 
       <section className={styles.columns}>
         <TopList
-          title={`${pair.user_a_username}'s top 5`}
+          username={pair.user_a_username}
+          score={entry.user_a_score}
           tracks={renderList(entry.user_a_top_track_indices)}
         />
         <TopList
-          title={`${pair.user_b_username}'s top 5`}
+          username={pair.user_b_username}
+          score={entry.user_b_score}
           tracks={renderList(entry.user_b_top_track_indices)}
         />
+        {/* Spotify isn't a user (no profile, no album score). */}
         <TopList
           title="Spotify's top 5"
+          score={null}
           tracks={renderList(entry.spotify_top5_indices)}
         />
       </section>
@@ -225,14 +265,37 @@ export function FriendAlbumDetailPage() {
 }
 
 interface TopListProps {
-  title: string;
+  // A user column links its name to the profile; Spotify passes a plain `title`.
+  username?: string;
+  title?: string;
+  // The album score for this person (null for Spotify — it has none).
+  score: number | null;
   tracks: AlbumTrack[];
 }
 
-function TopList({ title, tracks }: TopListProps) {
+function TopList({ username, title, score, tracks }: TopListProps) {
   return (
     <div className={styles.column}>
-      <h3>{title}</h3>
+      <div className={styles.columnHead}>
+        <h3>
+          {username ? (
+            <>
+              <Link className={styles.columnNameLink} to={profilePath(username)}>
+                {username}
+              </Link>
+              ’s top 5
+            </>
+          ) : (
+            title
+          )}
+        </h3>
+        {score != null && (
+          <span className={styles.columnScore}>
+            {score.toFixed(1)}
+            <span className={styles.columnScoreOut}>/10</span>
+          </span>
+        )}
+      </div>
       <ol>
         {tracks.map((t) => (
           <li key={t.index}>
@@ -244,10 +307,9 @@ function TopList({ title, tracks }: TopListProps) {
                   t.name
                 )}
               </span>
-              <span className={styles.trackRowMeta}>
-                #{t.index}
-                {t.duration_ms != null && <> · {formatDuration(t.duration_ms)}</>}
-              </span>
+              {t.duration_ms != null && (
+                <span className={styles.trackRowMeta}>{formatDuration(t.duration_ms)}</span>
+              )}
             </span>
           </li>
         ))}
@@ -256,6 +318,60 @@ function TopList({ title, tracks }: TopListProps) {
   );
 }
 
-function fmt(v: number | null): string {
-  return v === null ? "—" : v.toFixed(3);
+// A participant in a similarity pairing: either a user (avatar + name) or the
+// special "spotify" party (rendered as the Spotify mark).
+type SimParty = { username: string; pictureUrl: string | null } | "spotify";
+
+// A clickable participant avatar: a user links to their profile; Spotify links
+// out to Spotify.
+function PartyAvatar({ party }: { party: SimParty }) {
+  if (party === "spotify") {
+    return (
+      <a
+        className={styles.simAvatarLink}
+        href="https://open.spotify.com"
+        target="_blank"
+        rel="noreferrer"
+        aria-label="Spotify"
+        data-tip="Spotify"
+      >
+        <span className={styles.simSpotify}>
+          <SpotifyIcon size={22} />
+        </span>
+      </a>
+    );
+  }
+  return (
+    <Link
+      className={styles.simAvatarLink}
+      to={profilePath(party.username)}
+      aria-label={party.username}
+      data-tip={party.username}
+    >
+      <Avatar username={party.username} pictureUrl={party.pictureUrl} size={28} />
+    </Link>
+  );
+}
+
+// One similarity tile: the teal value on top, the two parties (avatar <->
+// avatar) below. The label is carried by the (clickable) avatars.
+function SimTile({
+  left,
+  right,
+  value,
+}: {
+  left: SimParty;
+  right: SimParty;
+  value: number | null;
+}) {
+  return (
+    <div className={styles.simTile}>
+      <span className={styles.simPill}>{value === null ? "—" : value.toFixed(2)}</span>
+      <span className={styles.simPair}>
+        <PartyAvatar party={left} />
+        <span className={styles.simDash}>&lt;-&gt;</span>
+        <PartyAvatar party={right} />
+      </span>
+    </div>
+  );
 }

@@ -198,9 +198,9 @@ function NavItem({
         `${styles.item} ${isActive ? styles.itemActive : ""}`
       }
       onClick={onActivate}
-      // Icons only now; `title` gives the browser hover tooltip, `aria-label`
-      // keeps the accessible name that the removed visible label provided.
-      title={label}
+      // Icons only now; the custom hover chip (`data-tip`) replaces the browser's
+      // native `title`; `aria-label` keeps the accessible name.
+      data-tip={label}
       aria-label={label}
     >
       <span className={styles.itemIcon}>
