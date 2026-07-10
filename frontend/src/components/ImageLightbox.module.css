@@ -66,6 +66,9 @@
   width: auto;
   height: auto;
   object-fit: contain;
+  /* Solid backing so images with transparency (PNGs) don't show the dimmed page
+     through them — the enlarged view should read as an opaque photo. */
+  background: #fff;
   border: var(--border-w) solid var(--border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-modal);

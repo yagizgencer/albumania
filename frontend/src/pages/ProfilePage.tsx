@@ -33,11 +33,21 @@ import { ProfileDashboard } from "./ProfileDashboardPage";
 import { FriendDashboard } from "./FriendDashboardPage";
 import { Alert } from "../components/Alert";
 import { LoadingState } from "../components/Spinner";
-import { PageContainer } from "../components/PageContainer";
 import { Button } from "../components/Button";
 import { ConfirmButton } from "../components/ConfirmButton";
 import { Card } from "../components/Card";
-import { SpotifyIcon } from "../components/Icons";
+import {
+  CalendarIcon,
+  CheckIcon,
+  ChevronDownIcon,
+  CloseIcon,
+  HourglassIcon,
+  LockIcon,
+  PencilIcon,
+  PeopleIcon,
+  SearchIcon,
+  SpotifyIcon,
+} from "../components/Icons";
 import styles from "./ProfilePage.module.css";
 
 type AccessBlock = "friends-only" | null;
@@ -160,22 +170,55 @@ export function ProfilePage() {
 
   if (error)
     return (
-      <PageContainer width="wide">
+      <main className={styles.page}>
         <Alert>{error}</Alert>
-      </PageContainer>
+      </main>
     );
   if (!profile)
     return (
-      <PageContainer width="wide">
+      <main className={styles.page}>
         <LoadingState />
-      </PageContainer>
+      </main>
     );
 
   const viewerCanSeeDashboard =
     isOwner || friendState?.kind === "friends" || profile.profile_visibility === "public";
 
+  // The "Compare with" control lives inside the dashboard's controls box (passed
+  // down as a slot), so it sits to the right of the filters rather than floating
+  // above. My own profile gets the friend combobox; on someone else's whose
+  // dashboard I can see, a compare toggle.
+  const compareControl =
+    isOwner && myFriends.length > 0 ? (
+      <FriendCombobox
+        friends={myFriends}
+        selectedId={
+          compareSource?.kind === "friendship" ? compareSource.friendshipId : null
+        }
+        onSelect={(id) =>
+          setCompareSource(id === null ? null : { kind: "friendship", friendshipId: id })
+        }
+      />
+    ) : !isOwner && viewerCanSeeDashboard ? (
+      <Button
+        intent="secondary"
+        size="sm"
+        onClick={() =>
+          setCompareSource((prev) =>
+            prev !== null
+              ? null
+              : friendState?.kind === "friends"
+              ? { kind: "friendship", friendshipId: friendState.friendship.id }
+              : { kind: "user", username: profile.username }
+          )
+        }
+      >
+        {compareSource !== null ? "Hide comparison" : "Compare with you"}
+      </Button>
+    ) : null;
+
   return (
-    <PageContainer width="wide">
+    <main className={styles.page}>
       <section className={styles.card}>
         <button
           type="button"
@@ -187,7 +230,7 @@ export function ProfilePage() {
             username={profile.username}
             pictureUrl={profile.profile_picture_url}
             displayName={profile.display_name}
-            size={88}
+            size={104}
             className={styles.avatar}
           />
         </button>
@@ -203,15 +246,8 @@ export function ProfilePage() {
             />
           ) : (
             <>
-              <div className={styles.nameRow}>
-                <h1 className={styles.displayName}>{profile.display_name}</h1>
-                {!viewerCanSeeDashboard && (
-                  <span className={styles.privacyPill} title="Visible to friends only">
-                    🔒 Friends only
-                  </span>
-                )}
-              </div>
-              <p className={styles.username}>{profile.username}</p>
+              <h1 className={styles.displayName}>{profile.display_name}</h1>
+              <p className={styles.username}>@{profile.username}</p>
               {profile.description ? (
                 <div className={styles.description}>
                   <Markdown
@@ -227,67 +263,56 @@ export function ProfilePage() {
               ) : (
                 isOwner && (
                   <p className={styles.descriptionPlaceholder}>
-                    No bio yet. Click Edit to add one.
+                    No bio yet — tap the edit icon to add one.
                   </p>
                 )
               )}
-              <p className={styles.memberSince}>
-                Member since {formatDate(profile.created_at)}
-              </p>
+              <div className={styles.metaChips}>
+                {!viewerCanSeeDashboard && (
+                  <span
+                    className={`${styles.metaChip} ${styles.privacyChip}`}
+                    title="Visible to friends only"
+                  >
+                    <LockIcon size={13} className={styles.metaChipIcon} />
+                    <span className={styles.metaChipText}>Friends only</span>
+                  </span>
+                )}
+                <span className={styles.metaChip}>
+                  <CalendarIcon size={14} className={styles.metaChipIcon} />
+                  <span className={styles.metaChipText}>
+                    Member since {formatDate(profile.created_at)}
+                  </span>
+                </span>
+              </div>
             </>
           )}
         </div>
-        <div className={styles.headerActions}>
-          {isOwner && !editing && (
-            <Button intent="secondary" size="sm" onClick={() => setEditing(true)}>
-              Edit
-            </Button>
-          )}
-          {friendState && (
-            <FriendshipButton
-              state={friendState}
-              targetUsername={profile.username}
-              onChanged={reloadFriendships}
-            />
-          )}
-        </div>
+        {!editing && (
+          <div className={styles.headerActions}>
+            {isOwner && (
+              <button
+                type="button"
+                className={`${styles.iconBtn} ${styles.iconEdit}`}
+                onClick={() => setEditing(true)}
+                aria-label="Edit profile"
+                data-tip="Edit profile"
+              >
+                <PencilIcon size={20} />
+              </button>
+            )}
+            {friendState && (
+              <FriendshipButton
+                state={friendState}
+                targetUsername={profile.username}
+                onChanged={reloadFriendships}
+              />
+            )}
+          </div>
+        )}
       </section>
 
       <section className={styles.dashboardSection}>
-        <div className={styles.dashboardHeader}>
-          <h2 className={styles.sectionTitle}>Dashboard</h2>
-          {isOwner && myFriends.length > 0 && (
-            <FriendCombobox
-              friends={myFriends}
-              selectedId={
-                compareSource?.kind === "friendship" ? compareSource.friendshipId : null
-              }
-              onSelect={(id) =>
-                setCompareSource(id === null ? null : { kind: "friendship", friendshipId: id })
-              }
-            />
-          )}
-          {/* Compare against anyone whose dashboard I can see (public, or a
-              friends-only friend). Friends use the precomputed pair dashboard;
-              everyone else is compared live by username. */}
-          {!isOwner && viewerCanSeeDashboard && (
-            <Button
-              intent="secondary"
-              size="sm"
-              onClick={() =>
-                setCompareSource((prev) =>
-                  prev !== null
-                    ? null
-                    : friendState?.kind === "friends"
-                    ? { kind: "friendship", friendshipId: friendState.friendship.id }
-                    : { kind: "user", username: profile.username }
-                )
-              }
-            >
-              {compareSource !== null ? "Hide comparison" : "Compare with you"}
-            </Button>
-          )}
-        </div>
+        <h2 className={styles.sectionTitle}>Dashboard</h2>
         {compareSource !== null &&
         // A user source is always valid here. A friendship source: on my own
         // profile it may be any accepted friendship (combobox); on someone else's
@@ -299,7 +324,7 @@ export function ProfilePage() {
               )
             : friendState?.kind === "friends" &&
               friendState.friendship.id === compareSource.friendshipId)) ? (
-          <FriendDashboard source={compareSource} />
+          <FriendDashboard source={compareSource} compareSlot={compareControl} />
         ) : (
           <>
             {accessBlock && (
@@ -311,6 +336,7 @@ export function ProfilePage() {
             <ProfileDashboard
               username={profile.username}
               onAccessBlocked={setAccessBlock}
+              compareSlot={compareControl}
             />
           </>
         )}
@@ -329,7 +355,7 @@ export function ProfilePage() {
       )}
 
       <UnsavedChangesModal {...unsavedGuard} />
-    </PageContainer>
+    </main>
   );
 }
 
@@ -515,7 +541,7 @@ function FriendshipButton({
         disabled={busy}
         title="Send friend request"
       >
-        <span aria-hidden>👤</span>
+        <PeopleIcon size={16} />
         Add friend
       </Button>
     );
@@ -530,7 +556,7 @@ function FriendshipButton({
         disabled={busy}
         title="Cancel friend request"
       >
-        <span aria-hidden>⌛</span>
+        <HourglassIcon size={16} />
         Request sent
       </Button>
     );
@@ -546,7 +572,7 @@ function FriendshipButton({
           disabled={busy}
           title="Accept friend request"
         >
-          <span aria-hidden>＋</span>
+          <CheckIcon size={16} />
           Accept
         </Button>
         <Button
@@ -556,6 +582,7 @@ function FriendshipButton({
           disabled={busy}
           title="Decline friend request"
         >
+          <CloseIcon size={16} />
           Decline
         </Button>
       </div>
@@ -567,7 +594,7 @@ function FriendshipButton({
     <ConfirmButton
       label={
         <>
-          <span aria-hidden>✓</span> Friends
+          <CheckIcon size={16} /> Friends
         </>
       }
       prompt={`Unfriend ${targetUsername}?`}
@@ -721,33 +748,40 @@ function FriendCombobox({
   const displayValue = open ? query : selected?.username ?? "";
 
   return (
-    <div className={styles.compareControl} ref={wrapRef}>
+    <div className={styles.compareControl} ref={wrapRef} data-open={open}>
       <span className={styles.compareLabel}>Compare with</span>
-      <div className={styles.combobox}>
-        <input
-          className={styles.compareSelect}
-          type="text"
-          role="combobox"
-          aria-expanded={open}
-          aria-controls="friend-combobox-list"
-          placeholder={selected ? selected.username : "Spotify"}
-          value={displayValue}
-          onFocus={() => setOpen(true)}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            setOpen(true);
-          }}
-        />
-        {selected && (
-          <button
-            type="button"
-            className={styles.comboClear}
-            aria-label="Clear"
-            onClick={() => choose(null)}
-          >
-            ×
-          </button>
-        )}
+      <div className={styles.searchWrap}>
+        <div className={styles.searchBar} onClick={() => setOpen(true)}>
+          <SearchIcon size={16} className={styles.searchIcon} />
+          <input
+            className={styles.searchInput}
+            type="text"
+            role="combobox"
+            aria-expanded={open}
+            aria-controls="friend-combobox-list"
+            placeholder={selected ? selected.username : "Spotify"}
+            value={displayValue}
+            onFocus={() => setOpen(true)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setOpen(true);
+            }}
+          />
+          {selected && (
+            <button
+              type="button"
+              className={styles.comboClear}
+              aria-label="Clear"
+              onClick={(e) => {
+                e.stopPropagation();
+                choose(null);
+              }}
+            >
+              <CloseIcon size={14} />
+            </button>
+          )}
+          <ChevronDownIcon size={17} className={styles.searchChevron} />
+        </div>
         {open && (
           <ul
             id="friend-combobox-list"
@@ -761,7 +795,7 @@ function FriendCombobox({
               onClick={() => choose(null)}
             >
               <span className={styles.comboSpotify}>
-                <SpotifyIcon size={16} className={styles.comboSpotifyIcon} />
+                <SpotifyIcon size={18} className={styles.comboSpotifyIcon} />
                 Spotify
               </span>
             </li>

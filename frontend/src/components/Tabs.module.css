@@ -99,3 +99,46 @@
   color: var(--text);
   box-shadow: var(--shadow-soft);
 }
+
+/* --- Pill variant: clean rounded segmented control (dashboard toggles) ----- */
+.tabsPill {
+  display: inline-flex;
+  gap: 3px;
+  padding: 3px;
+  background: var(--surface-muted);
+  border: var(--border-w-thin) solid var(--border-soft);
+  border-radius: var(--radius-pill);
+}
+
+.tabPill {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-weight: 700;
+  font-size: var(--text-sm);
+  line-height: 1;
+  padding: 6px 15px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  box-shadow: none;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.tabPill:not(.activePill):hover {
+  color: var(--text);
+  background: transparent;
+  transform: none;
+  box-shadow: none;
+}
+
+.tabPill:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Active: a clean teal fill (no hard offset shadow). */
+.activePill {
+  background: var(--select);
+  color: var(--on-select);
+}

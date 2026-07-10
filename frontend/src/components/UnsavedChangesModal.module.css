@@ -12,21 +12,28 @@
 .modal {
   background: var(--surface);
   border: var(--border-w) solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-modal);
-  max-width: 440px;
+  max-width: 460px;
   width: 100%;
   padding: var(--space-5);
+}
+[data-theme="dark"] .modal {
+  border-color: var(--border-soft);
+  box-shadow: var(--shadow-modal), inset 0 0 0 1.5px rgba(255, 233, 208, 0.14);
 }
 
 .title {
   margin: 0 0 0.5rem;
-  font-size: 1.15rem;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  color: var(--text);
 }
 
 .text {
-  margin: 0 0 1.25rem;
+  margin: 0 0 1.35rem;
   color: var(--text-muted);
+  font-size: 1rem;
 }
 
 .actions {
@@ -36,12 +43,29 @@
 }
 
 .btn {
-  padding: 0.6rem 1.1rem;
-  border-radius: 6px;
-  font-size: 0.95rem;
-  font-weight: 600;
+  padding: 0.55rem 1.15rem;
+  border-radius: var(--radius-pill);
+  font: inherit;
+  font-size: 0.98rem;
+  font-weight: 700;
   cursor: pointer;
-  border: 1px solid transparent;
+  border: var(--border-w-thin) solid transparent;
+  box-shadow: none;
+  transition: background 0.14s ease, color 0.14s ease, border-color 0.14s ease;
+}
+
+/* Kill the global button:hover chrome (offset shadow + nudge + brightness) so
+   these read as clean, flat pills — the color change alone signals hover. */
+.btn:hover:not(:disabled),
+.btn:active:not(:disabled) {
+  transform: none;
+  box-shadow: none;
+  filter: none;
+}
+
+.btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .btn:disabled {
@@ -49,32 +73,48 @@
   cursor: not-allowed;
 }
 
+/* All three carry a soft, theme-aware tinted fill + matching edge — cohesive and
+   understated, with a distinct hue per action (teal confirm / red discard /
+   neutral cancel). */
+
+/* Primary — teal "confirm". */
 .save {
-  background: var(--btn-primary-bg);
-  color: var(--btn-primary-fg);
-  border-color: var(--btn-primary-bg);
+  background: color-mix(in srgb, var(--select) 30%, var(--surface));
+  color: var(--on-select);
+  border-color: color-mix(in srgb, var(--select) 55%, var(--border-soft));
 }
-
 .save:hover:not(:disabled) {
-  background: var(--btn-primary-bg-hover);
+  background: color-mix(in srgb, var(--select) 44%, var(--surface));
+}
+[data-theme="dark"] .save {
+  color: var(--select-hover);
 }
 
+/* Destructive — red "discard". */
 .quit {
-  background: transparent;
-  color: var(--danger-text);
-  border-color: var(--danger-text);
+  background: color-mix(in srgb, #b0433b 14%, var(--surface));
+  color: #9a3a33;
+  border-color: color-mix(in srgb, #b0433b 42%, var(--border-soft));
 }
-
 .quit:hover:not(:disabled) {
-  background: var(--danger-tint);
+  background: color-mix(in srgb, #b0433b 22%, var(--surface));
+}
+[data-theme="dark"] .quit {
+  background: color-mix(in srgb, #ec9f9f 16%, var(--surface));
+  color: #ec9f9f;
+  border-color: color-mix(in srgb, #ec9f9f 38%, var(--border-soft));
+}
+[data-theme="dark"] .quit:hover:not(:disabled) {
+  background: color-mix(in srgb, #ec9f9f 24%, var(--surface));
 }
 
+/* Neutral — quiet "cancel". */
 .cancel {
-  background: transparent;
-  color: var(--text);
-  border-color: var(--border);
-}
-
-.cancel:hover:not(:disabled) {
   background: var(--surface-muted);
+  color: var(--text-muted);
+  border-color: var(--border-soft);
+}
+.cancel:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--text) 8%, var(--surface-muted));
+  color: var(--text);
 }

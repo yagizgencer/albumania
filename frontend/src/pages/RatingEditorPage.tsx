@@ -4,6 +4,7 @@ import {
   DragOverlay,
   DragStartEvent,
   KeyboardSensor,
+  type Modifier,
   PointerSensor,
   closestCenter,
   useDraggable,
@@ -12,8 +13,9 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
+import { getEventCoordinates } from "@dnd-kit/utilities";
 import { useEffect, useId, useRef, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { getAlbum, type Album, type AlbumTrack } from "../api/albums";
 import {
   createRating,
@@ -32,9 +34,44 @@ import { UnsavedChangesModal } from "../components/UnsavedChangesModal";
 import { Alert } from "../components/Alert";
 import { CommentComposer } from "../components/CommentComposer";
 import { LoadingState } from "../components/Spinner";
+import {
+  ChevronDownIcon,
+  CloseIcon,
+  DiscIcon,
+  ExternalLinkIcon,
+  HourglassIcon,
+  NoteIcon,
+  PaperPlaneIcon,
+  PlusIcon,
+  SaveIcon,
+  SpotifyIcon,
+  TrashIcon,
+} from "../components/Icons";
+import { ImageLightbox } from "../components/ImageLightbox";
+import { formatDuration } from "../utils/duration";
+import { formatDate } from "../lib/date";
 import styles from "./RatingEditorPage.module.css";
 
 const TOP_5_SIZE = 5;
+
+// Center the drag overlay on the cursor regardless of where in the row the grab
+// started (otherwise the overlay hangs off wherever you happened to grab). This
+// is the standard `snapCenterToCursor` from @dnd-kit/modifiers, inlined so we
+// don't pull in that extra package just for one helper.
+const snapCenterToCursor: Modifier = ({ activatorEvent, draggingNodeRect, transform }) => {
+  if (draggingNodeRect && activatorEvent) {
+    const coords = getEventCoordinates(activatorEvent);
+    if (!coords) return transform;
+    const offsetX = coords.x - draggingNodeRect.left;
+    const offsetY = coords.y - draggingNodeRect.top;
+    return {
+      ...transform,
+      x: transform.x + offsetX - draggingNodeRect.width / 2,
+      y: transform.y + offsetY - draggingNodeRect.height / 2,
+    };
+  }
+  return transform;
+};
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -51,190 +88,160 @@ function slotsFromIndices(indices: (number | null)[]): (number | null)[] {
 }
 
 // ---------------------------------------------------------------------------
-// DraggableTrack — used for both top-5 filled slots and rest tracks
+// Podium slot — a droppable rank position (empty or filled). A filled slot's
+// name is itself draggable so slots can be swapped to reorder.
 // ---------------------------------------------------------------------------
 
-function DraggableTrack({
-  id,
-  track,
-  note,
-  onNoteChange,
-  actions,
-  positionLabel,
-}: {
-  id: string;
-  track: AlbumTrack;
-  note: string;
-  onNoteChange: (idx: number, text: string) => void;
-  actions?: React.ReactNode;
-  positionLabel?: React.ReactNode;
-}) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id });
-
+function SlotName({ track }: { track: AlbumTrack }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `top-${track.index}`,
+  });
   return (
-    <div
+    <span
       ref={setNodeRef}
-      className={styles.trackItem}
-      style={{ opacity: isDragging ? 0.3 : 1 }}
+      className={styles.slotName}
+      style={{ opacity: isDragging ? 0.4 : 1 }}
+      {...attributes}
+      {...listeners}
     >
-      <div className={styles.trackRow}>
-        <span className={styles.dragHandle} {...attributes} {...listeners}>⠿</span>
-        {positionLabel}
-        <span className={styles.trackName}>{track.name}</span>
-        {actions}
-      </div>
-      <textarea
-        className={styles.noteInput}
-        rows={1}
-        placeholder="Add a note… (optional)"
-        value={note}
-        onChange={(e) => onNoteChange(track.index, e.target.value)}
-      />
-    </div>
+      {track.name}
+    </span>
   );
 }
-
-// ---------------------------------------------------------------------------
-// TopSlot — always rendered (empty or filled)
-// ---------------------------------------------------------------------------
 
 function TopSlot({
   slotIndex,
   track,
-  note,
-  onNoteChange,
   onRemove,
 }: {
   slotIndex: number;
   track: AlbumTrack | null;
-  note: string;
-  onNoteChange: (idx: number, text: string) => void;
   onRemove: (idx: number) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: `slot-${slotIndex}` });
-
   return (
     <div
       ref={setNodeRef}
-      className={`${styles.slot} ${isOver ? styles.slotOver : ""}`}
+      className={`${styles.slot} ${track ? styles.slotFilled : ""} ${
+        isOver ? styles.slotOver : ""
+      }`}
     >
+      <span className={styles.medal} data-r={slotIndex + 1}>
+        {slotIndex + 1}
+      </span>
       {track ? (
-        <DraggableTrack
-          id={`top-${track.index}`}
-          track={track}
-          note={note}
-          onNoteChange={onNoteChange}
-          positionLabel={
-            <span className={styles.trackPosition}>{slotIndex + 1}</span>
-          }
-          actions={
-            <button
-              className={`${styles.trackBtn} ${styles.trackBtnRemove}`}
-              onClick={() => onRemove(track.index)}
-              type="button"
-            >
-              Remove
-            </button>
-          }
-        />
+        <>
+          <SlotName track={track} />
+          <button
+            type="button"
+            className={styles.xBtn}
+            onClick={() => onRemove(track.index)}
+            aria-label={`Remove ${track.name} from Top 5`}
+            data-tip="Remove"
+          >
+            <CloseIcon size={14} />
+          </button>
+        </>
       ) : (
-        <div className={styles.slotEmpty}>
-          <span className={styles.slotNumber}>{slotIndex + 1}</span>
-          <span className={styles.slotHint}>Drop a track here</span>
-        </div>
+        <span className={styles.slotPh}>Drop a track here</span>
       )}
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// RestTrack — draggable, with optional "Add" button fallback
+// Track pool row. Tracks already in the Top 5 render as a faded, non-draggable
+// placeholder (keeps the list from reflowing) but their note stays editable.
 // ---------------------------------------------------------------------------
 
-function RestTrack({
+function TrackRow({
   track,
   note,
-  topSlots,
+  noteOpen,
+  rank,
+  topFull,
+  onAdd,
+  onToggleNote,
   onNoteChange,
-  onSetSlot,
 }: {
   track: AlbumTrack;
   note: string;
-  topSlots: (number | null)[];
+  noteOpen: boolean;
+  rank: number | null; // 1-based Top 5 rank, or null when in the pool
+  topFull: boolean;
+  onAdd: () => void;
+  onToggleNote: () => void;
   onNoteChange: (idx: number, text: string) => void;
-  onSetSlot: (slotIndex: number, trackIndex: number) => void;
 }) {
-  return (
-    <DraggableTrack
-      id={`rest-${track.index}`}
-      track={track}
-      note={note}
-      onNoteChange={onNoteChange}
-      actions={
-        <div className={styles.slotButtonRow} role="group" aria-label="Add to slot">
-          {topSlots.map((slotTrack, slotIndex) => (
-            <button
-              key={slotIndex}
-              type="button"
-              className={styles.slotButton}
-              onClick={() => onSetSlot(slotIndex, track.index)}
-              title={
-                slotTrack === null
-                  ? `Place in slot ${slotIndex + 1}`
-                  : `Replace slot ${slotIndex + 1}`
-              }
-            >
-              {slotIndex + 1}
-            </button>
-          ))}
-        </div>
-      }
-    />
-  );
-}
+  const inTop5 = rank !== null;
+  const hasNote = note.trim() !== "";
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `rest-${track.index}`,
+    disabled: inTop5,
+  });
 
-// ---------------------------------------------------------------------------
-// RestPlaceholder — empty slot rendered when a track currently lives in Top 5,
-// so the rest list never collapses or reorders.
-// ---------------------------------------------------------------------------
-
-function RestPlaceholder({ track, slotIndex }: { track: AlbumTrack; slotIndex: number }) {
   return (
-    <div className={`${styles.trackItem} ${styles.restPlaceholder}`}>
-      <div className={styles.trackRow}>
-        <span className={styles.dragHandle} aria-hidden="true">⠿</span>
-        <span className={styles.trackName}>{track.name}</span>
-        <span className={styles.restPlaceholderBadge}>In Top 5 · #{slotIndex + 1}</span>
+    <li>
+      {/* The row toggles this track's note; drag it (or use the + button) to rank. */}
+      <div
+        ref={setNodeRef}
+        className={`${styles.trk} ${inTop5 ? styles.trkPicked : ""} ${
+          noteOpen ? styles.trkNoteOpen : ""
+        }`}
+        style={{ opacity: isDragging ? 0.4 : undefined }}
+        onClick={onToggleNote}
+        aria-expanded={noteOpen}
+        {...(inTop5 ? {} : attributes)}
+        {...(inTop5 ? {} : listeners)}
+      >
+        <span className={styles.num}>{track.index}</span>
+        <span className={styles.tnm}>{track.name}</span>
+        {hasNote && (
+          <span className={styles.noteFlag} aria-label="Has a note" data-tip="Has a note">
+            <NoteIcon size={17} />
+          </span>
+        )}
+        <span className={styles.dur}>{formatDuration(track.duration_ms)}</span>
+        {inTop5 ? (
+          <span className={styles.rankPill}>#{rank}</span>
+        ) : (
+          <button
+            type="button"
+            className={styles.addBtn}
+            // Don't let the button start a drag or toggle the note.
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); onAdd(); }}
+            disabled={topFull}
+            aria-label="Add to Top 5"
+            data-tip={topFull ? "Top 5 is full" : "Add to Top 5"}
+          >
+            <PlusIcon size={16} />
+          </button>
+        )}
       </div>
-    </div>
+      {noteOpen && (
+        <textarea
+          className={styles.noteBox}
+          rows={1}
+          placeholder="A note about this track… (optional)"
+          value={note}
+          onChange={(e) => onNoteChange(track.index, e.target.value)}
+          // Clicks inside the editor shouldn't bubble to the row (which would
+          // collapse it again).
+          onClick={(e) => e.stopPropagation()}
+        />
+      )}
+    </li>
   );
 }
-
-// ---------------------------------------------------------------------------
-// RestZone — droppable container that accepts top-5 tracks to remove them
-// ---------------------------------------------------------------------------
-
-function RestZone({ children }: { children: React.ReactNode }) {
-  const { setNodeRef, isOver } = useDroppable({ id: "rest-zone" });
-  return (
-    <div
-      ref={setNodeRef}
-      className={`${styles.restZone} ${isOver ? styles.restZoneOver : ""}`}
-    >
-      {children}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Overlay card shown while dragging
-// ---------------------------------------------------------------------------
 
 function TrackOverlayCard({ name }: { name: string }) {
+  // The outer wrapper fills the (row-sized) overlay box that dnd-kit creates and
+  // centers a compact chip in it, so with `snapCenterToCursor` the small chip
+  // lands on the pointer — not a full-width card hanging off to one side.
   return (
-    <div className={styles.overlayCard}>
-      <span className={styles.dragHandle}>⠿</span>
-      <span>{name}</span>
+    <div className={styles.overlayWrap}>
+      <span className={styles.overlayCard}>{name}</span>
     </div>
   );
 }
@@ -248,8 +255,7 @@ export function RatingEditorPage() {
   const navigate = useNavigate();
   const location = useLocation();
   // Where the editor was opened from (album page or Listen Later); publishing
-  // returns here. Falls back to the album page when the origin is unknown
-  // (direct link / refresh).
+  // returns here. Falls back to the album page when the origin is unknown.
   const from = (location.state as { from?: string } | null)?.from;
   const origin = from ?? `/albums/${spotifyId}`;
 
@@ -260,6 +266,10 @@ export function RatingEditorPage() {
   // Always 5 entries; null = empty slot
   const [topSlots, setTopSlots] = useState<(number | null)[]>(makeEmptySlots());
   const [notes, setNotes] = useState<Record<number, string>>({});
+  // Which tracks currently show their note textarea (opened by the pencil, or
+  // auto-opened for tracks that loaded with a saved note).
+  const [openNotes, setOpenNotes] = useState<Set<number>>(new Set());
+  const [tracksOpen, setTracksOpen] = useState(true);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -270,13 +280,14 @@ export function RatingEditorPage() {
   // Serialized snapshot of the last saved rating state; used to detect unsaved
   // edits. Reset by applyRating (load/save).
   const savedSnapshotRef = useRef<string>("");
-  // A pending programmatic navigation (publish / remove). We clear our dirty
-  // registration first, then this effect performs the nav once the guard is no
-  // longer armed — so our own navigation isn't blocked.
+  // A pending programmatic navigation (publish / remove) performed once the
+  // dirty flag has cleared, so our own redirect isn't blocked by the guard.
   const [pendingNav, setPendingNav] = useState<string | null>(null);
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    // A small activation distance lets a plain click on a pool row "add to next
+    // slot" without accidentally starting a drag.
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
@@ -286,9 +297,8 @@ export function RatingEditorPage() {
     getAlbum(spotifyId)
       .then(async (a) => {
         setAlbum(a);
-        // "Rate" should drop the user straight into the editor. If they don't
-        // have a rating for this album yet, create the draft now rather than
-        // showing a separate "Start Rating" gate.
+        // "Rate" drops the user straight into the editor: reuse their draft or
+        // create one now rather than showing a separate "Start Rating" gate.
         try {
           applyRating(await getMyRatingForAlbum(a.id));
         } catch {
@@ -337,6 +347,8 @@ export function RatingEditorPage() {
     const noteMap: Record<number, string> = {};
     for (const n of r.notes) noteMap[n.track_index] = n.note_text;
     setNotes(noteMap);
+    // Tracks that loaded with a note start expanded so the note is visible.
+    setOpenNotes(new Set(Object.keys(noteMap).map(Number)));
     // This is now the saved baseline — clears the dirty flag.
     savedSnapshotRef.current = serialize(hs, sc, slots, noteMap);
   }
@@ -344,23 +356,17 @@ export function RatingEditorPage() {
   // Derived
   const filledCount = topSlots.filter((s) => s !== null).length;
   const canPublish = hasScore && filledCount === TOP_5_SIZE;
+  const nextOpenSlot = topSlots.indexOf(null);
 
-  // Unsaved edits: the rating differs from the last saved state, or there's text
-  // in the publish comment box that would be lost. Suppressed once we've kicked
-  // off our own programmatic navigation (publish / remove).
   const isDirty =
     !pendingNav &&
     (serialize(hasScore, score, topSlots, notes) !== savedSnapshotRef.current ||
       commentText.trim() !== "");
 
-  // Register with the shared unsaved-changes guard. "Save" for the guard writes
-  // the current draft (Save & quit uses this).
   const editorId = useId();
   useRegisterUnsaved(editorId, isDirty, () => handleSave());
   const unsavedGuard = useUnsavedNavigationGuard();
 
-  // Perform a queued programmatic nav once our dirty flag has cleared (so the
-  // guard doesn't block our own publish/remove redirect).
   useEffect(() => {
     if (pendingNav && !isDirty) navigate(pendingNav);
   }, [pendingNav, isDirty, navigate]);
@@ -370,8 +376,8 @@ export function RatingEditorPage() {
     setSaving(true); setError(null);
     const notesPatch: Record<number, string> = {};
     for (const [k, v] of Object.entries(notes)) notesPatch[Number(k)] = v;
-    // Send the full sparse array so empty slots in the middle keep their
-    // position. Publish strips this to require all 5 filled.
+    // Send the full sparse array so empty slots keep their position. Publish
+    // strips this to require all 5 filled.
     try {
       const updated = await patchRating(rating.id, {
         score: hasScore ? score : undefined,
@@ -399,15 +405,11 @@ export function RatingEditorPage() {
           await createComment(album.spotify_id, { text: trimmed, visibility: commentVisibility });
           setCommentText("");
         } catch {
-          // Comment failed but the rating is published — surface it and stay so
-          // the user can retry the comment (don't redirect over the message).
           applyRating(updated);
           setError("Rating published, but the comment could not be posted.");
           return;
         }
       }
-      // Published successfully → leave the editor for wherever we came from.
-      // Queue the nav so it fires after our dirty flag clears (see the effect).
       setPendingNav(origin);
     } catch (e: unknown) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -428,10 +430,33 @@ export function RatingEditorPage() {
     setNotes((prev) => ({ ...prev, [trackIndex]: text }));
   }
 
+  function toggleNote(trackIndex: number) {
+    setOpenNotes((prev) => {
+      const next = new Set(prev);
+      if (next.has(trackIndex)) next.delete(trackIndex);
+      else next.add(trackIndex);
+      return next;
+    });
+  }
+
+  function resetTop5() {
+    setTopSlots(makeEmptySlots());
+  }
+
+  function toggleAllNotes() {
+    if (!album) return;
+    setOpenNotes((prev) =>
+      prev.size >= album.tracks.length
+        ? new Set()
+        : new Set(album.tracks.map((t) => t.index))
+    );
+  }
+
   function handleSetSlot(slotIndex: number, trackIndex: number) {
+    if (slotIndex < 0) return;
     setTopSlots((prev) => {
       const next = [...prev];
-      // If the track is already in another slot, clear that slot (track moves).
+      // If the track already sits in another slot, clear that one (it moves).
       const existing = prev.indexOf(trackIndex);
       if (existing !== -1) next[existing] = null;
       next[slotIndex] = trackIndex;
@@ -454,39 +479,28 @@ export function RatingEditorPage() {
 
     const overId = String(over.id);
     const activeStr = String(active.id);
-
-    // Drop a top-5 track onto the rest zone → remove from top 5.
-    if (overId === "rest-zone" && activeStr.startsWith("top-")) {
-      const trackIndex = parseInt(activeStr.split("-")[1], 10);
-      handleRemoveFromTop5(trackIndex);
-      return;
-    }
-
     if (!overId.startsWith("slot-")) return;
     const targetSlot = parseInt(overId.split("-")[1], 10);
+    const trackIndex = parseInt(activeStr.split("-")[1], 10);
 
     setTopSlots((prev) => {
       const next = [...prev];
-
       if (activeStr.startsWith("top-")) {
-        // Reorder within top 5: swap source and target slots
-        const trackIndex = parseInt(activeStr.split("-")[1], 10);
+        // Reorder within Top 5: swap source and target slots.
         const sourceSlot = prev.indexOf(trackIndex);
         if (sourceSlot === targetSlot) return prev;
         next[sourceSlot] = prev[targetSlot];
         next[targetSlot] = trackIndex;
       } else {
-        // From rest into a slot (may displace existing track, which returns to rest)
-        const trackIndex = parseInt(activeStr.split("-")[1], 10);
+        // From the pool into a slot (may displace the existing track).
         next[targetSlot] = trackIndex;
       }
-
       return next;
     });
   }
 
-  if (loading) return <div className={styles.page}><LoadingState /></div>;
-  if (error && !album) return <div className={styles.page}><Alert>{error}</Alert></div>;
+  if (loading) return <main className={styles.page}><LoadingState /></main>;
+  if (error && !album) return <main className={styles.page}><Alert>{error}</Alert></main>;
   if (!album) return null;
 
   const trackMap = new Map(album.tracks.map((t) => [t.index, t]));
@@ -495,154 +509,157 @@ export function RatingEditorPage() {
     if (trackIndex !== null) slotByTrackIndex.set(trackIndex, slotIndex);
   });
   const isPublished = rating?.status === "published";
+  const totalMs = album.tracks.reduce((sum, t) => sum + (t.duration_ms ?? 0), 0);
+  const hasAnyDuration = album.tracks.some((t) => t.duration_ms != null);
+  const spotifyAlbumUrl = `https://open.spotify.com/album/${album.spotify_id}`;
+  // Tracks laid out in two columns (first half | second half), preserving order.
+  const mid = Math.ceil(album.tracks.length / 2);
+  const trackColumns = [album.tracks.slice(0, mid), album.tracks.slice(mid)].filter(
+    (col) => col.length > 0
+  );
+  const topFull = nextOpenSlot === -1;
+  const allNotesOpen = album.tracks.length > 0 && openNotes.size >= album.tracks.length;
 
-  // Track name for overlay
-  const activeTrackIndex = activeId
-    ? parseInt(activeId.split("-")[1], 10)
-    : null;
+  const activeTrackIndex = activeId ? parseInt(activeId.split("-")[1], 10) : null;
   const activeTrack = activeTrackIndex !== null ? trackMap.get(activeTrackIndex) : null;
 
-  return (
-    <div className={styles.page}>
-      {/* Album header */}
-      <div className={styles.albumHeader}>
-        {album.album_art_url && (
-          <img className={styles.albumArt} src={album.album_art_url} alt={album.title} width={80} height={80} />
-        )}
-        <div className={styles.albumMeta}>
-          <h1>{album.title}</h1>
-          <p>{album.artist} · {album.release_date.slice(0, 4)} · {album.total_songs} tracks</p>
-          {rating && (
-            <span className={`${styles.badge} ${isPublished ? styles.badgePublished : styles.badgeDraft}`}>
-              {isPublished ? "Published" : "Draft"}
-            </span>
-          )}
-        </div>
-      </div>
+  // Publish gating message (shown as the button's tooltip when disabled).
+  const publishTip = !hasScore
+    ? "Set a score before publishing"
+    : filledCount !== TOP_5_SIZE
+    ? "Fill all 5 Top 5 slots before publishing"
+    : "Publish rating";
 
-      {rating && (
-        <>
-          {/* Score */}
-          <div className={styles.section}>
-            <h2>Score</h2>
+  return (
+    <main className={styles.page}>
+      <div className={styles.grid}>
+        {/* -------- Left: the album + score + actions card -------- */}
+        <aside className={`${styles.card} ${styles.leftCard}`}>
+          {album.album_art_url ? (
+            <ImageLightbox
+              src={album.album_art_url}
+              alt={`${album.title} cover`}
+              thumbClassName={styles.cover}
+            />
+          ) : (
+            <div className={`${styles.cover} ${styles.coverEmpty}`} aria-hidden>♪</div>
+          )}
+
+          <div className={styles.titleBlock}>
+            <h1 className={styles.title}>
+              <Link className={styles.headerLink} to={`/albums/${album.spotify_id}`}>
+                {album.title}
+              </Link>
+              <a
+                className={styles.spotifyLink}
+                href={spotifyAlbumUrl}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Open on Spotify"
+                data-tip="Open on Spotify"
+              >
+                <ExternalLinkIcon size={14} className={styles.spotifyArrow} />
+                <SpotifyIcon size={19} className={styles.spotifyMark} />
+              </a>
+            </h1>
+            <p className={styles.sub}>
+              {album.artist_spotify_id ? (
+                <Link className={styles.headerLink} to={`/artists/${album.artist_spotify_id}`}>
+                  {album.artist}
+                </Link>
+              ) : (
+                album.artist
+              )}
+            </p>
+            <div className={styles.metaChips}>
+              <span className={styles.metaChip}>
+                <DiscIcon size={14} className={styles.metaChipIcon} />
+                <span className={styles.metaChipText}>{formatDate(album.release_date)}</span>
+              </span>
+              {hasAnyDuration && (
+                <span className={styles.metaChip}>
+                  <HourglassIcon size={14} className={styles.metaChipIcon} />
+                  <span className={styles.metaChipText}>{formatDuration(totalMs)}</span>
+                </span>
+              )}
+            </div>
+          </div>
+
+          <hr className={styles.hr} />
+
+          {/* Score — amber pill + slider */}
+          <div className={styles.scoreBlock}>
+            <span className={styles.scoreLabel}>Your score</span>
             <div className={styles.scoreRow}>
+              <span className={styles.scorePill}>
+                {hasScore ? score.toFixed(1) : "—"}
+                <span className={styles.scorePillOut}>/10</span>
+              </span>
               <input
-                className={styles.scoreInput}
+                className={styles.scoreRange}
                 type="range"
                 min={0}
                 max={10}
                 step={0.1}
                 value={hasScore ? score : 5}
+                aria-label="Your score"
                 onChange={(e) => { setHasScore(true); setScore(Number(e.target.value)); }}
               />
-              <span className={styles.scoreValue}>{hasScore ? score.toFixed(1) : "—"}</span>
             </div>
           </div>
 
-          {/* Top 5 + Rest share one DndContext */}
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-          >
-            <div className={styles.dndGrid}>
-              {/* Rest (left, scrollable) */}
-              <section className={styles.restColumn}>
-                <h2 className={styles.columnHeading}>All Tracks</h2>
-                <RestZone>
-                  <ul className={styles.trackList}>
-                    {album.tracks.map((track) => {
-                      const slotIndex = slotByTrackIndex.get(track.index);
-                      return (
-                        <li key={track.index}>
-                          {slotIndex !== undefined ? (
-                            <RestPlaceholder track={track} slotIndex={slotIndex} />
-                          ) : (
-                            <RestTrack
-                              track={track}
-                              note={notes[track.index] ?? ""}
-                              topSlots={topSlots}
-                              onNoteChange={handleNoteChange}
-                              onSetSlot={handleSetSlot}
-                            />
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </RestZone>
-              </section>
+          <hr className={styles.hr} />
 
-              {/* Top 5 (right, sticky) */}
-              <aside className={styles.topColumn}>
-                <h2 className={styles.columnHeading}>Top 5 ({filledCount}/{TOP_5_SIZE})</h2>
-                <div className={styles.slotList}>
-                  {topSlots.map((trackIndex, slotIndex) => (
-                    <TopSlot
-                      key={slotIndex}
-                      slotIndex={slotIndex}
-                      track={trackIndex !== null ? (trackMap.get(trackIndex) ?? null) : null}
-                      note={trackIndex !== null ? (notes[trackIndex] ?? "") : ""}
-                      onNoteChange={handleNoteChange}
-                      onRemove={handleRemoveFromTop5}
-                    />
-                  ))}
-                </div>
-              </aside>
-            </div>
-
-            <DragOverlay>
-              {activeTrack ? <TrackOverlayCard name={activeTrack.name} /> : null}
-            </DragOverlay>
-          </DndContext>
-
-          {!isPublished && (
-            <div className={styles.section}>
-              <h2>Comment (optional)</h2>
-              <CommentComposer
-                value={commentText}
-                onChange={setCommentText}
-                visibility={commentVisibility}
-                onVisibilityChange={setCommentVisibility}
-                placeholder="Add a comment to publish with your rating…"
-              />
-            </div>
-          )}
-
-          {/* Actions */}
-          {error && <Alert>{error}</Alert>}
-          <div className={styles.actions}>
-            <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={handleSave} disabled={saving}>
-              {saving ? "Saving…" : "Save Draft"}
+          {/* Icon actions */}
+          <div className={styles.iconBar}>
+            <button
+              type="button"
+              className={`${styles.iconBtn} ${styles.iconSave}`}
+              onClick={handleSave}
+              disabled={saving}
+              aria-label="Save draft"
+              data-tip={saving ? "Saving…" : "Save draft"}
+            >
+              <SaveIcon size={24} />
             </button>
             {!isPublished && (
               <button
-                className={`${styles.btn} ${styles.btnSuccess}`}
+                type="button"
+                className={`${styles.iconBtn} ${styles.iconPublish}`}
                 onClick={handlePublish}
                 disabled={saving || !canPublish}
-                title={
-                  !hasScore
-                    ? "Set a score before publishing"
-                    : filledCount !== TOP_5_SIZE
-                    ? "Fill all 5 top track slots before publishing"
-                    : undefined
-                }
+                aria-label="Publish rating"
+                data-tip={publishTip}
               >
-                Publish
+                <PaperPlaneIcon size={24} />
               </button>
             )}
-            {confirmingRemove ? (
-              <div className={styles.confirm}>
-                <span className={styles.confirmText}>Remove this rating?</span>
+            <button
+              type="button"
+              className={`${styles.iconBtn} ${styles.iconRemove}`}
+              onClick={() => setConfirmingRemove(true)}
+              disabled={saving}
+              aria-label="Remove rating"
+              data-tip="Remove rating"
+            >
+              <TrashIcon size={24} />
+            </button>
+          </div>
+
+          {confirmingRemove && (
+            <div className={styles.confirm}>
+              <span className={styles.confirmText}>Remove this rating?</span>
+              <div className={styles.confirmBtns}>
                 <button
-                  className={`${styles.btn} ${styles.btnRemoveConfirm}`}
+                  type="button"
+                  className={`${styles.btn} ${styles.btnDanger}`}
                   onClick={handleRemove}
                   disabled={saving}
                 >
                   {saving ? "Removing…" : "Yes, remove"}
                 </button>
                 <button
+                  type="button"
                   className={`${styles.btn} ${styles.btnCancel}`}
                   onClick={() => setConfirmingRemove(false)}
                   disabled={saving}
@@ -650,20 +667,124 @@ export function RatingEditorPage() {
                   Cancel
                 </button>
               </div>
-            ) : (
-              <button
-                className={`${styles.btn} ${styles.btnRemove}`}
-                onClick={() => setConfirmingRemove(true)}
-                disabled={saving}
-              >
-                Remove
-              </button>
-            )}
-          </div>
-        </>
-      )}
+            </div>
+          )}
+
+          {error && <Alert>{error}</Alert>}
+        </aside>
+
+        {/* -------- Right: Top 5 + tracks + comment -------- */}
+        <section className={styles.card}>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
+            <div className={styles.sectionHead}>
+              <h2>Your Top 5</h2>
+              {filledCount > 0 && (
+                <button
+                  type="button"
+                  className={`${styles.linkBtn} ${styles.mlAuto}`}
+                  onClick={resetTop5}
+                >
+                  Reset
+                </button>
+              )}
+            </div>
+
+            <div className={styles.podium}>
+              {topSlots.map((trackIndex, slotIndex) => (
+                <TopSlot
+                  key={slotIndex}
+                  slotIndex={slotIndex}
+                  track={trackIndex !== null ? (trackMap.get(trackIndex) ?? null) : null}
+                  onRemove={handleRemoveFromTop5}
+                />
+              ))}
+            </div>
+
+            <hr className={styles.hr} />
+
+            {/* Tracks — collapsible, expanded by default; the drag source. */}
+            <div className={styles.tracksBlock}>
+              <div className={styles.tracksHead}>
+                <button
+                  type="button"
+                  className={styles.tracksToggle}
+                  onClick={() => setTracksOpen((o) => !o)}
+                  aria-expanded={tracksOpen}
+                  aria-label={`Tracks (${album.tracks.length})`}
+                >
+                  <span className={styles.tracksLabel}>
+                    Tracks <span className={styles.tracksCount}>({album.tracks.length})</span>
+                  </span>
+                  <ChevronDownIcon
+                    size={20}
+                    className={`${styles.chevron} ${tracksOpen ? styles.chevronOpen : ""}`}
+                  />
+                </button>
+                {tracksOpen && (
+                  <button
+                    type="button"
+                    className={styles.linkBtn}
+                    onClick={toggleAllNotes}
+                  >
+                    {allNotesOpen ? "Hide all notes" : "Show all notes"}
+                  </button>
+                )}
+              </div>
+              {tracksOpen && (
+                <div className={styles.trackCols}>
+                  {trackColumns.map((col, ci) => (
+                    <ul key={ci} className={styles.trackList}>
+                      {col.map((track) => {
+                        const slotIndex = slotByTrackIndex.get(track.index);
+                        return (
+                          <TrackRow
+                            key={track.index}
+                            track={track}
+                            note={notes[track.index] ?? ""}
+                            noteOpen={openNotes.has(track.index)}
+                            rank={slotIndex !== undefined ? slotIndex + 1 : null}
+                            topFull={topFull}
+                            onAdd={() => handleSetSlot(nextOpenSlot, track.index)}
+                            onToggleNote={() => toggleNote(track.index)}
+                            onNoteChange={handleNoteChange}
+                          />
+                        );
+                      })}
+                    </ul>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <DragOverlay modifiers={[snapCenterToCursor]}>
+              {activeTrack ? <TrackOverlayCard name={activeTrack.name} /> : null}
+            </DragOverlay>
+          </DndContext>
+
+          {!isPublished && (
+            <>
+              <hr className={styles.hr} />
+              <div className={styles.sectionHead}>
+                <h2>A few words</h2>
+              </div>
+              <CommentComposer
+                value={commentText}
+                onChange={setCommentText}
+                visibility={commentVisibility}
+                onVisibilityChange={setCommentVisibility}
+                placeholder="Share your thoughts on this album… (optional, posted when you publish)"
+              />
+            </>
+          )}
+        </section>
+      </div>
 
       <UnsavedChangesModal {...unsavedGuard} />
-    </div>
+    </main>
   );
 }

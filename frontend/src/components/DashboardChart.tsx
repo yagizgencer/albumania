@@ -8,6 +8,7 @@ import {
   Title,
   Tooltip,
   type ChartData,
+  type ChartEvent,
 } from "chart.js";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Line } from "react-chartjs-2";
@@ -42,6 +43,33 @@ interface DashboardChartProps {
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
+const HTML_ESCAPE: Record<string, string> = {
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+};
+const esc = (s: string) => s.replace(/[&<>"]/g, (c) => HTML_ESCAPE[c]);
+
+/** In detailed mode, map a canvas (x, y) below the plot onto the album index
+ *  whose x-axis label sits there (so the tilted album names act as links).
+ *  Returns null when not over a label. */
+function labelIndexAt(
+  chart: ChartJS,
+  x: number,
+  y: number,
+  view: ChartView,
+  count: number
+): number | null {
+  if (view !== "detailed") return null;
+  const area = chart.chartArea;
+  if (y <= area.bottom || x < area.left || x > area.right) return null;
+  const raw = chart.scales.x?.getValueForPixel(x);
+  if (raw == null) return null;
+  const idx = Math.round(raw);
+  return idx >= 0 && idx < count ? idx : null;
+}
+
 function truncate(s: string): string {
   return s.length > LABEL_MAX ? `${s.slice(0, LABEL_MAX - 1)}…` : s;
 }
@@ -73,6 +101,10 @@ export function DashboardChart({
   sortKey,
 }: DashboardChartProps) {
   const boxRef = useRef<HTMLDivElement | null>(null);
+  const tooltipRef = useRef<HTMLDivElement | null>(null);
+  const chartRef = useRef<ChartJS<"line"> | null>(null);
+  // The x-axis album label currently hovered (detailed mode) → underline it.
+  const hoverLabelRef = useRef<number | null>(null);
   const [containerW, setContainerW] = useState(800);
   const suppressClick = useRef(false);
 
@@ -217,15 +249,54 @@ export function DashboardChart({
       maintainAspectRatio: false,
       animation: false as const,
       layout: { padding: { left: 12, right: 12 } },
-      interaction: { mode: "nearest" as const, intersect: false },
-      onClick: (_evt: unknown, elements: { index: number }[]) => {
+      // `intersect: true` so the tooltip only appears when actually near a point
+      // (not snapping to the nearest one from anywhere in the plot). A small
+      // hitRadius (below) keeps points easy to hover.
+      interaction: { mode: "nearest" as const, intersect: true },
+      onClick: (evt: ChartEvent, elements: { index: number }[], chart: ChartJS) => {
         if (suppressClick.current) return;
+        // A click on an x-axis album label (detailed mode) takes precedence over
+        // the "nearest" point Chart.js reports so the label maps to the album
+        // directly under it.
+        const labelIdx = labelIndexAt(chart, evt.x ?? 0, evt.y ?? 0, view, labels.length);
+        if (labelIdx !== null) {
+          onPointClick(labelIdx);
+          return;
+        }
         if (elements.length > 0) onPointClick(elements[0].index);
       },
-      elements: { point: { radius, hoverRadius: 5 } },
+      elements: { point: { radius, hoverRadius: 6, hitRadius: 8 } },
       plugins: {
         legend: { position: "top" as const },
         tooltip: {
+          // Custom HTML tooltip so the album name can read as an (underlined) link.
+          enabled: false,
+          external: (ctx: {
+            chart: ChartJS;
+            tooltip: {
+              opacity: number;
+              title?: string[];
+              body?: { lines: string[] }[];
+              caretX: number;
+              caretY: number;
+            };
+          }) => {
+            const el = tooltipRef.current;
+            if (!el) return;
+            const tt = ctx.tooltip;
+            if (tt.opacity === 0) {
+              el.style.opacity = "0";
+              return;
+            }
+            const title = tt.title?.[0] ?? "";
+            const line = tt.body?.[0]?.lines?.[0] ?? "";
+            el.innerHTML =
+              `<span class="${styles.ttAlbum}">${esc(title)}</span>` +
+              `<span class="${styles.ttValue}">${esc(line)}</span>`;
+            el.style.opacity = "1";
+            el.style.left = `${ctx.chart.canvas.offsetLeft + tt.caretX}px`;
+            el.style.top = `${ctx.chart.canvas.offsetTop + tt.caretY}px`;
+          },
           callbacks: {
             title: (items: { dataIndex: number }[]) =>
               items.length ? labels[items[0].dataIndex] ?? "" : "",
@@ -256,6 +327,112 @@ export function DashboardChart({
     [view, labels, radius, onPointClick, effStart, effSpan, yBounds]
   );
 
+  // Own the hover detection (Chart.js's throttled onHover was unreliable — it
+  // stuck/missed). On every pointer move over the box, resolve the x-axis album
+  // label under the cursor from its position, set the cursor, and redraw only
+  // when the underlined label changes. Cleared on leave.
+  useEffect(() => {
+    const el = boxRef.current;
+    if (!el) return;
+    const move = (e: MouseEvent) => {
+      const chart = chartRef.current;
+      if (!chart) return;
+      const rect = chart.canvas.getBoundingClientRect();
+      const idx = labelIndexAt(
+        chart,
+        e.clientX - rect.left,
+        e.clientY - rect.top,
+        view,
+        labels.length
+      );
+      const overPoint =
+        chart.getElementsAtEventForMode(e, "nearest", { intersect: true }, false).length > 0;
+      el.style.cursor = idx !== null || overPoint ? "pointer" : "default";
+      if (idx !== hoverLabelRef.current) {
+        hoverLabelRef.current = idx;
+        chart.draw();
+      }
+    };
+    const leave = () => {
+      el.style.cursor = "default";
+      if (hoverLabelRef.current !== null) {
+        hoverLabelRef.current = null;
+        chartRef.current?.draw();
+      }
+    };
+    el.addEventListener("mousemove", move);
+    el.addEventListener("mouseleave", leave);
+    return () => {
+      el.removeEventListener("mousemove", move);
+      el.removeEventListener("mouseleave", leave);
+    };
+  }, [view, labels.length]);
+
+  // Draws the underline under the hovered x-axis label, reusing Chart.js's own
+  // computed label geometry (`_labelItems`) so it lines up with the tilted text.
+  const underlinePlugin = useMemo(
+    () => ({
+      id: "axisHoverUnderline",
+      afterDraw(chart: ChartJS) {
+        const idx = hoverLabelRef.current;
+        if (idx == null || view !== "detailed") return;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const scale = chart.scales.x as any;
+        // In Chart.js v4 each cached label item is
+        // `{ label, font, textOffset, options: { translation:[x,y], rotation,
+        //   textAlign, textBaseline } }`.
+        const items = scale?._labelItems as
+          | {
+              label?: string | string[];
+              font?: { string?: string; size?: number };
+              textOffset?: number;
+              options?: {
+                translation?: [number, number];
+                rotation?: number;
+                textAlign?: string;
+                textBaseline?: string;
+              };
+            }[]
+          | undefined;
+        const ticks = scale?.ticks as { value: number }[] | undefined;
+        if (!items || !ticks) return;
+        const pos = ticks.findIndex((t) => t.value === idx);
+        if (pos < 0 || pos >= items.length) return;
+        const item = items[pos];
+        const opt = item.options ?? {};
+        const [tx, ty] = opt.translation ?? [0, 0];
+        const ctx = chart.ctx;
+        ctx.save();
+        ctx.translate(tx, ty);
+        if (opt.rotation) ctx.rotate(opt.rotation);
+        ctx.font = item.font?.string ?? `${ChartJS.defaults.font.size}px ${ChartJS.defaults.font.family}`;
+        const text = Array.isArray(item.label) ? item.label.join(" ") : item.label ?? "";
+        const w = ctx.measureText(text).width;
+        let x0 = -w;
+        let x1 = 0;
+        if (opt.textAlign === "left") { x0 = 0; x1 = w; }
+        else if (opt.textAlign === "center") { x0 = -w / 2; x1 = w / 2; }
+        const fs = item.font?.size ?? ChartJS.defaults.font.size ?? 13;
+        const off = item.textOffset ?? 0;
+        const uy =
+          opt.textBaseline === "top"
+            ? off + fs + 2
+            : opt.textBaseline === "bottom"
+            ? off + 2
+            : off + fs * 0.5 + 2;
+        const accent = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim();
+        ctx.strokeStyle = accent || (ChartJS.defaults.color as string);
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(x0, uy);
+        ctx.lineTo(x1, uy);
+        ctx.stroke();
+        ctx.restore();
+      },
+    }),
+    [view]
+  );
+
   const scrollable = points > effSpan;
 
   return (
@@ -283,7 +460,13 @@ export function DashboardChart({
       )}
 
       <div ref={boxRef} className={styles.chartBox}>
-        <Line data={{ labels, datasets }} options={options} />
+        <Line
+          ref={chartRef}
+          data={{ labels, datasets }}
+          options={options}
+          plugins={[underlinePlugin]}
+        />
+        <div ref={tooltipRef} className={styles.chartTooltip} aria-hidden />
       </div>
 
       {scrollable && (

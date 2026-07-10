@@ -22,12 +22,16 @@ type Mode = "similarity" | "rating";
 export function ProfileDashboard({
   username,
   onAccessBlocked,
+  compareSlot,
 }: {
   username: string;
   /** Called when the dashboard can't be shown because the profile is private
    *  (403) so the parent can render a nicer explanation instead of a bare
    *  alert. Passing "friends-only" | null (cleared on success). */
   onAccessBlocked?: (reason: "friends-only" | null) => void;
+  /** The parent's "Compare with" control, rendered on the right of the controls
+   *  box so it sits with the filters rather than above the dashboard. */
+  compareSlot?: ReactNode;
 }) {
   const navigate = useNavigate();
   const [entries, setEntries] = useState<DashboardEntry[] | null>(null);
@@ -183,6 +187,8 @@ export function ProfileDashboard({
           To
           <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
         </label>
+
+        {compareSlot && <div className={styles.controlsRight}>{compareSlot}</div>}
       </section>
 
       <section className={styles.chartCard}>
@@ -210,16 +216,16 @@ export function ProfileDashboard({
             <thead>
               <tr>
                 <SortableHeader label="Album" column="album" sort={sort} onClick={cycleSort} align="left" />
-                <SortableHeader label="Released" column="release" sort={sort} onClick={cycleSort} align="right" />
-                <SortableHeader label="Rated" column="rated" sort={sort} onClick={cycleSort} align="right" />
-                <SortableHeader label="Score" column="score" sort={sort} onClick={cycleSort} align="right" />
+                <SortableHeader label="Released" column="release" sort={sort} onClick={cycleSort} align="center" />
+                <SortableHeader label="Rated" column="rated" sort={sort} onClick={cycleSort} align="center" />
+                <SortableHeader label="Score" column="score" sort={sort} onClick={cycleSort} align="center" />
                 <SortableHeader
                   label={stack(trunc(username), "Spotify")}
                   title={`${username} ↔ Spotify`}
                   column="similarity"
                   sort={sort}
                   onClick={cycleSort}
-                  align="right"
+                  align="center"
                 />
               </tr>
             </thead>
@@ -284,7 +290,7 @@ function SortableHeader({
   column: SortColumn;
   sort: SortState | null;
   onClick: (column: SortColumn) => void;
-  align: "left" | "right";
+  align: "left" | "right" | "center";
 }) {
   const active = sort?.column === column;
   const indicator = !active ? "↕" : sort.direction === "asc" ? "▲" : "▼";
@@ -293,9 +299,11 @@ function SortableHeader({
     : sort.direction === "asc"
     ? "ascending"
     : "descending";
+  const alignClass =
+    align === "center" ? styles.thCenter : align === "right" ? styles.thRight : "";
   return (
     <th
-      className={`${styles.th} ${align === "right" ? styles.thRight : ""}`}
+      className={`${styles.th} ${alignClass}`}
       aria-sort={ariaSort}
       title={title}
     >

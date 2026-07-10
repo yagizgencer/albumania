@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import styles from "./ImageLightbox.module.css";
 
 /**
@@ -38,29 +39,34 @@ export function ImageLightbox({
         <img src={src} alt={alt} className={styles.thumbImg} />
       </button>
 
-      {open && (
-        <div
-          className={styles.backdrop}
-          role="dialog"
-          aria-modal="true"
-          aria-label={alt || "Expanded image"}
-          onClick={() => setOpen(false)}
-        >
-          {/* Figure wraps the image so the close button anchors to the photo's
-              corner (not the page). Stop clicks inside from closing the overlay. */}
-          <figure className={styles.figure} onClick={(e) => e.stopPropagation()}>
-            <img src={src} alt={alt} className={styles.fullImg} />
-            <button
-              type="button"
-              className={styles.close}
-              aria-label="Close"
-              onClick={() => setOpen(false)}
-            >
-              ×
-            </button>
-          </figure>
-        </div>
-      )}
+      {/* Portalled to <body> so the fixed overlay isn't trapped inside a
+          positioned/sticky/transformed ancestor's stacking context (e.g. the
+          rating page's sticky card) — which left it sitting behind other content. */}
+      {open &&
+        createPortal(
+          <div
+            className={styles.backdrop}
+            role="dialog"
+            aria-modal="true"
+            aria-label={alt || "Expanded image"}
+            onClick={() => setOpen(false)}
+          >
+            {/* Figure wraps the image so the close button anchors to the photo's
+                corner (not the page). Stop clicks inside from closing the overlay. */}
+            <figure className={styles.figure} onClick={(e) => e.stopPropagation()}>
+              <img src={src} alt={alt} className={styles.fullImg} />
+              <button
+                type="button"
+                className={styles.close}
+                aria-label="Close"
+                onClick={() => setOpen(false)}
+              >
+                ×
+              </button>
+            </figure>
+          </div>,
+          document.body
+        )}
     </>
   );
 }

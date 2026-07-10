@@ -25,17 +25,28 @@
   text-decoration-color: var(--link-underline-hover);
 }
 
+/* Standardized "sticker" cards (border-w + radius-lg + offset shadow), matching
+   the Album / Listen & Rate / Rating pages; dark gets the clean hairline+offset. */
 .controls {
   background: var(--surface);
   color: var(--text);
-  border: var(--border-w-thin) solid var(--border);
-  border-radius: var(--radius);
-  padding: 1rem 1.25rem;
-  margin-bottom: 1.5rem;
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-4) var(--space-5);
+  margin-bottom: var(--space-5);
   display: flex;
   flex-wrap: wrap;
-  gap: 1.25rem;
+  gap: var(--space-5);
   align-items: center;
+}
+[data-theme="dark"] .controls,
+[data-theme="dark"] .chartCard,
+[data-theme="dark"] .tableWrap {
+  box-shadow:
+    inset 0 0 0 1.5px rgba(255, 233, 208, 0.16),
+    5px 5px 0 #000,
+    0 6px 16px rgba(0, 0, 0, 0.45);
 }
 
 .controls label {
@@ -45,15 +56,39 @@
   gap: 0.25rem;
 }
 
-.controls select,
-.controls input[type="text"],
-.controls input[type="date"] {
-  padding: 0.3rem 0.5rem;
-  border-radius: var(--radius-sm);
+/* The parent's "Compare with" control, pushed to the right of the filters row. */
+.controlsRight {
+  margin-left: auto;
+}
+
+/* Scoped to the filter inputs (inside labels) so it doesn't style the compare
+   searchbar's borderless input, which also lives in this controls box. */
+.controls label select,
+.controls label input[type="text"],
+.controls label input[type="date"] {
+  padding: 0.35rem 0.55rem;
+  border-radius: var(--radius);
   border: var(--border-w-thin) solid var(--border);
   background: var(--surface);
   color: var(--text);
   font: inherit;
+}
+/* Dark: the near-black border vanishes on the dark surface — lighten it so the
+   fields keep their outline/form. */
+[data-theme="dark"] .controls label select,
+[data-theme="dark"] .controls label input[type="text"],
+[data-theme="dark"] .controls label input[type="date"] {
+  border-color: color-mix(in srgb, var(--border-soft) 60%, var(--text-subtle));
+}
+.controls label input:focus,
+.controls label select:focus {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+/* Dark: the browser's native date-picker calendar glyph is dark ink — invert it
+   so it's visible on the dark field. */
+[data-theme="dark"] .controls label input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.8);
 }
 
 .controls input[type="checkbox"] {
@@ -64,10 +99,11 @@
 .chartCard {
   background: var(--surface);
   color: var(--text);
-  border: var(--border-w-thin) solid var(--border);
-  border-radius: var(--radius);
-  padding: 1rem 1.75rem 1.25rem;
-  margin-bottom: 1.5rem;
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-4) var(--space-5) var(--space-5);
+  margin-bottom: var(--space-5);
 }
 
 .chartHeader {
@@ -85,22 +121,27 @@
 }
 
 .toolBtn {
-  min-width: 1.9rem;
+  min-width: 2rem;
   background: var(--surface);
   color: var(--text-muted);
-  border: var(--border-w-thin) solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 0.2rem 0.5rem;
+  border: var(--border-w-thin) solid var(--border-soft);
+  border-radius: var(--radius-pill);
+  padding: 0.25rem 0.6rem;
   font: inherit;
   font-size: 0.85rem;
-  font-weight: 700;
+  font-weight: 800;
   line-height: 1;
   cursor: pointer;
+  box-shadow: none;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
 }
 
-.toolBtn:hover {
+.toolBtn:hover:not(:disabled) {
   background: var(--surface-muted);
   color: var(--text);
+  border-color: var(--border);
+  transform: none;
+  box-shadow: none;
 }
 
 /* The canvas stays fixed-size (so y-axis + legend never move); only the visible
@@ -119,11 +160,43 @@
   cursor: pointer;
 }
 
+/* Custom HTML tooltip (album name reads as an underlined link + the value). */
+.chartTooltip {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 10px));
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 0.4rem 0.6rem;
+  background: var(--surface);
+  color: var(--text);
+  border: var(--border-w-thin) solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-modal);
+  font-size: 0.82rem;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.1s ease;
+}
+[data-theme="dark"] .chartTooltip {
+  border-color: var(--border-soft);
+}
+.ttAlbum {
+  font-weight: 700;
+}
+.ttValue {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
 /* The table fits the page: fixed layout shares width across the (fixed number of)
    columns so it never overflows, regardless of username length. */
 .tableWrap {
-  border: var(--border-w-thin) solid var(--border);
-  border-radius: var(--radius);
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
   /* Cap the table so it scrolls internally (~25 rows) instead of growing the
      page forever; the header stays pinned via the sticky .th rule below. */
   max-height: 1100px;
@@ -171,14 +244,18 @@
    differs. Multi-line similarity headers in the friend view baseline-align with
    the single-line ones. */
 .table th {
-  padding: 0.75rem 0.6rem;
+  padding: 0.6rem 0.6rem 0.7rem;
   vertical-align: bottom;
+  /* A clean underline delineates the header row instead of a filled box. */
+  border-bottom: var(--border-w-thin) solid var(--border-soft);
 }
 
 .th {
-  background: var(--surface-muted);
-  font-weight: 600;
-  font-size: 0.85rem;
+  /* Same fill as the table so the header reads as a clean row (not filled boxes);
+     stays opaque so it covers rows while the body scrolls. */
+  background: var(--surface);
+  font-weight: 700;
+  font-size: 0.92rem;
   color: var(--text-muted);
   text-align: left;
   /* Keep headers visible while the table body scrolls. */
@@ -191,6 +268,18 @@
   text-align: right;
 }
 
+/* Centered numeric columns — header label centers over its centered values.
+   Compound selectors so they beat `.table th` / `.table td`. */
+.table th.thCenter {
+  text-align: center;
+}
+.thCenter .sortBtn {
+  justify-content: center;
+}
+.thCenter .stackHeader {
+  align-items: center;
+}
+
 .sortBtn {
   display: inline-flex;
   /* center (not flex-end) so the sort icon stays put against multi-line,
@@ -199,6 +288,10 @@
   gap: 0.3rem;
   background: none;
   border: none;
+  border-radius: 0;
+  /* Kill the global button chrome (border/offset shadow) that made these read as
+     boxy chips. */
+  box-shadow: none;
   padding: 0;
   margin: 0;
   font: inherit;
@@ -210,6 +303,13 @@
   line-height: 1.15;
   white-space: normal;
   overflow-wrap: anywhere;
+  /* Slight underline to signal it's clickable; strengthens on hover. No blocky
+     shadow/nudge (the global button hover is reset below). */
+  text-decoration: underline;
+  text-decoration-color: var(--border-soft);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+  transition: color 0.12s ease, text-decoration-color 0.12s ease;
 }
 
 /* Allow the header label to wrap inside its (fixed-width) column. */
@@ -222,15 +322,26 @@
   text-align: right;
 }
 
-.sortBtn:hover {
+.sortBtn:hover:not(:disabled) {
   color: var(--text);
+  text-decoration-color: var(--text);
+  transform: none;
+  box-shadow: none;
+  filter: none;
+}
+.sortBtn:active:not(:disabled) {
+  transform: none;
+  box-shadow: none;
 }
 
 .sortBtnActive {
   color: var(--text);
+  text-decoration-color: var(--accent);
 }
 
 .sortIcon {
+  /* inline-block so the header's underline doesn't run under the arrow glyph. */
+  display: inline-block;
   font-size: 0.7rem;
   opacity: 0.55;
 }
@@ -251,8 +362,9 @@
 /* Right-aligned numeric cells. With `table-layout: fixed` the numeric columns
    are equal width, and th/td share side padding, so each value sits under its
    right-aligned header label. */
-.numCell {
-  text-align: right;
+/* Compound selector so it beats `.table td { text-align: left }`. */
+.table td.numCell {
+  text-align: center;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }

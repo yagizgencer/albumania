@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
   Friendship,
@@ -15,39 +15,21 @@ import {
 import { Avatar } from "../components/Avatar";
 import { Alert } from "../components/Alert";
 import { LoadingState } from "../components/Spinner";
-import { PageContainer } from "../components/PageContainer";
-import { Button } from "../components/Button";
-import { ConfirmButton } from "../components/ConfirmButton";
-import { Card } from "../components/Card";
 import {
-  SearchIcon,
+  CheckIcon,
+  CloseIcon,
+  LockIcon,
   PeopleIcon,
-  InboxIcon,
-  PaperPlaneIcon,
+  SearchIcon,
+  TrashIcon,
+  UserPlusIcon,
 } from "../components/Icons";
 import { getErrorMessage } from "../lib/apiError";
 import { profilePath } from "../lib/paths";
 import styles from "./FriendsPage.module.css";
 
-type Tab = "friends" | "incoming" | "outgoing";
-
-const TABS: { value: Tab; label: string; count: (d: FriendshipList | null) => number }[] = [
-  { value: "friends", label: "Friends", count: (d) => d?.accepted.length ?? 0 },
-  { value: "incoming", label: "Incoming", count: (d) => d?.incoming.length ?? 0 },
-  { value: "outgoing", label: "Outgoing", count: (d) => d?.outgoing.length ?? 0 },
-];
-
-const TAB_VALUES = TABS.map((t) => t.value);
-
 export function FriendsPage() {
   const { username } = useAuth();
-  // Drive the active tab from the URL so notifications can deep-link
-  // (e.g. /friends?tab=incoming).
-  const [searchParams, setSearchParams] = useSearchParams();
-  const tabParam = searchParams.get("tab");
-  const tab: Tab = TAB_VALUES.includes(tabParam as Tab) ? (tabParam as Tab) : "friends";
-  const setTab = (next: Tab) =>
-    setSearchParams(next === "friends" ? {} : { tab: next }, { replace: true });
 
   const [data, setData] = useState<FriendshipList | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -170,29 +152,21 @@ export function FriendsPage() {
   }
 
   const showPanel = searchOpen && query.trim().length > 0;
-  const friendCount = data?.accepted.length ?? 0;
 
   return (
-    <PageContainer>
-      <div className={styles.wrap}>
+    <main className={styles.page}>
       <div className={styles.header}>
         <h1 className={styles.title}>Friends</h1>
-        <p className={styles.subtitle}>
-          {friendCount === 0
-            ? "Find people and grow your circle."
-            : `You have ${friendCount} friend${friendCount === 1 ? "" : "s"}.`}
-        </p>
       </div>
 
+      {/* Prominent full-width people search with a dropdown of results. */}
       <div className={styles.search} ref={searchWrapRef}>
-        <div className={styles.searchField}>
-          <span className={styles.searchIcon}>
-            <SearchIcon size={18} />
-          </span>
+        <div className={styles.searchBar}>
+          <SearchIcon size={18} className={styles.searchIcon} />
           <input
             className={styles.searchInput}
             type="search"
-            placeholder="Search people by username or display name…"
+            placeholder="Find people by username or display name…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => setSearchOpen(true)}
@@ -207,153 +181,197 @@ export function FriendsPage() {
             {!searching && !searchError && results.length === 0 && (
               <p className={styles.searchStatus}>No people found.</p>
             )}
-            {results.map((u) => (
-              <div key={u.username} className={styles.resultRow}>
-                {/* The whole row opens the profile: this link's ::after stretches
-                    over the entire row (see .stretchLink). The action buttons
-                    below sit above it via z-index so they stay clickable. */}
-                <Link
-                  to={profilePath(u.username)}
-                  className={`${styles.userInline} ${styles.stretchLink}`}
-                  aria-label={`Open ${u.display_name}'s profile`}
-                >
-                  <Avatar
-                    username={u.username}
-                    pictureUrl={u.profile_picture_url}
-                    displayName={u.display_name}
-                    size={36}
-                  />
-                  <span className={styles.userText}>
-                    <span className={styles.userLink}>{u.display_name}</span>
-                    <span className={styles.userHandle}>{u.username}</span>
-                  </span>
+            {results.map((u) => {
+              const s = searchState(u.username);
+              return (
+                <div key={u.username} className={styles.resultRow}>
+                  <Link
+                    to={profilePath(u.username)}
+                    className={styles.userInline}
+                    aria-label={`Open ${u.display_name}'s profile`}
+                  >
+                    <Avatar
+                      username={u.username}
+                      pictureUrl={u.profile_picture_url}
+                      displayName={u.display_name}
+                      size={36}
+                    />
+                    <span className={styles.userText}>
+                      <span className={styles.userName}>{u.display_name}</span>
+                      <span className={styles.userHandle}>@{u.username}</span>
+                    </span>
+                  </Link>
                   {u.profile_visibility !== "public" && (
                     <span className={styles.privatePill} title="Visible to friends only">
-                      🔒 Friends
+                      <LockIcon size={11} />
+                      Friends
                     </span>
                   )}
-                </Link>
-                {(() => {
-                  const s = searchState(u.username);
-                  if (s.kind === "friends")
-                    return <span className={styles.resultStatus}>Friends</span>;
-                  if (s.kind === "requested")
-                    return <span className={styles.resultStatus}>Requested</span>;
-                  if (s.kind === "incoming")
-                    return (
-                      <div className={styles.rowActions}>
-                        <Button intent="success" size="sm" onClick={() => onAccept(s.id)}>
-                          Accept
-                        </Button>
-                        <Button intent="secondary" size="sm" onClick={() => onDecline(s.id)}>
-                          Decline
-                        </Button>
-                      </div>
-                    );
-                  return (
-                    <Button size="sm" onClick={() => onSend(u.username)}>
-                      Add
-                    </Button>
-                  );
-                })()}
-              </div>
-            ))}
+                  {s.kind === "friends" ? (
+                    <span className={styles.resultStatus}>Friends</span>
+                  ) : s.kind === "requested" ? (
+                    <span className={styles.resultStatus}>Requested</span>
+                  ) : s.kind === "incoming" ? (
+                    <span className={styles.rowActions}>
+                      <IconButton kind="accept" tipPos="left" tip="Accept" onClick={() => onAccept(s.id)}>
+                        <CheckIcon size={18} />
+                      </IconButton>
+                      <IconButton kind="decline" tipPos="left" tip="Decline" onClick={() => onDecline(s.id)}>
+                        <CloseIcon size={18} />
+                      </IconButton>
+                    </span>
+                  ) : (
+                    <IconButton kind="add" tipPos="left" tip="Add friend" onClick={() => onSend(u.username)}>
+                      <UserPlusIcon size={19} />
+                    </IconButton>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
-      </div>
-
-      <div className={styles.tabs} role="tablist" aria-label="Friend lists">
-        {TABS.map((t) => (
-          <button
-            key={t.value}
-            type="button"
-            role="tab"
-            aria-selected={tab === t.value}
-            className={`${styles.tab} ${tab === t.value ? styles.tabActive : ""}`}
-            onClick={() => setTab(t.value)}
-          >
-            {t.label} <span className={styles.tabCount}>{t.count(data)}</span>
-          </button>
-        ))}
       </div>
 
       {error && <Alert>{error}</Alert>}
       {!data && !error && <LoadingState />}
 
-      {data && tab === "friends" && (
-        <FriendList
-          items={data.accepted}
-          emptyIcon={<PeopleIcon size={44} />}
-          emptyText="No friends yet — search above to add some."
-          render={(f) => (
-            <FriendRow
-              key={f.id}
-              username={otherUsername(f)}
-              pictureUrl={otherPictureUrl(f)}
-              actions={
-                <ConfirmButton
-                  label="Unfriend"
-                  prompt={`Unfriend ${otherUsername(f)}?`}
-                  confirmLabel="Yes, unfriend"
-                  onConfirm={() => onRemove(f.id)}
-                  title="Unfriend"
+      {data && (
+        <div className={styles.split}>
+          <aside className={styles.rail}>
+            <RequestBox title="Incoming" count={data.incoming.length} empty="No incoming requests.">
+              {data.incoming.map((f) => (
+                <RequestRow
+                  key={f.id}
+                  username={f.requested_by}
+                  pictureUrl={f.requested_by_picture_url}
+                  actions={
+                    <>
+                      <IconButton kind="accept" small tipPos="left" tip="Accept" onClick={() => onAccept(f.id)}>
+                        <CheckIcon size={16} />
+                      </IconButton>
+                      <IconButton kind="decline" small tipPos="left" tip="Decline" onClick={() => onDecline(f.id)}>
+                        <CloseIcon size={16} />
+                      </IconButton>
+                    </>
+                  }
                 />
-              }
-            />
-          )}
-        />
-      )}
+              ))}
+            </RequestBox>
 
-      {data && tab === "incoming" && (
-        <FriendList
-          items={data.incoming}
-          emptyIcon={<InboxIcon size={44} />}
-          emptyText="No incoming requests."
-          render={(f) => (
-            <FriendRow
-              key={f.id}
-              username={f.requested_by}
-              pictureUrl={f.requested_by_picture_url}
-              actions={
-                <>
-                  <Button intent="success" size="sm" onClick={() => onAccept(f.id)}>
-                    Accept
-                  </Button>
-                  <Button intent="secondary" size="sm" onClick={() => onDecline(f.id)}>
-                    Decline
-                  </Button>
-                </>
-              }
-            />
-          )}
-        />
-      )}
+            <RequestBox title="Outgoing" count={data.outgoing.length} empty="Nothing pending.">
+              {data.outgoing.map((f) => (
+                <RequestRow
+                  key={f.id}
+                  username={otherUsername(f)}
+                  pictureUrl={otherPictureUrl(f)}
+                  actions={
+                    <IconButton kind="decline" small tipPos="left" tip="Cancel" onClick={() => onRemove(f.id)}>
+                      <CloseIcon size={16} />
+                    </IconButton>
+                  }
+                />
+              ))}
+            </RequestBox>
+          </aside>
 
-      {data && tab === "outgoing" && (
-        <FriendList
-          items={data.outgoing}
-          emptyIcon={<PaperPlaneIcon size={44} />}
-          emptyText="No outgoing requests."
-          render={(f) => (
-            <FriendRow
-              key={f.id}
-              username={otherUsername(f)}
-              pictureUrl={otherPictureUrl(f)}
-              actions={
-                <Button intent="danger" size="sm" onClick={() => onRemove(f.id)}>
-                  Cancel
-                </Button>
-              }
-            />
-          )}
-        />
+          <section>
+            <h2 className={styles.sectionTitle}>
+              Your friends{" "}
+              <span className={styles.friendsCount}>({data.accepted.length})</span>
+            </h2>
+            {data.accepted.length === 0 ? (
+              <div className={styles.emptyState}>
+                <span className={styles.emptyIcon} aria-hidden>
+                  <PeopleIcon size={44} />
+                </span>
+                <p>No friends yet — search above to add some.</p>
+              </div>
+            ) : (
+              <div className={styles.grid}>
+                {data.accepted.map((f) => (
+                  <FriendCard
+                    key={f.id}
+                    username={otherUsername(f)}
+                    pictureUrl={otherPictureUrl(f)}
+                    onUnfriend={() => onRemove(f.id)}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
       )}
-      </div>
-    </PageContainer>
+    </main>
   );
 }
 
-function FriendRow({
+// ---------------------------------------------------------------------------
+// Small building blocks
+// ---------------------------------------------------------------------------
+
+function IconButton({
+  kind,
+  tip,
+  tipPos,
+  small,
+  onClick,
+  disabled,
+  children,
+}: {
+  kind: "add" | "accept" | "decline" | "remove";
+  tip: string;
+  /** Tooltip side — "left" for buttons inside scrollable panels (search results,
+   *  request lists) so the chip isn't clipped by the container's overflow. */
+  tipPos?: "left";
+  small?: boolean;
+  onClick: () => void;
+  disabled?: boolean;
+  children: React.ReactNode;
+}) {
+  const kindClass =
+    kind === "add" || kind === "accept"
+      ? styles.iconAccept
+      : styles.iconRemove; // decline / cancel / remove share the clay-red look
+  return (
+    <button
+      type="button"
+      className={`${styles.iconBtn} ${small ? styles.iconBtnSm : ""} ${kindClass}`}
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={tip}
+      data-tip={tip}
+      data-tip-pos={tipPos}
+    >
+      {children}
+    </button>
+  );
+}
+
+function RequestBox({
+  title,
+  count,
+  empty,
+  children,
+}: {
+  title: string;
+  count: number;
+  empty: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className={styles.tbox}>
+      <div className={styles.tboxHead}>
+        <span className={styles.tboxTitle}>{title}</span>
+        {count > 0 && <span className={styles.tboxCount}>{count}</span>}
+      </div>
+      <div className={styles.tlist}>
+        {count === 0 ? <p className={styles.emptyLine}>{empty}</p> : children}
+      </div>
+    </section>
+  );
+}
+
+function RequestRow({
   username,
   pictureUrl,
   actions,
@@ -363,35 +381,71 @@ function FriendRow({
   actions: React.ReactNode;
 }) {
   return (
-    <Card pad="sm" className={styles.row}>
-      <Link to={profilePath(username)} className={styles.rowAvatar} aria-label={username}>
-        <Avatar username={username} pictureUrl={pictureUrl} size={44} />
+    <div className={styles.tRow}>
+      <Link to={profilePath(username)} className={styles.tRowAvatar} aria-hidden tabIndex={-1}>
+        <Avatar username={username} pictureUrl={pictureUrl} size={38} />
       </Link>
-      <Link to={profilePath(username)} className={styles.rowName}>
+      <Link to={profilePath(username)} className={styles.tRowName}>
         {username}
       </Link>
-      <div className={styles.rowActions}>{actions}</div>
-    </Card>
+      <span className={styles.tRowActions}>{actions}</span>
+    </div>
   );
 }
 
-interface FriendListProps {
-  items: Friendship[];
-  emptyIcon: React.ReactNode;
-  emptyText: string;
-  render: (f: Friendship) => React.ReactNode;
-}
+function FriendCard({
+  username,
+  pictureUrl,
+  onUnfriend,
+}: {
+  username: string;
+  pictureUrl: string | null;
+  onUnfriend: () => void | Promise<void>;
+}) {
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
 
-function FriendList({ items, emptyIcon, emptyText, render }: FriendListProps) {
-  if (items.length === 0) {
-    return (
-      <div className={styles.empty}>
-        <span className={styles.emptyIcon} aria-hidden>
-          {emptyIcon}
-        </span>
-        <p>{emptyText}</p>
-      </div>
-    );
+  async function run() {
+    setBusy(true);
+    try {
+      await onUnfriend();
+    } finally {
+      setBusy(false);
+    }
   }
-  return <div className={styles.list}>{items.map(render)}</div>;
+
+  return (
+    <article className={styles.fcard}>
+      <Link to={profilePath(username)} className={styles.fcardAvatar} aria-hidden tabIndex={-1}>
+        <Avatar username={username} pictureUrl={pictureUrl} size={72} />
+      </Link>
+      <Link to={profilePath(username)} className={styles.fname}>
+        {username}
+      </Link>
+      <div className={styles.fcardActions}>
+        {confirming ? (
+          <>
+            <span className={styles.confirmText}>Unfriend?</span>
+            <IconButton kind="remove" tip="Yes, unfriend" onClick={run} disabled={busy}>
+              <CheckIcon size={18} />
+            </IconButton>
+            <button
+              type="button"
+              className={`${styles.iconBtn} ${styles.iconCancel}`}
+              onClick={() => setConfirming(false)}
+              disabled={busy}
+              aria-label="Keep friend"
+              data-tip="Keep"
+            >
+              <CloseIcon size={18} />
+            </button>
+          </>
+        ) : (
+          <IconButton kind="remove" tip="Unfriend" onClick={() => setConfirming(true)}>
+            <TrashIcon size={19} />
+          </IconButton>
+        )}
+      </div>
+    </article>
+  );
 }

@@ -137,8 +137,16 @@ function ProfileMenu({
       {open && (
         <div className={styles.menu} role="menu">
           <div className={styles.menuHeader}>
-            <span className={styles.menuName}>{displayName}</span>
-            <span className={styles.menuHandle}>@{username}</span>
+            <Avatar
+              username={username}
+              pictureUrl={pictureUrl}
+              displayName={displayName}
+              size={38}
+            />
+            <div className={styles.menuIdentity}>
+              <span className={styles.menuName}>{displayName}</span>
+              <span className={styles.menuHandle}>@{username}</span>
+            </div>
           </div>
           <button
             type="button"

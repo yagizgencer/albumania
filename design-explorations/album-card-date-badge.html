@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Album card — release-date badge options</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Comic+Neue:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --primary: #f2a6a0;
+        --select: #4fb8a4;
+        --data: #f0c66a;
+        --on-select: #0b352d;
+        --on-data: #3a2c14;
+        --surface: #fbf1e2;
+        --surface-muted: #f2e2cc;
+        --border: #2e2620;
+        --border-soft: #cbb493;
+        --text: #2e2620;
+        --text-muted: #6f6155;
+        --text-subtle: #9a8b7b;
+        --radius: 8px;
+        --radius-pill: 999px;
+        --font-display: "Patrick Hand", cursive;
+        --shadow-soft: 3px 3px 0 var(--border);
+        --shadow-pop: 5px 5px 0 var(--border);
+        --page: #f6ead6;
+        --chip-dark-icon: var(--text-muted);
+      }
+      [data-theme="dark"] {
+        --select: #4fb8a4;
+        --data: #f0c66a;
+        --surface: #2c251f;
+        --surface-muted: #38302a;
+        --border: #0f0b08;
+        --border-soft: #4a4038;
+        --text: #ece0cf;
+        --text-muted: #bcaf9f;
+        --text-subtle: #8a7d6e;
+        --shadow-soft: inset 1.5px 1.5px 0 rgba(255, 235, 210, 0.28), 3px 3px 0 #000;
+        --shadow-pop: inset 2px 2px 0 rgba(255, 235, 210, 0.3), 5px 5px 0 #000,
+          0 4px 12px rgba(0, 0, 0, 0.45);
+        --page: #221c17;
+        --chip-dark-icon: #d0c3ae;
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: 2rem clamp(1rem, 4vw, 3rem) 4rem;
+        font-family: "Comic Neue", system-ui, sans-serif;
+        background: var(--page);
+        color: var(--text);
+      }
+      h1 {
+        font-family: var(--font-display);
+        font-size: 2rem;
+        margin: 0 0 0.25rem;
+      }
+      .sub { color: var(--text-muted); margin: 0 0 1.5rem; max-width: 60ch; }
+      .toggle {
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+        border: 2px solid var(--border);
+        background: var(--surface);
+        color: var(--text);
+        border-radius: var(--radius-pill);
+        padding: 0.4rem 1rem;
+        box-shadow: var(--shadow-soft);
+        margin-bottom: 2rem;
+      }
+      h2 {
+        font-family: var(--font-display);
+        font-size: 1.4rem;
+        margin: 2rem 0 1rem;
+        border-bottom: 2px solid var(--border-soft);
+        padding-bottom: 0.35rem;
+      }
+      .row {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 260px));
+        gap: 1.5rem 1.25rem;
+      }
+      .variant { }
+      .variant .label {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: var(--text-subtle);
+        margin: 0 0 0.4rem;
+        letter-spacing: 0.02em;
+      }
+
+      /* ---- The card (mirrors the app's new sizing) ---- */
+      .card {
+        background: var(--surface);
+        border: 2px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-soft);
+        padding: 0.9rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      .art {
+        width: 100%;
+        aspect-ratio: 1 / 1;
+        border-radius: 6px;
+        object-fit: cover;
+        background: linear-gradient(135deg, #c98b6b, #7c9a8e);
+      }
+      .title {
+        font-weight: 600;
+        font-size: 1.05rem;
+        line-height: 1.25;
+      }
+      .footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-top: 0.15rem;
+        font-size: 0.98rem;
+        color: var(--text-subtle);
+      }
+      .score { font-weight: 700; color: var(--text); }
+      .out { font-size: 0.72em; color: var(--text-muted); }
+      .count { font-size: 0.8em; color: var(--text-subtle); margin-left: 0.3rem; }
+
+      .disc { flex-shrink: 0; }
+      .meta { display: inline-flex; align-items: center; }
+
+      /* ===== CURRENT (for reference) ===== */
+      .m-current {
+        display: inline-flex; align-items: center; gap: 0.3rem;
+        padding: 0.12rem 0.5rem; border-radius: var(--radius-pill);
+        background: var(--surface-muted);
+        border: 2px solid var(--border);
+        color: var(--text); font-size: 0.75rem; font-weight: 700;
+      }
+      [data-theme="dark"] .m-current { border-color: var(--border-soft); }
+
+      /* ===== PLAIN TEXT ===== */
+      .p-base { display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 700; }
+      .p1 { color: var(--text-muted); font-size: 0.85rem; }
+      .p2 { color: var(--text-subtle); font-size: 0.85rem; }
+      .p3 { color: var(--text-subtle); font-size: 0.85rem; } /* no icon */
+      .p4 { color: var(--text-subtle); font-size: 0.72rem; font-weight: 700;
+            letter-spacing: 0.06em; text-transform: uppercase; }
+
+      /* ===== SOFT BORDERLESS CHIP ===== */
+      .c-base {
+        display: inline-flex; align-items: center; gap: 0.35rem;
+        padding: 0.15rem 0.55rem; border-radius: var(--radius-pill);
+        font-size: 0.8rem; font-weight: 700; border: none;
+      }
+      .c1 { background: var(--surface-muted); color: var(--text-muted); }
+      .c2 { background: color-mix(in srgb, var(--surface-muted) 55%, transparent);
+            color: var(--text-muted); }
+      .c3 { background: var(--surface-muted); color: var(--text-muted); } /* no icon */
+      .c4 { background: color-mix(in srgb, var(--data) 16%, transparent);
+            color: var(--text-muted); }
+
+      .metaIcon { color: var(--chip-dark-icon); }
+    </style>
+  </head>
+  <body>
+    <h1>Release-date badge — options</h1>
+    <p class="sub">
+      Same card, new sizing (slightly smaller cover, bigger title + score). Only the
+      release-date treatment differs. Toggle light/dark to compare. The first card is the
+      current bordered pill for reference.
+    </p>
+    <button class="toggle" onclick="document.documentElement.dataset.theme = document.documentElement.dataset.theme === 'dark' ? '' : 'dark'">
+      Toggle light / dark
+    </button>
+
+    <h2>Reference — current</h2>
+    <div class="row" id="ref"></div>
+
+    <h2>Plain muted text (no chip)</h2>
+    <div class="row" id="plain"></div>
+
+    <h2>Soft borderless chip</h2>
+    <div class="row" id="soft"></div>
+
+    <script>
+      const DISC = (cls) =>
+        `<svg class="disc ${cls}" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none"/></svg>`;
+
+      function card(label, metaHtml) {
+        return `
+          <div class="variant">
+            <p class="label">${label}</p>
+            <div class="card">
+              <div class="art"></div>
+              <div class="title">Everything Everything</div>
+              <div>${metaHtml}</div>
+              <div class="footer">
+                <span><span class="score">8.4</span><span class="out">/10</span><span class="count">(98)</span></span>
+              </div>
+            </div>
+          </div>`;
+      }
+
+      document.getElementById("ref").innerHTML = card(
+        "Current pill",
+        `<span class="meta m-current">${DISC("metaIcon")}17.05.2019</span>`
+      );
+
+      document.getElementById("plain").innerHTML = [
+        card("P1 · disc + date, muted", `<span class="p-base p1">${DISC("metaIcon")}17.05.2019</span>`),
+        card("P2 · disc + date, subtle", `<span class="p-base p2">${DISC("metaIcon")}17.05.2019</span>`),
+        card("P3 · date only, subtle", `<span class="p-base p3">17.05.2019</span>`),
+        card("P4 · caption (uppercase)", `<span class="p-base p4">${DISC("metaIcon")}17 May 2019</span>`),
+      ].join("");
+
+      document.getElementById("soft").innerHTML = [
+        card("C1 · muted fill", `<span class="c-base c1">${DISC("metaIcon")}17.05.2019</span>`),
+        card("C2 · faint fill", `<span class="c-base c2">${DISC("metaIcon")}17.05.2019</span>`),
+        card("C3 · muted fill, no icon", `<span class="c-base c3">17.05.2019</span>`),
+        card("C4 · amber tint", `<span class="c-base c4">${DISC("metaIcon")}17.05.2019</span>`),
+      ].join("");
+    </script>
+  </body>
+</html>

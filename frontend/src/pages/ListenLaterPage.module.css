@@ -1,405 +1,625 @@
+/* Listen & Rate — card gallery of queued albums with a Home-trending-style
+   invites rail. Widths/margins match the Home and Album pages. */
+
 .page {
-  padding: 0 var(--page-pad);
-  max-width: var(--page-max);
+  max-width: min(93vw, 1560px);
   margin: 2rem auto;
+  padding: 0 0.35rem;
   color: var(--text);
+}
+
+.pageTitle {
+  font-family: var(--font-display);
+  font-size: clamp(1.9rem, 3vw, 2.4rem);
+  margin: 0 0.3rem var(--space-4);
 }
 
 .layout {
   display: grid;
-  grid-template-columns: 280px 1fr;
-  gap: 1.5rem;
+  grid-template-columns: 340px 1fr;
+  gap: var(--space-5);
   align-items: start;
 }
 
-@media (max-width: 800px) {
+@media (max-width: 900px) {
   .layout {
     grid-template-columns: 1fr;
   }
 }
 
-.sidebar {
+.rail {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--space-5);
   position: sticky;
-  top: 60px;
+  top: calc(var(--nav-height) + var(--space-2));
 }
 
-.sideSection {
-  background: var(--surface);
-  border: var(--border-w-thin) solid var(--border);
-  border-radius: var(--radius);
-  padding: 0.85rem 0.9rem;
-}
-
-.sideSection h2 {
-  margin: 0 0 0.6rem;
-  font-size: 0.95rem;
-  color: var(--text);
-}
-
-.sidebarEmpty {
-  color: var(--text-subtle);
-  font-size: 0.85rem;
-  margin: 0;
-}
-
-.sideItem {
-  border-top: 1px solid var(--surface-muted);
-  padding-top: 0.6rem;
-  margin-top: 0.6rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-}
-
-.sideItem:first-of-type {
-  border-top: none;
-  padding-top: 0;
-  margin-top: 0;
-}
-
-.sideAlbum {
-  display: flex;
-  gap: 0.55rem;
-  text-decoration: none;
-  color: var(--text);
-}
-
-.sideArt {
-  width: 44px;
-  height: 44px;
-  border-radius: 4px;
-  object-fit: cover;
-}
-
-.sideMeta {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  font-size: 0.82rem;
-  line-height: 1.2;
-}
-
-.sideMeta strong {
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.sideMeta span {
-  color: var(--text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.sideFooter {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.sideBlurb {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-size: 0.78rem;
-  color: var(--text-muted);
-}
-
-.sideBlurb a {
-  color: inherit;
-  text-decoration: none;
-  font-weight: 600;
-}
-
-.sideBlurb a:hover {
-  color: var(--btn-primary-bg);
-}
-
-.sideActions {
-  display: inline-flex;
-  gap: 0.3rem;
-}
-
-.sideBtnPrimary,
-.sideBtnGhost {
-  font-size: var(--text-xs);
-  padding: 0.25rem 0.6rem;
-  border-radius: var(--radius);
-  border: var(--border-w-thin) solid var(--border);
-  cursor: pointer;
-}
-
-.sideBtnPrimary {
-  background: var(--btn-primary-bg);
-  border-color: var(--btn-primary-bg);
-  color: var(--btn-primary-fg);
-}
-
-.sideBtnPrimary:hover {
-  background: var(--btn-primary-bg-hover);
-  border-color: var(--btn-primary-bg-hover);
-}
-
-.sideBtnGhost {
-  background: transparent;
-  color: var(--text-muted);
-}
-
-.sideBtnGhost:hover {
-  background: var(--surface-muted);
-  color: var(--text);
-}
-
-.main {
-  min-width: 0;
+@media (max-width: 900px) {
+  .rail {
+    position: static;
+  }
 }
 
 .empty {
   background: var(--surface);
-  border: 1px dashed var(--border);
-  border-radius: var(--radius);
-  padding: 2rem;
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-6);
+  color: var(--text-muted);
   text-align: center;
-  color: var(--text-subtle);
 }
 
-.list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.row {
-  display: grid;
-  grid-template-columns: 80px 1fr auto;
-  gap: 1rem;
+/* ---- Invite box — Home trending-box look ---- */
+.tbox {
   background: var(--surface);
   color: var(--text);
-  border: var(--border-w-thin) solid var(--border);
-  border-radius: var(--radius);
-  padding: 0.75rem;
-  align-items: center;
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-4) var(--space-4) var(--space-3);
 }
-
-.art {
-  width: 80px;
-  height: 80px;
-  border-radius: var(--radius-sm);
-  object-fit: cover;
-  cursor: pointer;
+[data-theme="dark"] .tbox {
+  box-shadow:
+    inset 0 0 0 1.5px rgba(255, 233, 208, 0.16),
+    5px 5px 0 #000,
+    0 6px 16px rgba(0, 0, 0, 0.45);
 }
-
-.info h3 {
-  margin: 0;
-  font-size: 1.05rem;
-}
-
-.info p {
-  margin: 0.1rem 0;
-  color: var(--text-muted);
-  font-size: 0.9rem;
-}
-
-.artistLink {
-  color: inherit;
-  text-decoration: none;
-}
-
-.artistLink:hover {
-  text-decoration: underline;
-}
-
-.chipRow {
+.tboxHead {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin-top: 0.4rem;
-}
-
-.chip {
-  background: var(--status-info-bg);
-  color: var(--status-info-fg);
-  font-size: 0.78rem;
-  padding: 0.2rem 0.55rem 0.2rem 0.25rem;
-  border-radius: var(--radius-pill);
-  display: inline-flex;
   align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-2);
+  border-bottom: var(--border-w-thin) solid var(--border);
 }
-
-.chipPending {
-  background: var(--status-warn-bg);
-  color: var(--status-warn-fg);
+.tboxTitle {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  line-height: 1.1;
 }
-
-.chipDone {
-  background: var(--status-ok-bg);
-  color: var(--status-ok-fg);
-}
-
-/* The avatar + username inside a chip navigate to the profile. */
-.chipUser {
-  display: inline-flex;
-  align-items: center;
-  color: inherit;
-  text-decoration: none;
-  font-weight: 600;
-}
-
-.chipUser:hover {
-  text-decoration: underline;
-}
-
-.action {
-  background: var(--btn-primary-bg);
-  color: var(--btn-primary-fg);
+.tboxCount {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--on-select);
+  background: var(--select);
   border: var(--border-w-thin) solid var(--border);
-  padding: 0.45rem 1rem;
-  border-radius: var(--radius);
-  cursor: pointer;
-  font-weight: 700;
-  text-decoration: none;
-  font-size: var(--text-sm);
-  /* It's a full-width <a> in a stretched column — center the label. */
-  text-align: center;
+  border-radius: var(--radius-pill);
+  padding: 0.05rem 0.5rem;
 }
-
-.action:hover {
-  background: var(--btn-primary-bg-hover);
-}
-
-.actions {
+.tlist {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
-  align-items: stretch;
 }
-
-/* Scoped under .actions so these beat the global button rule's box-shadow and
-   hover-background without needing !important. */
-.actions .removeBtn {
-  background: transparent;
+.emptyLine {
   color: var(--text-muted);
+  font-size: 0.88rem;
+  font-style: italic;
+  margin: 0.25rem 0;
+}
+
+/* Invite row */
+.tRow {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.3rem;
+  border-bottom: var(--border-w-thin) solid var(--border-soft);
+}
+.tRow:last-child {
+  border-bottom: none;
+}
+.tArtLink {
+  display: block;
+  line-height: 0;
+  flex-shrink: 0;
+}
+.tArt {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-sm);
   border: var(--border-w-thin) solid var(--border);
-  padding: 0.35rem 1rem;
-  border-radius: var(--radius);
-  cursor: pointer;
+  object-fit: cover;
+  display: block;
+}
+.tArtEmpty {
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  color: #3a2c14;
+  background: linear-gradient(135deg, #f2a6a0, #f0c66a);
+}
+.tInfo {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.tTitle {
   font-weight: 700;
-  font-size: var(--text-sm);
-  box-shadow: none;
+  font-size: 0.9rem;
+  color: var(--text);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tTitle:hover {
+  color: var(--accent);
+}
+.tSub {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fromLine {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 1px;
+  font-size: 0.74rem;
+  color: var(--text-subtle);
+}
+.fromLine a {
+  color: var(--link);
+  text-decoration: none;
+  font-weight: 700;
+}
+.fromLine a:hover {
+  text-decoration: underline;
+}
+.tActions {
+  display: inline-flex;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
-.actions .removeBtn:hover {
-  background: transparent;
-  color: var(--danger-text);
-  border-color: var(--danger-text);
-  transform: none;
+/* ---- Icon buttons (AlbumInfoPage .iconBtn look) ---- */
+.iconBtn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: var(--radius-pill);
+  border: var(--border-w-thin) solid var(--border);
+  box-shadow: var(--shadow-soft);
+  background: var(--surface);
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease,
+    color 0.12s ease;
+}
+.iconBtn svg {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+.iconBtnSm {
+  width: 30px;
+  height: 30px;
+}
+.iconBtnSm svg {
+  width: 16px;
+  height: 16px;
+}
+.iconBtn:hover:not(:disabled) {
+  transform: translate(-1px, -1px);
+  box-shadow: var(--shadow-pop);
+}
+.iconBtn:active:not(:disabled) {
+  transform: translate(1px, 1px);
   box-shadow: none;
 }
+.iconBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.iconRate {
+  background: #f6e4b8;
+  color: #98700f;
+}
+.iconRate:hover:not(:disabled) {
+  background: #e6b545;
+  color: #3a2c14;
+}
+.iconRemove {
+  background: #f4d8d3;
+  color: #c2554e;
+}
+.iconRemove:hover:not(:disabled) {
+  background: #c2554e;
+  color: #fbf1e2;
+}
+.iconAccept {
+  background: #d3ebe1;
+  color: #2f8f77;
+}
+.iconAccept:hover:not(:disabled) {
+  background: #2f8f77;
+  color: #fbf1e2;
+}
+.iconDecline {
+  background: #f4d8d3;
+  color: #c2554e;
+}
+.iconDecline:hover:not(:disabled) {
+  background: #c2554e;
+  color: #fbf1e2;
+}
+[data-theme="dark"] .iconRate {
+  background: #3d3318;
+  color: #f0c66a;
+}
+[data-theme="dark"] .iconRate:hover:not(:disabled) {
+  background: #f0c66a;
+  color: #2a2110;
+}
+[data-theme="dark"] .iconRemove,
+[data-theme="dark"] .iconDecline {
+  background: #4a2f2c;
+  color: #e0938c;
+}
+[data-theme="dark"] .iconRemove:hover:not(:disabled),
+[data-theme="dark"] .iconDecline:hover:not(:disabled) {
+  background: #d06a63;
+  color: #211b16;
+}
+[data-theme="dark"] .iconAccept {
+  background: #233d36;
+  color: #57c3a7;
+}
+[data-theme="dark"] .iconAccept:hover:not(:disabled) {
+  background: #3aa088;
+  color: #08231c;
+}
 
+/* ---- Queue cards ---- */
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: var(--space-4);
+}
+.qcard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  background: var(--surface);
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-4);
+}
+[data-theme="dark"] .qcard {
+  box-shadow:
+    inset 0 0 0 1.5px rgba(255, 233, 208, 0.16),
+    5px 5px 0 #000,
+    0 6px 16px rgba(0, 0, 0, 0.4);
+}
+.qcoverLink {
+  display: block;
+  line-height: 0;
+}
+.qcover {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: var(--radius);
+  border: var(--border-w-thin) solid var(--border);
+  box-shadow: var(--shadow-soft);
+  object-fit: cover;
+  display: block;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.qcoverLink:hover .qcover {
+  transform: translate(-1px, -1px);
+  box-shadow: var(--shadow-pop);
+}
+.qcoverEmpty {
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-size: 3rem;
+  color: #3a2c14;
+  background: linear-gradient(135deg, #f2a6a0, #f0c66a);
+}
+.qbody {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.entryTitle {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  line-height: 1.05;
+  color: var(--text);
+  text-decoration: none;
+}
+.entryTitle:hover {
+  text-decoration: underline;
+}
+/* Artist on its own line — the body-font subtitle used on the Album/Rating
+   pages (not the display font of the title). */
+.entryArtist {
+  align-self: flex-start;
+  max-width: 100%;
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.entryArtist:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+/* Release date + runtime as the Album-page metadata chips (disc + hourglass). */
+.metaChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.metaChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: var(--radius-pill);
+  background: var(--surface-muted);
+  border: var(--border-w-thin) solid var(--border-soft);
+  color: var(--text);
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.metaChipIcon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.metaChipText {
+  position: relative;
+  top: 1px;
+}
+[data-theme="dark"] .metaChipIcon {
+  color: #d0c3ae;
+}
+/* Footer: actions on the left, the listening-with stack on the right. */
+.qFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: auto;
+}
+.qActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Inline remove confirm (replaces the actions row). */
 .confirm {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: var(--space-2);
+  width: 100%;
 }
-
 .confirmText {
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   color: var(--text-muted);
 }
-
 .confirmButtons {
   display: flex;
-  gap: 0.4rem;
+  gap: var(--space-2);
 }
-
-.actions .removeConfirmBtn {
+.removeConfirmBtn {
   background: var(--btn-danger-bg);
   color: var(--btn-danger-fg);
   border: var(--border-w-thin) solid var(--border);
-  padding: 0.35rem 0.75rem;
   border-radius: var(--radius);
-  cursor: pointer;
+  padding: 0.3rem 0.75rem;
   font-weight: 700;
   font-size: var(--text-sm);
+  cursor: pointer;
   box-shadow: none;
 }
-
-.actions .removeConfirmBtn:hover {
+.removeConfirmBtn:hover:not(:disabled) {
   background: var(--btn-danger-bg-hover);
-  transform: none;
-  box-shadow: none;
 }
-
-.actions .removeConfirmBtn:disabled {
-  opacity: 0.6;
-  cursor: progress;
-}
-
-.actions .cancelBtn {
-  background: transparent;
+.cancelBtn {
+  background: var(--surface);
   color: var(--text);
-  border: var(--border-w-thin) solid var(--border);
-  padding: 0.35rem 0.75rem;
+  border: var(--border-w-thin) solid var(--border-soft);
   border-radius: var(--radius);
-  cursor: pointer;
+  padding: 0.3rem 0.75rem;
   font-weight: 700;
   font-size: var(--text-sm);
+  cursor: pointer;
   box-shadow: none;
 }
-
-.actions .cancelBtn:hover {
+.cancelBtn:hover:not(:disabled) {
   background: var(--surface-muted);
-  transform: none;
-  box-shadow: none;
 }
 
-.userInline {
+/* ---- Listening-with avatar stack (trigger) + dropdown ---- */
+.lwrap {
+  position: relative;
+  flex-shrink: 0;
+}
+/* Soft chip — headphones + stacked photos. Clicking the chip opens the dropdown;
+   the avatars are their own profile links. */
+.lwChip {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  vertical-align: middle;
-}
-
-.solo {
-  color: var(--text-subtle);
-  font-style: italic;
-  font-size: 0.85rem;
-}
-
-.incomingSection {
-  margin-bottom: 1.5rem;
-}
-
-.incomingSection h2 {
-  font-size: 1.1rem;
-  margin: 0 0 0.5rem;
-  color: var(--text-muted);
-}
-
-.inviteActions {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.actionGhost {
+  gap: 7px;
+  padding: 3px 9px 3px 7px;
+  border-radius: var(--radius-pill);
   background: var(--surface-muted);
+  border: var(--border-w-thin) solid var(--border-soft);
+  cursor: pointer;
+  box-shadow: none;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease,
+    border-color 0.12s ease;
+}
+.lwChip:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+/* Highlight the chip on hover/focus — but not when an avatar is hovered (the
+   avatar has its own highlight and goes to that friend's profile). */
+.lwChip:hover:not(:has(.lwAvatarLink:hover)) {
+  background: var(--surface);
+  border-color: var(--border);
+  transform: translate(-1px, -1px);
+  box-shadow: var(--shadow-soft);
+}
+.lwIcon {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--select-hover);
+}
+.lwIcon svg {
+  width: 18px;
+  height: 18px;
+}
+.lwAvatars {
+  display: inline-flex;
+  align-items: center;
+}
+/* Later avatars overlap the earlier ones (right partly occludes left). */
+.lwAvatars > * {
+  margin-left: -9px;
+}
+.lwAvatars > *:first-child {
+  margin-left: 0;
+}
+.lwAvatarLink {
+  position: relative;
+  display: inline-flex;
+  line-height: 0;
+  border-radius: 50%;
+  transition: transform 0.12s ease;
+}
+.lwAvatarLink:hover {
+  z-index: 3;
+}
+.lwAvatarLink:hover .lwAvatar {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+}
+.lwAvatar {
+  border: var(--border-w-thin) solid var(--border);
+  flex-shrink: 0;
+  transition: transform 0.12s ease, border-color 0.12s ease;
+}
+.lwMore {
+  display: grid;
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 5px;
+  margin-left: -9px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-muted);
+  border: var(--border-w-thin) solid var(--border);
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+/* Subtle thin outline: dark ink in light mode, a warm light hairline in dark. */
+[data-theme="dark"] .lwAvatar,
+[data-theme="dark"] .lwMore {
+  border-color: color-mix(in srgb, var(--text) 52%, transparent);
+}
+/* Dropdown opens downward from the chip. */
+.comboList {
+  position: absolute;
+  z-index: 30;
+  right: 0;
+  min-width: 230px;
+  top: calc(100% + 8px);
+  list-style: none;
+  margin: 0;
+  padding: 0.3rem;
+  background: var(--surface);
   color: var(--text);
   border: var(--border-w-thin) solid var(--border);
-  padding: 0.45rem 1rem;
   border-radius: var(--radius);
-  cursor: pointer;
-  font-weight: 700;
-  font-size: var(--text-sm);
+  box-shadow: var(--shadow-modal);
+  max-height: 17rem;
+  overflow-y: auto;
 }
-
-.actionGhost:hover {
-  background: var(--surface);
+[data-theme="dark"] .comboList {
+  border-color: var(--border-soft);
+  box-shadow: var(--shadow-modal), inset 0 1px 0 rgba(255, 235, 210, 0.1);
+}
+.comboItem {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  color: var(--text);
+}
+.comboItem:hover {
+  background: var(--surface-muted);
+}
+.comboText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.comboName {
+  font-weight: 700;
+  color: var(--text);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.comboName:hover {
+  color: var(--accent);
+}
+.comboUser {
+  color: var(--text-subtle);
+  font-size: 0.8rem;
+}
+/* Status pill (replaces the album page's amber score pill). */
+.statusPill {
+  margin-left: auto;
+  flex-shrink: 0;
+  padding: 0.1rem 0.55rem;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid var(--border);
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.statusDone {
+  background: var(--select);
+  color: var(--on-select);
+}
+.statusRating {
+  background: var(--data);
+  color: var(--on-data);
+}
+.comboEmpty {
+  padding: 0.5rem 0.7rem;
+  color: var(--text-subtle);
+  font-size: 0.85rem;
+  font-style: italic;
 }

@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Albumania · Rating — top strip + score-by-cover</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Patrick+Hand&display=swap" rel="stylesheet" />
+<style>
+/* Tokens from frontend/src/index.css ("Warm Peach Pro"). */
+:root{
+  --font-display:"Patrick Hand","Comic Sans MS",system-ui,cursive;
+  --primary:#f2a6a0;--primary-hover:#ec938c;--select:#4fb8a4;--select-hover:#45a794;--data:#f0c66a;
+  --on-primary:#2e2620;--on-select:#0b352d;--on-data:#3a2c14;
+  --paper:#f7e7d3;--surface:#fbf1e2;--surface-muted:#f2e2cc;--border:#2e2620;--border-soft:#cbb493;
+  --text:#2e2620;--text-muted:#6f6155;--text-subtle:#9a8b7b;
+  --success-bg:#a9d9c0;--success-text:#1f5540;--danger-text:#8a2f2f;--danger-tint:rgba(180,70,70,.12);
+  --link:#c26a4a;--accent:#c26a4a;--paper-dot:rgba(46,38,32,.05);
+  --overlay:rgba(46,38,32,.4);--shadow-modal:0 12px 32px rgba(46,38,32,.22);
+  --border-w:3px;--border-w-thin:2px;--radius-sm:7px;--radius:8px;--radius-lg:12px;--radius-pill:999px;
+  --shadow-soft:3px 3px 0 var(--border);--shadow-pop:5px 5px 0 var(--border);--shadow-card:5px 5px 0 var(--border);
+  --space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:24px;--space-6:32px;--space-8:48px;
+  --gold:#e9b949;--silver:#c9c3b6;--bronze:#cf9366;
+}
+[data-theme="dark"]{
+  --paper:#211b16;--surface:#2c251f;--surface-muted:#38302a;--border:#0f0b08;--border-soft:#4a4038;
+  --text:#ece0cf;--text-muted:#bcaf9f;--text-subtle:#8a7d6e;
+  --primary-hover:#f6b3ad;--select-hover:#5cc7b3;--success-bg:#6fbf9c;--success-text:#0c3325;
+  --danger-text:#e0938c;--danger-tint:rgba(229,145,145,.14);--link:#f0a888;--accent:#f0a888;--paper-dot:rgba(245,236,224,.04);
+  --overlay:rgba(0,0,0,.6);--shadow-modal:0 12px 32px rgba(0,0,0,.5);
+  --shadow-soft:inset 1.5px 1.5px 0 rgba(255,235,210,.28),3px 3px 0 #000;
+  --shadow-pop:inset 2px 2px 0 rgba(255,235,210,.3),5px 5px 0 #000,0 4px 12px rgba(0,0,0,.45);
+  --shadow-card:inset 2px 2px 0 rgba(255,230,200,.2),inset -1px -1px 0 rgba(0,0,0,.35),5px 5px 0 #000,0 4px 12px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box}
+body{margin:0;color:var(--text);font-family:"Comic Neue",system-ui,sans-serif;line-height:1.55;
+  background-color:var(--paper);background-image:radial-gradient(var(--paper-dot) 1px,transparent 1px);background-size:22px 22px}
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:400;letter-spacing:.01em;color:var(--text);margin:0}
+
+[data-tip]{position:relative}
+[data-tip]::before{content:attr(data-tip);position:absolute;top:calc(100% + 7px);left:50%;transform:translateX(-50%);
+  background:var(--text);color:var(--surface);font-size:.75rem;font-weight:700;white-space:nowrap;padding:.2rem .5rem;
+  border-radius:6px;opacity:0;pointer-events:none;transition:opacity .12s;z-index:60}
+[data-tip]:hover::before{opacity:1}
+
+.toolbar{position:sticky;top:0;z-index:100;display:flex;flex-wrap:wrap;align-items:center;gap:10px;
+  padding:12px clamp(12px,3.5vw,28px);background:var(--surface);border-bottom:var(--border-w) solid var(--border)}
+.toolbar .brand{font-family:var(--font-display);font-size:1.35rem;margin-right:6px}
+.toolbar .spacer{flex:1}
+.chip{font-family:inherit;font-weight:700;font-size:.9rem;cursor:pointer;padding:7px 14px;border-radius:var(--radius-pill);
+  border:var(--border-w-thin) solid var(--border);background:var(--surface);color:var(--text);box-shadow:var(--shadow-soft);
+  transition:transform .1s,box-shadow .1s,background .12s}
+.chip:hover{transform:translate(-1px,-1px);box-shadow:var(--shadow-pop)}
+.chip[aria-selected="true"]{background:var(--select);color:var(--on-select)}
+
+.wrap{max-width:min(93vw,1560px);margin:1.6rem auto;padding:0 .35rem}
+.intro{padding:0 .3rem;margin-bottom:var(--space-4)}
+.intro h2{font-size:1.55rem;margin-bottom:2px}
+.intro p{margin:.2rem 0;color:var(--text-muted);font-size:.95rem}.intro .name{color:var(--text);font-weight:700}
+.option{display:none}.option.active{display:block}
+
+.sheet{position:relative;background:var(--surface);color:var(--text);border-radius:var(--radius-lg);border:var(--border-w) solid var(--border);
+  box-shadow:var(--shadow-card);padding:var(--space-6) clamp(var(--space-5),3vw,var(--space-8))}
+.hr{height:1px;background:var(--border-soft);border:0;margin:var(--space-5) 0;opacity:.6}
+
+/* ---- Shared cover + icon bar ---- */
+.cover{flex-shrink:0;border-radius:var(--radius);border:var(--border-w-thin) solid var(--border);box-shadow:var(--shadow-soft);
+  display:grid;place-items:center;font-family:var(--font-display);background:linear-gradient(135deg,#f2a6a0,#f0c66a);color:#3a2c14}
+.badge{font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--text-subtle)}
+.htitle h1{font-size:clamp(1.7rem,2.6vw,2.3rem);line-height:1.05}
+.htitle .sub{color:var(--text-muted);font-weight:700}
+.iconBar{display:flex;gap:var(--space-3);align-items:center;flex-shrink:0}
+.iconBtn{position:relative;display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;
+  border-radius:var(--radius-pill);border:var(--border-w-thin) solid var(--border);box-shadow:var(--shadow-soft);cursor:pointer;
+  transition:transform .12s,box-shadow .12s,background .12s,color .12s;background:var(--surface)}
+.iconBtn svg{width:22px;height:22px}
+.iconBtn:hover:not(:disabled){transform:translate(-1px,-1px);box-shadow:var(--shadow-pop)}
+.iconBtn:active:not(:disabled){transform:translate(1px,1px);box-shadow:none}
+.iconSave{background:#d7e3ef;color:#3f6f9c}.iconSave:hover{background:#3f6f9c;color:#f3f8fc}
+.iconPublish{background:#2f8f77;color:#fbf1e2}.iconPublish:hover{background:#267a65}
+.iconRemove{background:#f4d8d3;color:#c2554e}.iconRemove:hover{background:#c2554e;color:#fbf1e2}
+[data-theme="dark"] .iconSave{background:#26333f;color:#82b6d8}[data-theme="dark"] .iconSave:hover{background:#5a97c2;color:#08161f}
+[data-theme="dark"] .iconPublish{background:#3aa088;color:#08231c}
+[data-theme="dark"] .iconRemove{background:#4a2f2c;color:#e0938c}[data-theme="dark"] .iconRemove:hover{background:#d06a63;color:#211b16}
+
+/* score bits reused across variants */
+.scoreLbl{font-size:.75rem;color:var(--text-subtle);font-weight:800;text-transform:uppercase;letter-spacing:.05em}
+.scoreNum{font-family:var(--font-display);line-height:1;color:var(--text)}
+.scoreNum small{color:var(--text-subtle)}
+input[type=range]{accent-color:var(--select);cursor:pointer;height:6px}
+
+/* ===== Variant A — score at bottom of meta column ===== */
+.headA{display:flex;gap:var(--space-6);align-items:stretch}
+.headA .cover{width:150px;height:150px;font-size:2.6rem}
+.headA .hmeta{flex:1;min-width:0;display:flex;flex-direction:column;gap:var(--space-2)}
+.headA .trow{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-4)}
+.headA .scoreInline{margin-top:auto;display:flex;align-items:center;gap:var(--space-4);
+  background:var(--surface-muted);border:var(--border-w-thin) solid var(--border-soft);border-radius:var(--radius);padding:.5rem .8rem}
+.headA .scoreInline .scoreNum{font-size:2.1rem}
+.headA .scoreInline input{flex:1;min-width:120px}
+@media(max-width:640px){.headA{flex-direction:column}}
+
+/* ===== Variant B — score panel beside cover ===== */
+.headB .trow{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-4);margin-bottom:var(--space-4)}
+.headB .brow{display:flex;gap:var(--space-5);align-items:stretch}
+.headB .cover{width:158px;height:158px;font-size:2.8rem}
+.headB .scorePanel{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:var(--space-2);
+  background:var(--surface-muted);border:var(--border-w-thin) solid var(--border-soft);border-radius:var(--radius-lg);padding:var(--space-4) var(--space-5)}
+.headB .scoreTopline{display:flex;align-items:baseline;gap:var(--space-3)}
+.headB .scoreNum{font-size:3.2rem}.headB .scoreNum small{font-size:1.1rem}
+.headB .scorePanel input{width:100%;margin-top:var(--space-1)}
+.headB .scoreHint{color:var(--text-subtle);font-size:.82rem}
+@media(max-width:640px){.headB .brow{flex-direction:column}}
+
+/* ===== Variant C — vertical slider rail beside cover ===== */
+.headC{display:flex;gap:var(--space-5);align-items:stretch}
+.headC .cover{width:150px;height:150px;font-size:2.6rem}
+.headC .scoreRail{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:var(--space-2);
+  background:var(--surface-muted);border:var(--border-w-thin) solid var(--border-soft);border-radius:var(--radius-lg);padding:var(--space-3) var(--space-4)}
+.headC .scoreRail .scoreNum{font-size:1.9rem}
+.headC .vrange{writing-mode:vertical-lr;direction:rtl;-webkit-appearance:slider-vertical;width:8px;flex:1;min-height:70px}
+.headC .hmeta{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:var(--space-2)}
+.headC .iconBar{position:absolute;top:var(--space-6);right:clamp(var(--space-5),3vw,var(--space-8))}
+@media(max-width:640px){.headC{flex-wrap:wrap}}
+
+.chips{display:flex;flex-wrap:wrap;gap:var(--space-2)}
+.metaChip{display:inline-flex;align-items:center;gap:.3rem;padding:.15rem .55rem;border-radius:var(--radius-pill);
+  background:var(--surface-muted);border:var(--border-w-thin) solid var(--border-soft);color:var(--text);font-size:.8rem;font-weight:700}
+
+/* ---- Section heading ---- */
+.sec{display:flex;align-items:baseline;gap:10px;margin-bottom:var(--space-3)}
+.sec h2{font-size:1.5rem}
+.sec .count{color:var(--text-muted);font-size:1.05rem}
+.sec .hint{color:var(--text-subtle);font-size:.85rem;margin-left:auto}
+
+/* ---- Top 5 strip; × always visible ---- */
+.podium{display:flex;flex-wrap:wrap;gap:8px}
+.slot{position:relative;display:flex;align-items:center;gap:var(--space-3);flex:1;min-width:172px;min-height:56px;padding:.4rem .55rem;
+  border-radius:var(--radius);transition:background .12s,box-shadow .12s}
+.slot:not(.filled){border:var(--border-w-thin) dashed color-mix(in srgb,var(--border-soft) 80%,transparent)}
+.slot.filled{background:var(--surface-muted)}
+.slot.dragover{background:color-mix(in srgb,var(--select) 16%,var(--surface));box-shadow:inset 0 0 0 2px var(--select)}
+.medal{width:2.1rem;height:2.1rem;flex-shrink:0;display:grid;place-items:center;border-radius:var(--radius-pill);
+  border:var(--border-w-thin) solid var(--border);font-family:var(--font-display);font-size:1.05rem;color:var(--on-data);background:var(--data)}
+.medal[data-r="1"]{background:var(--gold)}.medal[data-r="2"]{background:var(--silver)}.medal[data-r="3"]{background:var(--bronze);color:#fff}
+.slot .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.9rem}
+.slot .ph{color:var(--text-subtle);font-style:italic;font-size:.85rem}
+.xBtn{width:24px;height:24px;flex-shrink:0;border-radius:var(--radius-pill);cursor:pointer;
+  border:var(--border-w-thin) solid var(--border-soft);background:var(--surface);color:var(--text-subtle);display:grid;place-items:center;
+  transition:background .12s,color .12s,border-color .12s}
+.xBtn:hover{background:var(--danger-tint);color:var(--danger-text);border-color:var(--danger-text)}
+
+/* ---- Collapsible tracks ---- */
+.tracksToggle{display:flex;align-items:center;gap:var(--space-3);width:100%;background:transparent;border:none;cursor:pointer;
+  border-radius:var(--radius);padding:var(--space-1) var(--space-2);color:var(--text);font:inherit;transition:background .12s;margin-bottom:var(--space-2)}
+.tracksToggle:hover{background:var(--surface-muted)}
+.tracksLabel{font-family:var(--font-display);font-size:1.5rem}
+.tracksCount{color:var(--text-muted);font-size:1.05rem}
+.chev{margin-left:auto;color:var(--text-muted);transition:transform .18s}
+.tracksToggle[aria-expanded="true"] .chev{transform:rotate(180deg)}
+.trackWrap{overflow:hidden;max-height:0;transition:max-height .25s ease}
+.trackWrap.open{max-height:2200px}
+.list{list-style:none;margin:0;padding:0;column-count:2;column-gap:var(--space-8)}
+@media(max-width:760px){.list{column-count:1}}
+.trk{display:flex;align-items:center;gap:var(--space-3);padding:.5rem .55rem;border-radius:var(--radius-sm);cursor:grab;
+  break-inside:avoid;transition:background .12s;border-top:1px solid color-mix(in srgb,var(--border-soft) 55%,transparent)}
+.trk:hover{background:var(--surface-muted)}.trk:active{cursor:grabbing}
+.trk.picked{opacity:.45;cursor:default}
+.num{width:1.5rem;flex-shrink:0;text-align:center;color:var(--text-subtle);font-variant-numeric:tabular-nums;font-size:.85rem}
+.tnm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dur{color:var(--text-subtle);font-size:.8rem;font-variant-numeric:tabular-nums}
+.rankPill{flex-shrink:0;display:inline-flex;align-items:center;padding:.05rem .5rem;border-radius:var(--radius-pill);
+  background:var(--select);color:var(--on-select);font-weight:800;font-size:.75rem}
+.note{width:28px;height:28px;flex-shrink:0;display:grid;place-items:center;cursor:pointer;border-radius:var(--radius-pill);
+  border:none;background:transparent;color:var(--text-subtle);opacity:0;transition:opacity .12s,background .12s;font-size:.85rem}
+.trk:hover .note{opacity:1}
+.note:hover{background:var(--surface-muted);color:var(--text)}
+.noteBox{padding:2px .55rem var(--space-2) calc(1.5rem + var(--space-3))}
+.noteBox textarea{width:100%;resize:vertical;min-height:40px;font:inherit;font-size:.85rem;padding:.4rem .6rem;
+  border:1px solid var(--border-soft);border-radius:var(--radius-sm);background:var(--paper);color:var(--text)}
+
+/* ---- Comment ---- */
+.commentWrap{max-width:640px}
+.commentArea{width:100%;resize:vertical;min-height:70px;font:inherit;font-size:.92rem;padding:.6rem .75rem;
+  border:var(--border-w-thin) solid var(--border-soft);border-radius:var(--radius);background:var(--paper);color:var(--text)}
+.commentArea:focus{outline:none;box-shadow:0 0 0 3px rgba(79,184,164,.4)}
+.visRow{display:inline-flex;margin-top:var(--space-2);border:var(--border-w-thin) solid var(--border-soft);border-radius:var(--radius-pill);overflow:hidden}
+.visRow button{font-family:inherit;font-weight:700;font-size:.8rem;cursor:pointer;padding:.26rem .8rem;border:none;background:var(--surface);color:var(--text-muted)}
+.visRow button[aria-pressed="true"]{background:var(--select);color:var(--on-select)}
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <span class="brand">Albumania</span>
+  <button class="chip" aria-selected="true" data-opt="A">A · Score under title</button>
+  <button class="chip" aria-selected="false" data-opt="B">B · Score panel beside cover</button>
+  <button class="chip" aria-selected="false" data-opt="C">C · Vertical dial</button>
+  <span class="spacer"></span>
+  <button class="chip" id="themeToggle">🌙 Dark</button>
+</div>
+
+<svg style="display:none">
+  <symbol id="ic-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l3 3v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M8 3v5h7"/><rect x="8" y="13" width="8" height="6"/></symbol>
+  <symbol id="ic-publish" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4"/><path d="M7 9l5-5 5 5"/><path d="M4 20h16"/></symbol>
+  <symbol id="ic-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/><path d="M10 11v6M14 11v6"/></symbol>
+  <symbol id="ic-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></symbol>
+</svg>
+
+<div class="wrap">
+
+<template id="iconsTpl">
+  <div class="iconBar">
+    <button class="iconBtn iconSave" data-tip="Save draft"><svg><use href="#ic-save"/></svg></button>
+    <button class="iconBtn iconPublish" data-tip="Publish rating"><svg><use href="#ic-publish"/></svg></button>
+    <button class="iconBtn iconRemove" data-tip="Remove rating"><svg><use href="#ic-trash"/></svg></button>
+  </div>
+</template>
+<template id="bodyTpl">
+  <hr class="hr"/>
+  <div class="sec"><h2>Your Top 5</h2><span class="count topcount">(2/5)</span><span class="hint">drag favourites up here</span></div>
+  <div class="podium strip"></div>
+  <hr class="hr"/>
+  <button class="tracksToggle" aria-expanded="true"><span class="tracksLabel">All tracks <span class="tracksCount">(10)</span></span><svg class="chev" width="22" height="22"><use href="#ic-chev"/></svg></button>
+  <div class="trackWrap open"><ul class="list"></ul></div>
+  <hr class="hr"/>
+  <div class="commentWrap">
+    <div class="sec"><h2>A few words</h2><span class="hint">optional · posted when you publish</span></div>
+    <textarea class="commentArea" placeholder="What did you think of this album?"></textarea>
+    <div class="visRow"><button aria-pressed="true">Public</button><button aria-pressed="false">Friends</button></div>
+  </div>
+</template>
+
+<!-- ============ OPTION A ============ -->
+<section class="option active" id="optA">
+  <div class="intro"><h2>A — <span class="name">Score under the title</span></h2>
+    <p>Cover on the left; title, artist and chips on the right, with the score sitting in a soft pill at the bottom of the
+    meta column — big number + slider, aligned with the base of the cover. Calm and balanced.</p></div>
+  <div class="sheet" data-rater data-slots="3,6">
+    <div class="head headA">
+      <div class="cover">◑</div>
+      <div class="hmeta">
+        <div class="trow">
+          <div class="htitle"><div class="badge">Draft</div><h1>In Rainbows</h1><div class="sub">Radiohead · 2007</div></div>
+          <div class="icons-mount"></div>
+        </div>
+        <div class="chips"><span class="metaChip">⏱ 42 min</span><span class="metaChip">🎵 10 tracks</span></div>
+        <div class="scoreInline">
+          <span class="scoreLbl">Score</span>
+          <span class="scoreNum"><span class="sv">8.4</span><small>/10</small></span>
+          <input type="range" min="0" max="10" step=".1" value="8.4" class="scoreRange"/>
+        </div>
+      </div>
+    </div>
+    <div class="body-mount"></div>
+  </div>
+</section>
+
+<!-- ============ OPTION B ============ -->
+<section class="option" id="optB">
+  <div class="intro"><h2>B — <span class="name">Score panel beside the cover</span></h2>
+    <p>Title spans the top; below it the cover sits next to a dedicated <b>score panel</b> of the same height — a large
+    number over a full-width slider. The rating gets real presence right next to the artwork.</p></div>
+  <div class="sheet" data-rater data-slots="3,6">
+    <div class="head headB">
+      <div class="trow">
+        <div class="htitle"><div class="badge">Draft</div><h1>In Rainbows</h1><div class="sub">Radiohead · 2007 · 10 tracks</div></div>
+        <div class="icons-mount"></div>
+      </div>
+      <div class="brow">
+        <div class="cover">◑</div>
+        <div class="scorePanel">
+          <span class="scoreLbl">Your score</span>
+          <div class="scoreTopline"><span class="scoreNum"><span class="sv">8.4</span><small>/10</small></span></div>
+          <input type="range" min="0" max="10" step=".1" value="8.4" class="scoreRange"/>
+          <span class="scoreHint">Slide to rate from 0 to 10</span>
+        </div>
+      </div>
+    </div>
+    <div class="body-mount"></div>
+  </div>
+</section>
+
+<!-- ============ OPTION C ============ -->
+<section class="option" id="optC">
+  <div class="intro"><h2>C — <span class="name">Vertical dial beside the cover</span></h2>
+    <p>A slim <b>vertical slider rail</b> stands right next to the cover — number on top, upright slider below — like a
+    little level meter. The most characterful; title and chips sit to the right.</p></div>
+  <div class="sheet" data-rater data-slots="3,6">
+    <div class="head headC">
+      <div class="cover">◑</div>
+      <div class="scoreRail">
+        <span class="scoreNum"><span class="sv">8.4</span></span>
+        <input type="range" min="0" max="10" step=".1" value="8.4" class="scoreRange vrange"/>
+        <span class="scoreLbl">score</span>
+      </div>
+      <div class="hmeta">
+        <div class="badge">Draft</div>
+        <h1>In Rainbows</h1>
+        <div class="sub">Radiohead · 2007</div>
+        <div class="chips"><span class="metaChip">⏱ 42 min</span><span class="metaChip">🎵 10 tracks</span></div>
+      </div>
+      <div class="icons-mount"></div>
+    </div>
+    <div class="body-mount"></div>
+  </div>
+</section>
+
+</div>
+
+<script>
+const TRACKS=[
+ {i:0,n:"15 Step",d:"3:57"},{i:1,n:"Bodysnatchers",d:"4:02"},{i:2,n:"Nude",d:"4:15"},
+ {i:3,n:"Weird Fishes / Arpeggi",d:"5:18"},{i:4,n:"All I Need",d:"3:48"},{i:5,n:"Faust Arp",d:"2:09"},
+ {i:6,n:"Reckoner",d:"4:50"},{i:7,n:"House of Cards",d:"5:28"},{i:8,n:"Jigsaw Falling Into Place",d:"4:09"},
+ {i:9,n:"Videotape",d:"4:39"}];
+const byI=i=>TRACKS.find(t=>t.i===i);
+
+document.querySelectorAll('.icons-mount').forEach(m=>m.appendChild(document.getElementById('iconsTpl').content.cloneNode(true)));
+document.querySelectorAll('.body-mount').forEach(m=>m.appendChild(document.getElementById('bodyTpl').content.cloneNode(true)));
+
+document.querySelectorAll('.chip[data-opt]').forEach(c=>c.addEventListener('click',()=>{
+  document.querySelectorAll('.chip[data-opt]').forEach(x=>x.setAttribute('aria-selected','false'));
+  c.setAttribute('aria-selected','true');
+  document.querySelectorAll('.option').forEach(o=>o.classList.remove('active'));
+  document.getElementById('opt'+c.dataset.opt).classList.add('active');window.scrollTo({top:0});
+}));
+const tt=document.getElementById('themeToggle');
+tt.addEventListener('click',()=>{const d=document.documentElement.getAttribute('data-theme')==='dark';
+  document.documentElement.setAttribute('data-theme',d?'light':'dark');tt.textContent=d?'🌙 Dark':'☀️ Light';});
+
+document.querySelectorAll('.scoreRange').forEach(r=>r.addEventListener('input',()=>{
+  r.closest('.sheet').querySelector('.sv').textContent=Number(r.value).toFixed(1);}));
+document.querySelectorAll('.visRow').forEach(vr=>vr.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+  vr.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');})));
+document.querySelectorAll('.tracksToggle').forEach(t=>t.addEventListener('click',()=>{
+  const open=t.getAttribute('aria-expanded')==='true';t.setAttribute('aria-expanded',String(!open));
+  t.parentElement.querySelector('.trackWrap').classList.toggle('open',!open);}));
+
+function toggleNote(rowEl){const nx=rowEl.nextElementSibling;
+  if(nx&&nx.classList.contains('noteBox')){nx.remove();return;}
+  const box=document.createElement('li');box.className='noteBox';
+  box.innerHTML='<textarea placeholder="A note about this track… (optional)"></textarea>';
+  rowEl.after(box);box.querySelector('textarea').focus();}
+
+function initRater(root){
+  const podiumEl=root.querySelector('.podium');const list=root.querySelector('.list');const countEl=root.querySelector('.topcount');
+  let slots=[null,null,null,null,null];
+  (root.dataset.slots||'').split(',').filter(x=>x!=='').forEach((v,idx)=>slots[idx]=Number(v));
+  const nextOpen=()=>slots.indexOf(null);
+  function renderPodium(){podiumEl.innerHTML='';
+    for(let r=0;r<5;r++){const ti=slots[r],div=document.createElement('div');
+      div.className='slot'+(ti!=null?' filled':'');
+      if(ti!=null){const t=byI(ti);
+        div.innerHTML=`<span class="medal" data-r="${r+1}">${r+1}</span><span class="nm">${t.n}</span><button class="xBtn tip" data-tip="Remove">✕</button>`;
+        div.querySelector('.xBtn').onclick=()=>{slots[r]=null;render();};
+      }else div.innerHTML=`<span class="medal" data-r="${r+1}">${r+1}</span><span class="ph">Drop here</span>`;
+      div.addEventListener('dragover',e=>{e.preventDefault();div.classList.add('dragover');});
+      div.addEventListener('dragleave',()=>div.classList.remove('dragover'));
+      div.addEventListener('drop',e=>{e.preventDefault();div.classList.remove('dragover');
+        const ti=Number(e.dataTransfer.getData('text/plain'));const old=slots.indexOf(ti);if(old>=0)slots[old]=null;slots[r]=ti;render();});
+      podiumEl.appendChild(div);}}
+  function renderList(){list.innerHTML='';
+    TRACKS.forEach(t=>{const pos=slots.indexOf(t.i),picked=pos>=0;
+      const li=document.createElement('li');li.className='trk'+(picked?' picked':'');li.draggable=!picked;
+      li.innerHTML=`<span class="num">${t.i+1}</span><span class="tnm">${t.n}</span>
+        ${picked?`<span class="rankPill">#${pos+1}</span>`:`<span class="dur">${t.d}</span>`}
+        <button class="note tip" data-tip="Add note">✎</button>`;
+      li.addEventListener('dragstart',e=>e.dataTransfer.setData('text/plain',String(t.i)));
+      li.querySelector('.note').onclick=e=>{e.stopPropagation();toggleNote(li);};
+      li.onclick=e=>{if(e.target.closest('.note'))return;if(!picked){const s=nextOpen();if(s>=0){slots[s]=t.i;render();}}};
+      list.appendChild(li);});}
+  function render(){renderPodium();renderList();if(countEl)countEl.textContent=`(${slots.filter(s=>s!=null).length}/5)`;}
+  render();
+}
+document.querySelectorAll('[data-rater]').forEach(initRater);
+</script>
+</body>
+</html>

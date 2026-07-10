@@ -186,7 +186,7 @@ button.item:active:not(:disabled) {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  min-width: 208px;
+  min-width: 224px;
   background: var(--surface);
   border: var(--border-w-thin) solid var(--border);
   border-radius: var(--radius-lg);
@@ -197,20 +197,33 @@ button.item:active:not(:disabled) {
   flex-direction: column;
   gap: 2px;
 }
+/* Dark: a warm inner hairline gives the menu contour against the near-black
+   navbar (the plain border alone reads as a flat edge). */
+[data-theme="dark"] .menu {
+  border-color: var(--border-soft);
+  box-shadow: var(--shadow-modal), inset 0 0 0 1.5px rgba(255, 233, 208, 0.14);
+}
 
-/* Identity header at the top of the menu — name + handle, muted. */
+/* Identity header — avatar + name/handle, so the menu clearly belongs to you. */
 .menuHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.55rem 0.6rem;
+  margin-bottom: 3px;
+  border-bottom: var(--border-w-thin) solid var(--border-soft);
+}
+
+.menuIdentity {
   display: flex;
   flex-direction: column;
   gap: 1px;
-  padding: 0.4rem 0.6rem 0.55rem;
-  margin-bottom: 2px;
-  border-bottom: var(--border-w-thin) solid var(--border-soft);
+  min-width: 0;
 }
 
 .menuName {
   font-family: var(--font-display);
-  font-size: 1rem;
+  font-size: 1.05rem;
   line-height: 1.1;
   color: var(--text);
   overflow: hidden;
@@ -220,6 +233,7 @@ button.item:active:not(:disabled) {
 
 .menuHandle {
   font-size: 0.75rem;
+  font-weight: 600;
   color: var(--text-subtle);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -239,7 +253,7 @@ button.item:active:not(:disabled) {
   border-radius: var(--radius);
   font: inherit;
   font-size: 0.9rem;
-  font-weight: 600;
+  font-weight: 400;
   cursor: pointer;
   transition: background 0.12s ease, color 0.12s ease;
 }
@@ -290,10 +304,17 @@ button.menuItemDanger:hover:not(:disabled) {
 }
 
 [data-theme="dark"] .menuItemDanger,
-[data-theme="dark"] .menuItemDanger .menuIcon,
-[data-theme="dark"] .menuItemDanger:hover,
-[data-theme="dark"] .menuItemDanger:hover .menuIcon {
+[data-theme="dark"] .menuItemDanger .menuIcon {
   color: var(--danger-bg);
+}
+
+/* Dark hover: the faint coral text on the coral tint washed out — brighten the
+   text/icon and deepen the wash so "Log out" stays clearly legible. */
+[data-theme="dark"] .menuItemDanger:hover,
+[data-theme="dark"] button.menuItemDanger:hover:not(:disabled),
+[data-theme="dark"] .menuItemDanger:hover .menuIcon {
+  background: rgba(229, 145, 145, 0.22);
+  color: #f7c4c4;
 }
 
 .bellWrap {

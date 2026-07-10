@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ComponentType } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { changePassword, resendVerification } from "../api/auth";
 import { updateMe, type ProfileVisibility, type UserProfile } from "../api/users";
@@ -9,10 +9,14 @@ import { profilePath } from "../lib/paths";
 import { Alert } from "../components/Alert";
 import { Button } from "../components/Button";
 import { LoadingState } from "../components/Spinner";
-import { PageContainer } from "../components/PageContainer";
 import { PasswordInput } from "../components/PasswordInput";
 import { Select } from "../components/Select";
-import { Tabs } from "../components/Tabs";
+import {
+  MonitorIcon,
+  MoonIcon,
+  ShieldCheckIcon,
+  SunIcon,
+} from "../components/Icons";
 import styles from "./SettingsPage.module.css";
 
 type TabId = "account" | "appearance" | "security" | "privacy";
@@ -36,15 +40,17 @@ export function SettingsPage() {
 
   if (!profile) {
     return (
-      <PageContainer>
+      <main className={styles.page}>
         <LoadingState />
-      </PageContainer>
+      </main>
     );
   }
 
   return (
-    <PageContainer>
-      <h1 className={styles.pageTitle}>Settings</h1>
+    <main className={styles.page}>
+      <header className={styles.header}>
+        <h1 className={styles.pageTitle}>Settings</h1>
+      </header>
 
       <div className={styles.layout}>
         <nav className={styles.rail} aria-label="Settings sections">
@@ -72,7 +78,7 @@ export function SettingsPage() {
           </p>
         </div>
       </div>
-    </PageContainer>
+    </main>
   );
 }
 
@@ -111,8 +117,21 @@ function AccountTab({ profile }: { profile: UserProfile }) {
 
   return (
     <Panel title="Email" description="The address you use to sign in.">
-      <p className={styles.email}>{profile.email}</p>
-      {!profile.email_verified ? (
+      <div className={styles.emailRow}>
+        <span className={styles.email}>{profile.email}</span>
+        {profile.email_verified ? (
+          <span className={`${styles.badge} ${styles.badgeOk}`}>
+            <ShieldCheckIcon size={15} />
+            Verified
+          </span>
+        ) : (
+          <span className={`${styles.badge} ${styles.badgeWarn}`}>
+            <ShieldCheckIcon size={15} />
+            Not verified
+          </span>
+        )}
+      </div>
+      {!profile.email_verified && (
         <Alert
           variant="info"
           action={
@@ -121,19 +140,21 @@ function AccountTab({ profile }: { profile: UserProfile }) {
             </Button>
           }
         >
-          Your email isn't verified yet. Verify it to unlock friends and listen invites.
+          Verify your email to unlock friends and listen invites.
         </Alert>
-      ) : (
-        <p className={styles.verified}>✓ Verified</p>
       )}
     </Panel>
   );
 }
 
-const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
-  { value: "system", label: "System" },
-  { value: "light", label: "Light" },
-  { value: "dark", label: "Dark" },
+const THEME_OPTIONS: {
+  value: ThemePreference;
+  label: string;
+  icon: ComponentType<{ size?: number }>;
+}[] = [
+  { value: "system", label: "System", icon: MonitorIcon },
+  { value: "light", label: "Light", icon: SunIcon },
+  { value: "dark", label: "Dark", icon: MoonIcon },
 ];
 
 function AppearanceTab() {
@@ -143,19 +164,31 @@ function AppearanceTab() {
       title="Theme"
       description="Choose a light or dark look, or follow your device's setting."
     >
-      <div className={styles.themeRow}>
-        <Tabs
-          options={THEME_OPTIONS}
-          value={preference}
-          onChange={setPreference}
-          ariaLabel="Theme preference"
-        />
-        <span className={styles.themeHint}>
-          {preference === "system"
-            ? "Following your device's light/dark setting."
-            : `Always ${preference}.`}
-        </span>
+      <div className={styles.themeGrid} role="radiogroup" aria-label="Theme preference">
+        {THEME_OPTIONS.map(({ value, label, icon: Icon }) => {
+          const active = preference === value;
+          return (
+            <button
+              key={value}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              className={`${styles.themeCard} ${active ? styles.themeCardActive : ""}`}
+              onClick={() => setPreference(value)}
+            >
+              <span className={styles.themeIcon} aria-hidden>
+                <Icon size={26} />
+              </span>
+              {label}
+            </button>
+          );
+        })}
       </div>
+      <p className={styles.themeHint}>
+        {preference === "system"
+          ? "Following your device's light/dark setting."
+          : `Always ${preference}.`}
+      </p>
     </Panel>
   );
 }

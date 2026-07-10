@@ -219,7 +219,7 @@ describe("AlbumInfoPage", () => {
     renderPage();
     await screen.findByRole("link", { name: "Test Album" });
 
-    expect(screen.getByRole("button", { name: /listen later/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /listen & rate/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^rate$/i })).toBeInTheDocument();
   });
 
@@ -246,7 +246,7 @@ describe("AlbumInfoPage", () => {
     await screen.findByRole("link", { name: "Test Album" });
 
     expect(await screen.findByRole("button", { name: /^rate$/i })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /listen later/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /listen & rate/i })).not.toBeInTheDocument();
   });
 
   it("marks a friend as Invited (disabled) when a pending invite already exists", async () => {
@@ -363,7 +363,7 @@ describe("AlbumInfoPage", () => {
     await screen.findByRole("link", { name: "Test Album" });
 
     // A merely-pending invite does not commit me — I still get "Listen Later".
-    expect(await screen.findByRole("button", { name: /listen later/i })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /listen & rate/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^rate$/i })).toBeInTheDocument();
   });
 

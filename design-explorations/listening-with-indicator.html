@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Albumania · "Listening with" indicator options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Patrick+Hand&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --font-display:"Patrick Hand","Comic Sans MS",system-ui,cursive;
+  --primary:#f2a6a0;--select:#4fb8a4;--data:#f0c66a;--on-primary:#2e2620;--on-select:#0b352d;--on-data:#3a2c14;
+  --paper:#f7e7d3;--surface:#fbf1e2;--surface-muted:#f2e2cc;--border:#2e2620;--border-soft:#cbb493;
+  --text:#2e2620;--text-muted:#6f6155;--text-subtle:#9a8b7b;--accent:#c26a4a;--paper-dot:rgba(46,38,32,.05);
+  --border-w:3px;--border-w-thin:2px;--radius-sm:7px;--radius:8px;--radius-lg:12px;--radius-pill:999px;
+  --shadow-soft:3px 3px 0 var(--border);--shadow-pop:5px 5px 0 var(--border);--shadow-card:5px 5px 0 var(--border);
+  --space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:24px;--space-6:32px;
+}
+[data-theme="dark"]{
+  --paper:#211b16;--surface:#2c251f;--surface-muted:#38302a;--border:#0f0b08;--border-soft:#4a4038;
+  --text:#ece0cf;--text-muted:#bcaf9f;--text-subtle:#8a7d6e;--accent:#f0a888;--paper-dot:rgba(245,236,224,.04);
+  --shadow-soft:inset 1.5px 1.5px 0 rgba(255,235,210,.28),3px 3px 0 #000;
+  --shadow-pop:inset 2px 2px 0 rgba(255,235,210,.3),5px 5px 0 #000,0 4px 12px rgba(0,0,0,.45);
+  --shadow-card:inset 2px 2px 0 rgba(255,230,200,.2),inset -1px -1px 0 rgba(0,0,0,.35),5px 5px 0 #000,0 4px 12px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box}
+body{margin:0;color:var(--text);font-family:"Comic Neue",system-ui,sans-serif;line-height:1.55;
+  background-color:var(--paper);background-image:radial-gradient(var(--paper-dot) 1px,transparent 1px);background-size:22px 22px}
+h1,h2,h3{font-family:var(--font-display);font-weight:400;color:var(--text);margin:0}
+
+.toolbar{position:sticky;top:0;z-index:100;display:flex;flex-wrap:wrap;align-items:center;gap:10px;
+  padding:12px clamp(12px,3.5vw,28px);background:var(--surface);border-bottom:var(--border-w) solid var(--border)}
+.toolbar .brand{font-family:var(--font-display);font-size:1.35rem;margin-right:6px}
+.toolbar .spacer{flex:1}
+.chip{font-family:inherit;font-weight:700;font-size:.9rem;cursor:pointer;padding:7px 14px;border-radius:var(--radius-pill);
+  border:var(--border-w-thin) solid var(--border);background:var(--surface);color:var(--text);box-shadow:var(--shadow-soft);
+  transition:transform .1s,box-shadow .1s,background .12s}
+.chip:hover{transform:translate(-1px,-1px);box-shadow:var(--shadow-pop)}
+.chip[aria-selected="true"]{background:var(--select);color:var(--on-select)}
+
+.wrap{max-width:1080px;margin:1.6rem auto;padding:0 1rem}
+.intro{margin-bottom:var(--space-5)}
+.intro h1{font-size:1.8rem;margin-bottom:4px}
+.intro p{color:var(--text-muted);margin:.2rem 0}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:var(--space-4)}
+.qcard{display:flex;flex-direction:column;gap:var(--space-3);background:var(--surface);border:var(--border-w) solid var(--border);
+  border-radius:var(--radius-lg);box-shadow:var(--shadow-card);padding:var(--space-4)}
+[data-theme="dark"] .qcard{box-shadow:inset 0 0 0 1.5px rgba(255,233,208,.16),5px 5px 0 #000,0 6px 16px rgba(0,0,0,.4)}
+.qcover{width:100%;aspect-ratio:1;border-radius:var(--radius);border:var(--border-w-thin) solid var(--border);box-shadow:var(--shadow-soft);
+  display:grid;place-items:center;font-family:var(--font-display);font-size:3rem;color:#3a2c14;background:linear-gradient(135deg,#f2a6a0,#f0c66a)}
+.qcover.c2{background:linear-gradient(135deg,#a9cfe0,#a9d9c0)}
+.qbody{flex:1;display:flex;flex-direction:column;gap:var(--space-2);min-width:0}
+.entryTitle{font-family:var(--font-display);font-size:1.25rem;line-height:1.05;color:var(--text);text-decoration:none}
+.entryTitle:hover{text-decoration:underline}
+.entryArtist{align-self:flex-start;font-weight:700;font-size:1rem;color:var(--text-muted);text-decoration:none}
+.entryArtist:hover{color:var(--accent);text-decoration:underline}
+.metaChips{display:flex;flex-wrap:wrap;gap:var(--space-2)}
+.metaChip{display:inline-flex;align-items:center;gap:.35rem;padding:.15rem .6rem;border-radius:var(--radius-pill);
+  background:var(--surface-muted);border:var(--border-w-thin) solid var(--border-soft);color:var(--text);font-size:.8rem;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.metaChipIcon{color:var(--text-muted)}[data-theme="dark"] .metaChipIcon{color:#d0c3ae}
+.metaChipText{position:relative;top:1px}
+
+.qFooter{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);margin-top:auto}
+.qActions{display:flex;align-items:center;gap:10px}
+.iconBtn{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:var(--radius-pill);
+  border:var(--border-w-thin) solid var(--border);box-shadow:var(--shadow-soft);cursor:pointer;background:var(--surface)}
+.iconBtn svg{width:22px;height:22px}
+.iconRate{background:#f6e4b8;color:#98700f}.iconRemove{background:#f4d8d3;color:#c2554e}
+[data-theme="dark"] .iconRate{background:#3d3318;color:#f0c66a}[data-theme="dark"] .iconRemove{background:#4a2f2c;color:#e0938c}
+
+/* ---- avatar stack (shared) ---- */
+.lw{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.avatars{display:inline-flex;align-items:center}
+.avatars>*{margin-left:-9px}
+.avatars>*:first-child{margin-left:0}
+.av{width:26px;height:26px;border-radius:50%;border:var(--border-w-thin) solid var(--border);flex-shrink:0;
+  display:grid;place-items:center;font-size:.66rem;font-weight:800;color:#3a2c14;background:linear-gradient(135deg,#f2a6a0,#f0c66a)}
+.av.b{background:linear-gradient(135deg,#a9cfe0,#a9d9c0)}.av.c{background:linear-gradient(135deg,#c9b6e0,#a9cfe0)}
+.more{display:grid;place-items:center;min-width:26px;height:26px;padding:0 5px;margin-left:-9px;border-radius:var(--radius-pill);
+  background:var(--surface-muted);border:var(--border-w-thin) solid var(--border);font-size:.68rem;font-weight:800;color:var(--text-muted)}
+[data-theme="dark"] .av,[data-theme="dark"] .more{border-color:color-mix(in srgb,var(--text) 52%,transparent)}
+
+/* indicator bits */
+.lwIcon{color:var(--text-subtle);display:inline-flex}
+.lwIcon svg{width:18px;height:18px}
+.lwCap{font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--text-subtle)}
+.lwWith{font-size:.85rem;color:var(--text-subtle);font-style:italic}
+.lwStackWrap{position:relative;display:inline-flex}
+.lwBadge{position:absolute;top:-7px;left:-7px;width:19px;height:19px;border-radius:50%;display:grid;place-items:center;
+  background:var(--select);color:var(--on-select);border:var(--border-w-thin) solid var(--surface)}
+.lwBadge svg{width:11px;height:11px}
+.lwColumn{display:inline-flex;flex-direction:column;align-items:flex-end;gap:2px}
+
+/* variant D chip form */
+.lwChip{display:inline-flex;align-items:center;gap:6px;padding:2px 8px 2px 6px;border-radius:var(--radius-pill);
+  background:var(--surface-muted);border:var(--border-w-thin) solid var(--border-soft)}
+.lwChip .lwIcon{color:var(--select-hover,#45a794)}
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <span class="brand">Albumania</span>
+  <button class="chip" aria-selected="true" data-opt="A">A · Headphones + stack</button>
+  <button class="chip" aria-selected="false" data-opt="B">B · Micro caption</button>
+  <button class="chip" aria-selected="false" data-opt="C">C · “with” prefix</button>
+  <button class="chip" aria-selected="false" data-opt="D">D · Corner badge</button>
+  <button class="chip" aria-selected="false" data-opt="E">E · Soft chip</button>
+  <span class="spacer"></span>
+  <button class="chip" id="themeToggle">🌙 Dark</button>
+</div>
+
+<svg style="display:none">
+  <symbol id="ic-disc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="0.6" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="ic-hourglass" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h12"/><path d="M6 20.5h12"/><path d="M7.5 3.5c.2 4.5 2 6.3 4.5 8.5 2.5-2.2 4.3-4 4.5-8.5"/><path d="M7.5 20.5c.2-4.5 2-6.3 4.5-8.5 2.5 2.2 4.3 4 4.5 8.5"/></symbol>
+  <symbol id="ic-star" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 5.9 6.5.95-4.7 4.58 1.1 6.47L12 17.9l-5.8 3.05 1.1-6.47L2.6 9.9l6.5-.95L12 2.5z"/></symbol>
+  <symbol id="ic-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V5c0-.6.4-1 1-1h4c.6 0 1 .4 1 1v2"/><path d="M6 7l1 12c0 .6.4 1 1 1h8c.6 0 1-.4 1-1l1-12"/><path d="M10 11v6M14 11v6"/></symbol>
+  <symbol id="ic-headphones" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 14v-2a7.5 7.5 0 0 1 15 0v2"/><path d="M4.5 14.5c0-.8.6-1.4 1.4-1.4h.7c.5 0 .9.4.9.9v4c0 .5-.4.9-.9.9h-.7c-.8 0-1.4-.6-1.4-1.4z"/><path d="M19.5 14.5c0-.8-.6-1.4-1.4-1.4h-.7c-.5 0-.9.4-.9.9v4c0 .5.4.9.9.9h.7c.8 0 1.4-.6 1.4-1.4z"/></symbol>
+</svg>
+
+<div class="wrap">
+  <div class="intro">
+    <h1>“Listening with” — how to signal it's friends</h1>
+    <p>Each option keeps the stacked profile photos (now with a subtle outline) but adds a light, professional cue that
+    these are people you're listening along with. Two cards shown: 2 friends, and 4 (with “+2”).</p>
+  </div>
+  <div class="grid" id="grid"></div>
+</div>
+
+<script>
+const CARDS = [
+  {t:"In Rainbows",a:"Radiohead",cov:"",people:[["A","av"],["S","av b"]]},
+  {t:"To Pimp a Butterfly",a:"Kendrick Lamar",cov:"c2",people:[["M","av"],["J","av b"],["N","av c"],["R","av"]]},
+];
+
+function stack(people){
+  const shown = people.slice(0,2).map(p=>`<span class="${p[1]}">${p[0]}</span>`).join("");
+  const extra = people.length-2;
+  return `<span class="avatars">${shown}${extra>0?`<span class="more">+${extra}</span>`:""}</span>`;
+}
+
+function indicator(opt,people){
+  const s = stack(people);
+  if(opt==="A") return `<span class="lw"><span class="lwIcon"><svg><use href="#ic-headphones"/></svg></span>${s}</span>`;
+  if(opt==="B") return `<span class="lw lwColumn"><span class="lwCap">Listening with</span>${s}</span>`;
+  if(opt==="C") return `<span class="lw"><span class="lwWith">with</span>${s}</span>`;
+  if(opt==="D") return `<span class="lw"><span class="lwStackWrap">${s}<span class="lwBadge"><svg><use href="#ic-headphones"/></svg></span></span></span>`;
+  if(opt==="E") return `<span class="lw lwChip"><span class="lwIcon"><svg><use href="#ic-headphones"/></svg></span>${s}</span>`;
+  return s;
+}
+
+function card(c,opt){
+  return `<article class="qcard">
+    <span class="qcover ${c.cov}">◑</span>
+    <div class="qbody">
+      <a class="entryTitle" href="#">${c.t}</a>
+      <a class="entryArtist" href="#">${c.a}</a>
+      <div class="metaChips">
+        <span class="metaChip"><svg class="metaChipIcon" width="14" height="14"><use href="#ic-disc"/></svg><span class="metaChipText">10.10.2007</span></span>
+        <span class="metaChip"><svg class="metaChipIcon" width="14" height="14"><use href="#ic-hourglass"/></svg><span class="metaChipText">42 min</span></span>
+      </div>
+    </div>
+    <div class="qFooter">
+      <div class="qActions">
+        <button class="iconBtn iconRate"><svg><use href="#ic-star"/></svg></button>
+        <button class="iconBtn iconRemove"><svg><use href="#ic-trash"/></svg></button>
+      </div>
+      ${indicator(opt,c.people)}
+    </div>
+  </article>`;
+}
+
+let current="A";
+function render(){document.getElementById('grid').innerHTML=CARDS.map(c=>card(c,current)).join("");}
+render();
+
+document.querySelectorAll('.chip[data-opt]').forEach(c=>c.addEventListener('click',()=>{
+  document.querySelectorAll('.chip[data-opt]').forEach(x=>x.setAttribute('aria-selected','false'));
+  c.setAttribute('aria-selected','true');current=c.dataset.opt;render();
+}));
+const tt=document.getElementById('themeToggle');
+tt.addEventListener('click',()=>{const d=document.documentElement.getAttribute('data-theme')==='dark';
+  document.documentElement.setAttribute('data-theme',d?'light':'dark');tt.textContent=d?'🌙 Dark':'☀️ Light';});
+</script>
+</body>
+</html>

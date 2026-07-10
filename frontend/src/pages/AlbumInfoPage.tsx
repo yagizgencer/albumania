@@ -170,7 +170,7 @@ export function AlbumInfoPage() {
       setRating(r);
     } catch (e: unknown) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- axios error
-      setActionError((e as any)?.response?.data?.detail ?? "Could not add to Listen Later.");
+      setActionError((e as any)?.response?.data?.detail ?? "Could not add to Listen & Rate.");
     } finally {
       setBusy(false);
     }
@@ -239,7 +239,7 @@ export function AlbumInfoPage() {
       key: "listen",
       show: !isPublished && !rating && !hasActiveInvite,
       className: styles.iconListen,
-      tip: "Listen Later",
+      tip: "Listen & Rate",
       icon: <HeadphonesIcon size={26} />,
       onClick: handleAddToListenLater,
       disabled: busy || !rateable,
@@ -737,7 +737,7 @@ function InviteModal({
                 : listening
                 ? "Already listening with you"
                 : theyInvitedMe
-                ? `${username} already invited you — check Listen Later`
+                ? `${username} already invited you — check Listen & Rate`
                 : iInvited
                 ? "Invite already sent"
                 : null;

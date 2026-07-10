@@ -28,7 +28,11 @@ vi.mock("../context/AuthContext", () => ({
 // Stub the two dashboards so we can assert *which* one renders (and, for the
 // comparison, which source it got) without pulling in chart/table machinery.
 vi.mock("./ProfileDashboardPage", () => ({
-  ProfileDashboard: () => <div data-testid="solo-dashboard" />,
+  // The "Compare with" combobox is passed down as `compareSlot` and rendered in
+  // the controls box, so surface it here for the interaction test.
+  ProfileDashboard: ({ compareSlot }: { compareSlot?: React.ReactNode }) => (
+    <div data-testid="solo-dashboard">{compareSlot}</div>
+  ),
 }));
 vi.mock("./FriendDashboardPage", () => ({
   FriendDashboard: ({ source }: { source: unknown }) => (

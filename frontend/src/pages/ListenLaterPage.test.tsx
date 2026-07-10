@@ -67,7 +67,7 @@ describe("ListenLaterPage", () => {
 
     // Clicking Remove asks for confirmation — nothing removed yet.
     fireEvent.click(screen.getByRole("button", { name: "Remove" }));
-    expect(screen.getByText(/remove from listen later\?/i)).toBeInTheDocument();
+    expect(screen.getByText(/remove from listen & rate\?/i)).toBeInTheDocument();
     expect(removeFromListenLater).not.toHaveBeenCalled();
 
     // Confirming removes the album (by id) and refreshes the list.
@@ -98,6 +98,7 @@ describe("ListenLaterPage", () => {
       </MemoryRouter>
     );
 
+    // Each listening-with avatar is itself a link to that friend's profile.
     const link = await screen.findByRole("link", { name: /bob/i });
     expect(link).toHaveAttribute("href", "/profile/bob");
   });

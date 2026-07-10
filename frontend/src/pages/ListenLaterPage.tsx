@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   acceptInvite,
@@ -14,7 +14,18 @@ import {
 import { Avatar } from "../components/Avatar";
 import { Alert } from "../components/Alert";
 import { LoadingState } from "../components/Spinner";
+import {
+  CheckIcon,
+  CloseIcon,
+  DiscIcon,
+  HeadphonesIcon,
+  HourglassIcon,
+  StarIcon,
+  TrashIcon,
+} from "../components/Icons";
 import { profilePath } from "../lib/paths";
+import { formatDate } from "../lib/date";
+import { formatDuration } from "../utils/duration";
 import styles from "./ListenLaterPage.module.css";
 
 export function ListenLaterPage() {
@@ -30,7 +41,7 @@ export function ListenLaterPage() {
       setIncoming(invites.incoming);
       setOutgoing(invites.outgoing.filter((i) => i.status === "pending"));
     } catch {
-      setError("Could not load Listen Later.");
+      setError("Could not load Listen & Rate.");
     }
   }
 
@@ -56,59 +67,77 @@ export function ListenLaterPage() {
 
   return (
     <main className={styles.page}>
-      <h1>Listen &amp; Rate</h1>
+      <h1 className={styles.pageTitle}>Listen &amp; Rate</h1>
 
       <div className={styles.layout}>
-        <aside className={styles.sidebar}>
-          <section className={styles.sideSection}>
-            <h2>Incoming invites</h2>
-            {incoming.length === 0 ? (
-              <p className={styles.sidebarEmpty}>No invites right now.</p>
-            ) : (
-              incoming.map((inv) => (
-                <SidebarInvite
-                  key={inv.id}
-                  invite={inv}
-                  variant="incoming"
-                  onAccept={handleAccept}
-                  onDecline={handleDecline}
-                />
-              ))
-            )}
-          </section>
+        <aside className={styles.rail}>
+          <InviteBox title="Incoming invites" count={incoming.length} empty="No invites right now.">
+            {incoming.map((inv) => (
+              <SidebarInvite
+                key={inv.id}
+                invite={inv}
+                variant="incoming"
+                onAccept={handleAccept}
+                onDecline={handleDecline}
+              />
+            ))}
+          </InviteBox>
 
-          <section className={styles.sideSection}>
-            <h2>Outgoing invites</h2>
-            {outgoing.length === 0 ? (
-              <p className={styles.sidebarEmpty}>Nothing pending.</p>
-            ) : (
-              outgoing.map((inv) => (
-                <SidebarInvite
-                  key={inv.id}
-                  invite={inv}
-                  variant="outgoing"
-                  onCancel={handleCancel}
-                />
-              ))
-            )}
-          </section>
+          <InviteBox title="Outgoing invites" count={outgoing.length} empty="Nothing pending.">
+            {outgoing.map((inv) => (
+              <SidebarInvite
+                key={inv.id}
+                invite={inv}
+                variant="outgoing"
+                onCancel={handleCancel}
+              />
+            ))}
+          </InviteBox>
         </aside>
 
-        <section className={styles.main}>
+        <section>
           {entries.length === 0 ? (
             <div className={styles.empty}>
-              Nothing here yet. Search for an album and tap "Listen Later".
+              Nothing here yet. Search for an album and tap “Listen & Rate”.
             </div>
           ) : (
-            <div className={styles.list}>
+            <div className={styles.cardGrid}>
               {entries.map((e) => (
-                <Row key={e.album.id} entry={e} onRemoved={reload} />
+                <EntryCard key={e.album.id} entry={e} onRemoved={reload} />
               ))}
             </div>
           )}
         </section>
       </div>
     </main>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Invite box — styled like the Home trending boxes.
+// ---------------------------------------------------------------------------
+
+function InviteBox({
+  title,
+  count,
+  empty,
+  children,
+}: {
+  title: string;
+  count: number;
+  empty: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className={styles.tbox}>
+      <div className={styles.tboxHead}>
+        <span className={styles.tboxTitle}>{title}</span>
+        {count > 0 && <span className={styles.tboxCount}>{count}</span>}
+      </div>
+      <div className={styles.tlist}>
+        {count === 0 ? <p className={styles.emptyLine}>{empty}</p> : children}
+      </div>
+    </section>
   );
 }
 
@@ -133,73 +162,86 @@ function SidebarInvite({
 
   const other = variant === "incoming" ? invite.sender_username : invite.receiver_username;
   const otherPic = variant === "incoming" ? invite.sender_picture_url : invite.receiver_picture_url;
-  const blurb =
-    variant === "incoming"
-      ? `${other} invited you`
-      : `Waiting on ${other}`;
 
   return (
-    <article className={styles.sideItem}>
-      <Link to={`/albums/${invite.album.spotify_id}`} className={styles.sideAlbum}>
-        {invite.album.album_art_url && (
-          <img
-            className={styles.sideArt}
-            src={invite.album.album_art_url}
-            alt={invite.album.title}
-          />
+    <div className={styles.tRow}>
+      <Link to={`/albums/${invite.album.spotify_id}`} className={styles.tArtLink} aria-hidden tabIndex={-1}>
+        {invite.album.album_art_url ? (
+          <img className={styles.tArt} src={invite.album.album_art_url} alt="" />
+        ) : (
+          <span className={`${styles.tArt} ${styles.tArtEmpty}`} aria-hidden>♪</span>
         )}
-        <div className={styles.sideMeta}>
-          <strong>{invite.album.title}</strong>
-          <span>{invite.album.artist}</span>
-        </div>
       </Link>
-      <div className={styles.sideFooter}>
-        <span className={styles.sideBlurb}>
-          <Avatar username={other} pictureUrl={otherPic} size={18} />
-          <Link to={profilePath(other)}>{blurb}</Link>
-        </span>
-        <span className={styles.sideActions}>
+      <div className={styles.tInfo}>
+        <Link className={styles.tTitle} to={`/albums/${invite.album.spotify_id}`}>
+          {invite.album.title}
+        </Link>
+        <span className={styles.tSub}>{invite.album.artist}</span>
+        <span className={styles.fromLine}>
           {variant === "incoming" ? (
             <>
-              <button
-                className={styles.sideBtnPrimary}
-                onClick={() => run(() => onAccept!(invite.id))}
-                disabled={busy}
-              >
-                Accept
-              </button>
-              <button
-                className={styles.sideBtnGhost}
-                onClick={() => run(() => onDecline!(invite.id))}
-                disabled={busy}
-              >
-                Decline
-              </button>
+              <Avatar username={other} pictureUrl={otherPic} size={16} />
+              <Link to={profilePath(other)}>{other}</Link>
+              <span>invited you</span>
             </>
           ) : (
-            <button
-              className={styles.sideBtnGhost}
-              onClick={() => run(() => onCancel!(invite.id))}
-              disabled={busy}
-            >
-              Cancel
-            </button>
+            <>
+              <span>Invited</span>
+              <Avatar username={other} pictureUrl={otherPic} size={16} />
+              <Link to={profilePath(other)}>{other}</Link>
+            </>
           )}
         </span>
       </div>
-    </article>
+      <div className={styles.tActions}>
+        {variant === "incoming" ? (
+          <>
+            <button
+              className={`${styles.iconBtn} ${styles.iconBtnSm} ${styles.iconAccept}`}
+              onClick={() => run(() => onAccept!(invite.id))}
+              disabled={busy}
+              aria-label="Accept"
+              data-tip="Accept"
+            >
+              <CheckIcon size={16} />
+            </button>
+            <button
+              className={`${styles.iconBtn} ${styles.iconBtnSm} ${styles.iconDecline}`}
+              onClick={() => run(() => onDecline!(invite.id))}
+              disabled={busy}
+              aria-label="Decline"
+              data-tip="Decline"
+            >
+              <CloseIcon size={16} />
+            </button>
+          </>
+        ) : (
+          <button
+            className={`${styles.iconBtn} ${styles.iconBtnSm} ${styles.iconDecline}`}
+            onClick={() => run(() => onCancel!(invite.id))}
+            disabled={busy}
+            aria-label="Cancel"
+            data-tip="Cancel"
+          >
+            <CloseIcon size={16} />
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 
-function Row({ entry, onRemoved }: { entry: ListenLaterEntry; onRemoved: () => Promise<void> }) {
+// ---------------------------------------------------------------------------
+// Queue card
+// ---------------------------------------------------------------------------
+
+function EntryCard({ entry, onRemoved }: { entry: ListenLaterEntry; onRemoved: () => Promise<void> }) {
   const [confirming, setConfirming] = useState(false);
   const [removing, setRemoving] = useState(false);
 
   async function handleRemove() {
     setRemoving(true);
     try {
-      // Removes the draft (if any) and withdraws from any invite, so an
-      // accepted-invite row with no draft yet can still be removed.
       await removeFromListenLater(entry.album.id);
       await onRemoved();
     } finally {
@@ -207,56 +249,52 @@ function Row({ entry, onRemoved }: { entry: ListenLaterEntry; onRemoved: () => P
     }
   }
 
-  // Pending invites don't yet count as a shared listen — render those rows
-  // as solo until the other side accepts.
+  // Pending invites don't count as a shared listen yet — treat those as solo.
   const activeParticipants = entry.participants.filter(
     (p) => p.invite_status === "accepted"
   );
+  const totalMs = entry.album.tracks.reduce((sum, t) => sum + (t.duration_ms ?? 0), 0);
+  const hasAnyDuration = entry.album.tracks.some((t) => t.duration_ms != null);
+
   return (
-    <article className={styles.row}>
-      <Link to={`/albums/${entry.album.spotify_id}`}>
-        {entry.album.album_art_url && (
-          <img
-            className={styles.art}
-            src={entry.album.album_art_url}
-            alt={entry.album.title}
-          />
+    <article className={styles.qcard}>
+      <Link className={styles.qcoverLink} to={`/albums/${entry.album.spotify_id}`} aria-hidden tabIndex={-1}>
+        {entry.album.album_art_url ? (
+          <img className={styles.qcover} src={entry.album.album_art_url} alt="" />
+        ) : (
+          <span className={`${styles.qcover} ${styles.qcoverEmpty}`} aria-hidden>♪</span>
         )}
       </Link>
-      <div className={styles.info}>
-        <h3>
-          <Link to={`/albums/${entry.album.spotify_id}`} style={{ color: "inherit", textDecoration: "none" }}>
-            {entry.album.title}
+
+      <div className={styles.qbody}>
+        <Link className={styles.entryTitle} to={`/albums/${entry.album.spotify_id}`}>
+          {entry.album.title}
+        </Link>
+        {entry.album.artist_spotify_id ? (
+          <Link className={styles.entryArtist} to={`/artists/${entry.album.artist_spotify_id}`}>
+            {entry.album.artist}
           </Link>
-        </h3>
-        <p>
-          {entry.album.artist_spotify_id ? (
-            <Link
-              to={`/artists/${entry.album.artist_spotify_id}`}
-              className={styles.artistLink}
-            >
-              {entry.album.artist}
-            </Link>
-          ) : (
-            entry.album.artist
-          )}{" "}
-          · {entry.album.release_date.slice(0, 4)}
-        </p>
-        {activeParticipants.length > 0 && (
-          <div className={styles.chipRow}>
-            <span style={{ color: "var(--text-muted)", fontSize: "0.8rem", alignSelf: "center" }}>
-              Listening with:
-            </span>
-            {activeParticipants.map((p) => (
-              <ParticipantChip key={p.username} p={p} />
-            ))}
-          </div>
+        ) : (
+          <span className={styles.entryArtist}>{entry.album.artist}</span>
         )}
+        <div className={styles.metaChips}>
+          <span className={styles.metaChip}>
+            <DiscIcon size={14} className={styles.metaChipIcon} />
+            <span className={styles.metaChipText}>{formatDate(entry.album.release_date)}</span>
+          </span>
+          {hasAnyDuration && (
+            <span className={styles.metaChip}>
+              <HourglassIcon size={14} className={styles.metaChipIcon} />
+              <span className={styles.metaChipText}>{formatDuration(totalMs)}</span>
+            </span>
+          )}
+        </div>
       </div>
-      <div className={styles.actions}>
+
+      <div className={styles.qFooter}>
         {confirming ? (
           <div className={styles.confirm}>
-            <span className={styles.confirmText}>Remove from Listen Later?</span>
+            <span className={styles.confirmText}>Remove from Listen & Rate?</span>
             <div className={styles.confirmButtons}>
               <button
                 className={styles.removeConfirmBtn}
@@ -276,16 +314,28 @@ function Row({ entry, onRemoved }: { entry: ListenLaterEntry; onRemoved: () => P
           </div>
         ) : (
           <>
-            <Link
-              className={styles.action}
-              to={`/albums/${entry.album.spotify_id}/rate`}
-              state={{ from: "/listen-later" }}
-            >
-              Rate
-            </Link>
-            <button className={styles.removeBtn} onClick={() => setConfirming(true)}>
-              Remove
-            </button>
+            <div className={styles.qActions}>
+              <Link
+                className={`${styles.iconBtn} ${styles.iconRate}`}
+                to={`/albums/${entry.album.spotify_id}/rate`}
+                state={{ from: "/listen-later" }}
+                aria-label="Rate"
+                data-tip="Rate"
+              >
+                <StarIcon size={22} />
+              </Link>
+              <button
+                className={`${styles.iconBtn} ${styles.iconRemove}`}
+                onClick={() => setConfirming(true)}
+                aria-label="Remove"
+                data-tip="Remove"
+              >
+                <TrashIcon size={22} />
+              </button>
+            </div>
+            {activeParticipants.length > 0 && (
+              <ListeningWithStack participants={activeParticipants} />
+            )}
           </>
         )}
       </div>
@@ -293,26 +343,106 @@ function Row({ entry, onRemoved }: { entry: ListenLaterEntry; onRemoved: () => P
   );
 }
 
-function ParticipantChip({ p }: { p: ListenLaterParticipant }) {
-  const tag =
-    p.direction === "outgoing" ? "(you invited)" : "(invited you)";
+// ---------------------------------------------------------------------------
+// ListeningWithStack — a compact avatar stack (2 photos + "+N") in the card's
+// bottom corner. Clicking opens a scrollable dropdown (album-page combo styling)
+// with each participant's invite direction + rating/published status.
+// ---------------------------------------------------------------------------
 
-  let className = styles.chip;
-  let suffix = "";
-  if (p.they_published) {
-    className = `${styles.chip} ${styles.chipDone}`;
-    suffix = " · published";
-  } else if (p.invite_status === "pending") {
-    className = `${styles.chip} ${styles.chipPending}`;
-    suffix = p.direction === "outgoing" ? " · waiting on them" : " · waiting on you";
-  }
+const MAX_AVATARS = 2;
+
+function ListeningWithStack({ participants }: { participants: ListenLaterParticipant[] }) {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDoc(e: MouseEvent) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const shown = participants.slice(0, MAX_AVATARS);
+  const extra = participants.length - shown.length;
+  const label = `Listening with ${participants.length} ${
+    participants.length === 1 ? "person" : "people"
+  }`;
+
   return (
-    <span className={className}>
-      <Link to={profilePath(p.username)} className={styles.chipUser}>
-        <Avatar username={p.username} pictureUrl={p.picture_url} size={18} />
-        <span style={{ marginLeft: 6 }}>{p.username}</span>
-      </Link>
-      <span style={{ marginLeft: 4 }}>{tag}{suffix}</span>
-    </span>
+    <div className={styles.lwrap} ref={wrapRef} data-open={open}>
+      {/* The chip opens the dropdown; the avatars inside are their own links to
+          each friend's profile (they stop the click from opening the dropdown). */}
+      <div
+        className={styles.lwChip}
+        role="button"
+        tabIndex={0}
+        onClick={() => setOpen((o) => !o)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setOpen((o) => !o);
+          }
+        }}
+        aria-expanded={open}
+        aria-label={label}
+      >
+        <span className={styles.lwIcon}>
+          <HeadphonesIcon size={18} />
+        </span>
+        <span className={styles.lwAvatars}>
+          {shown.map((p) => (
+            <Link
+              key={p.username}
+              to={profilePath(p.username)}
+              className={styles.lwAvatarLink}
+              onClick={(e) => e.stopPropagation()}
+              aria-label={p.username}
+              data-tip={p.username}
+            >
+              <Avatar
+                username={p.username}
+                pictureUrl={p.picture_url}
+                size={24}
+                className={styles.lwAvatar}
+              />
+            </Link>
+          ))}
+          {extra > 0 && <span className={styles.lwMore}>+{extra}</span>}
+        </span>
+      </div>
+      {open && (
+        <ul role="listbox" className={styles.comboList}>
+          {participants.map((p) => (
+            <li key={p.username} role="option" aria-selected={false} className={styles.comboItem}>
+              <Avatar username={p.username} pictureUrl={p.picture_url} size={32} />
+              <span className={styles.comboText}>
+                <Link className={styles.comboName} to={profilePath(p.username)}>
+                  {p.username}
+                </Link>
+                <span className={styles.comboUser}>
+                  {p.direction === "outgoing" ? "You invited" : "Invited you"}
+                </span>
+              </span>
+              <span
+                className={`${styles.statusPill} ${
+                  p.they_published ? styles.statusDone : styles.statusRating
+                }`}
+              >
+                {p.they_published ? "Published" : "Rating…"}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { EyeIcon, EyeOffIcon } from "./Icons";
 import styles from "./PasswordInput.module.css";
 
 interface PasswordInputProps {
@@ -9,7 +10,7 @@ interface PasswordInputProps {
   required?: boolean;
 }
 
-/** Password field with a show/hide "eye" toggle. */
+/** Password field with a show/hide toggle (line-drawn eye, matching our icons). */
 export function PasswordInput({
   value,
   onChange,
@@ -36,7 +37,7 @@ export function PasswordInput({
         aria-label={visible ? "Hide password" : "Show password"}
         aria-pressed={visible}
       >
-        {visible ? "🙈" : "👁"}
+        {visible ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />}
       </button>
     </div>
   );

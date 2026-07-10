@@ -15,12 +15,30 @@ interface TabsProps<T extends string> {
    * "solid" (default) — bordered segmented bar with a filled active cell.
    * "subtle" — compact, borderless text toggle (for tight headers like the
    * trending boxes); the active item gets a soft pill, no chunky border.
+   * "pill" — a clean rounded segmented control (soft container, teal active
+   * pill, no hard offset shadow) — for dashboard metric/view toggles.
    */
-  variant?: "solid" | "subtle";
+  variant?: "solid" | "subtle" | "pill";
   /** Accessible group label. */
   ariaLabel?: string;
   className?: string;
 }
+
+const CONTAINER = {
+  solid: styles.tabs,
+  subtle: styles.tabsSubtle,
+  pill: styles.tabsPill,
+} as const;
+const CELL = {
+  solid: styles.tab,
+  subtle: styles.tabSubtle,
+  pill: styles.tabPill,
+} as const;
+const ACTIVE = {
+  solid: styles.active,
+  subtle: styles.activeSubtle,
+  pill: styles.activePill,
+} as const;
 
 /**
  * Rectangular segmented control (tabs / toggle). The active cell fills with the
@@ -36,14 +54,9 @@ export function Tabs<T extends string>({
   ariaLabel,
   className,
 }: TabsProps<T>) {
-  const subtle = variant === "subtle";
   return (
     <div
-      className={[
-        subtle ? styles.tabsSubtle : styles.tabs,
-        block ? styles.block : "",
-        className ?? "",
-      ]
+      className={[CONTAINER[variant], block ? styles.block : "", className ?? ""]
         .filter(Boolean)
         .join(" ")}
       role="group"
@@ -56,9 +69,7 @@ export function Tabs<T extends string>({
             key={o.value}
             type="button"
             aria-pressed={active}
-            className={`${subtle ? styles.tabSubtle : styles.tab} ${
-              active ? (subtle ? styles.activeSubtle : styles.active) : ""
-            }`}
+            className={`${CELL[variant]} ${active ? ACTIVE[variant] : ""}`}
             onClick={() => onChange(o.value)}
           >
             {o.label}

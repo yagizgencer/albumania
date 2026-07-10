@@ -1,334 +1,349 @@
+/* Profile — album-style sticker header + dashboard, on the shared Warm Peach
+   tokens (consistent with the Album / Listen & Rate / Rating pages). */
+
+.page {
+  /* Same width + side margins as the Album / Listen & Rate pages. */
+  max-width: min(93vw, 1560px);
+  margin: 2rem auto;
+  padding: 0 0.35rem;
+  color: var(--text);
+}
+
 .card {
   display: grid;
-  grid-template-columns: 88px 1fr auto;
-  gap: 1.25rem;
-  background: var(--surface);
-  border: var(--border-w-thin) solid var(--border);
-  border-radius: 14px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--space-5);
   align-items: start;
+  background: var(--surface);
+  color: var(--text);
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-5) var(--space-6);
+  margin-bottom: var(--space-5);
+}
+[data-theme="dark"] .card {
+  box-shadow:
+    inset 0 0 0 1.5px rgba(255, 233, 208, 0.16),
+    5px 5px 0 #000,
+    0 6px 16px rgba(0, 0, 0, 0.45);
 }
 
-.avatar {
-  width: 88px;
-  height: 88px;
-}
-
+/* Avatar — clickable "sticker" thumbnail. */
 .avatarButton {
   padding: 0;
   margin: 0;
   border: none;
   background: transparent;
+  box-shadow: none;
   cursor: zoom-in;
-  border-radius: 50%;
   line-height: 0;
+  border-radius: var(--radius-pill);
+  transition: transform 0.15s ease;
 }
-
+.avatarButton:hover:not(:disabled) {
+  transform: scale(1.02);
+  box-shadow: none;
+}
 .avatarButton:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
-
-.lightboxBackdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-  padding: 1.5rem;
-}
-
-.lightbox {
-  background: var(--surface);
-  color: var(--text);
+.avatar {
   border: var(--border-w-thin) solid var(--border);
-  border-radius: var(--radius);
-  padding: 1.25rem;
-  max-width: min(90vw, 520px);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
+  box-shadow: var(--shadow-soft);
 }
 
-.lightboxImg {
-  display: block;
-  max-width: 100%;
-  max-height: 70vh;
-  border-radius: 8px;
-  object-fit: contain;
-}
-
-.lightboxFallback {
-  width: 240px;
-  height: 240px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary) 0%, var(--data) 100%);
-  color: var(--text);
-  font-size: 6rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  user-select: none;
-}
-
-.lightboxActions {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.lightboxBtnPrimary {
-  background: var(--btn-primary-bg);
-  color: var(--btn-primary-fg);
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 0.9rem;
-}
-.lightboxBtnPrimary:hover {
-  background: var(--btn-primary-bg-hover);
-}
-
-.lightboxBtnDanger {
-  background: var(--btn-danger-bg);
-  color: var(--btn-danger-fg);
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 0.9rem;
-}
-.lightboxBtnDanger:hover {
-  background: var(--btn-danger-bg-hover);
-}
-
-.lightboxBtnGhost {
-  background: transparent;
-  color: var(--text);
-  border: var(--border-w-thin) solid var(--border);
-  padding: 0.5rem 1rem;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  font-size: 0.9rem;
-}
-.lightboxBtnGhost:hover {
-  background: var(--surface-muted);
-}
-
+/* ---- Header info ---- */
 .headerInfo {
   min-width: 0;
 }
-
-.nameRow {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-}
-
 .displayName {
   margin: 0;
-  font-size: 1.6rem;
-  line-height: 1.2;
-}
-
-.privacyPill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
   font-family: var(--font-display);
-  font-size: var(--text-sm);
-  color: var(--status-warn-fg);
-  background: var(--status-warn-bg);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-pill);
-  padding: 0.05rem 0.6rem;
+  font-size: clamp(1.9rem, 3vw, 2.5rem);
+  line-height: 1.04;
 }
-
 .username {
-  margin: 0.15rem 0 0.6rem;
-  color: var(--text-subtle);
-  font-size: 0.95rem;
+  margin: 2px 0 0;
+  color: var(--text-muted);
+  font-weight: 700;
 }
-
 .description {
-  margin: 0.4rem 0 0.6rem;
+  margin: var(--space-3) 0 0;
   color: var(--text);
+  max-width: 72ch;
   word-wrap: break-word;
 }
-
-/* react-markdown renders paragraphs/lists; keep them compact in the header. */
 .description > :first-child {
   margin-top: 0;
 }
-
 .description > :last-child {
   margin-bottom: 0;
 }
-
 .descriptionPlaceholder {
-  margin: 0.4rem 0 0.6rem;
+  margin: var(--space-3) 0 0;
   color: var(--text-subtle);
   font-style: italic;
   font-size: 0.9rem;
 }
 
-.memberSince {
-  margin: 0;
-  color: var(--text-subtle);
-  font-size: 0.85rem;
-}
-
-.headerActions {
+.metaChips {
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  align-items: flex-end;
-}
-
-/* Accept + Decline sit side by side under the header actions column. */
-.friendActions {
-  display: flex;
-  gap: 0.4rem;
-}
-
-.sectionTitle {
-  margin: 0 0 0.75rem;
-  font-size: 1.15rem;
-  letter-spacing: 0.02em;
-  color: var(--text-muted);
-}
-
-.dashboardSection {
-  margin-top: 1rem;
-}
-
-.dashboardHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
   flex-wrap: wrap;
-  margin-bottom: 0.75rem;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
 }
-
-.dashboardHeader .sectionTitle {
-  margin: 0;
-}
-
-.compareControl {
+.metaChip {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.85rem;
-  color: var(--text-muted);
-}
-
-.compareLabel {
-  letter-spacing: 0.02em;
-}
-
-.compareSelect {
-  background: var(--surface);
+  gap: 0.35rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: var(--radius-pill);
+  background: var(--surface-muted);
+  border: var(--border-w-thin) solid var(--border-soft);
   color: var(--text);
-  border: var(--border-w-thin) solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 0.35rem 1.6rem 0.35rem 0.55rem;
-  font: inherit;
-  min-width: 12rem;
+  font-size: var(--text-sm);
+  font-weight: 700;
 }
-
-.combobox {
+.metaChipIcon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.metaChipText {
   position: relative;
-  display: inline-block;
+  top: 1px;
+}
+[data-theme="dark"] .metaChipIcon {
+  color: #d0c3ae;
+}
+/* Privacy chip: amber "friends only" tint. */
+.privacyChip {
+  background: color-mix(in srgb, var(--data) 26%, var(--surface));
+  border-color: color-mix(in srgb, var(--data) 55%, var(--border-soft));
+}
+.privacyChip .metaChipIcon {
+  color: var(--on-data);
 }
 
-.comboClear {
-  position: absolute;
-  right: 0.4rem;
-  top: 50%;
-  transform: translateY(-50%);
-  background: transparent;
+/* ---- Header actions (top-right) ---- */
+.headerActions {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.friendActions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+/* Icon action button (Edit) — the Album-page .iconBtn look. */
+.iconBtn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border-radius: var(--radius-pill);
+  border: var(--border-w-thin) solid var(--border);
+  box-shadow: var(--shadow-soft);
+  cursor: pointer;
+  background: var(--surface);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease,
+    color 0.12s ease;
+}
+.iconBtn svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+.iconBtn:hover:not(:disabled) {
+  transform: translate(-1px, -1px);
+  box-shadow: var(--shadow-pop);
+}
+.iconBtn:active:not(:disabled) {
+  transform: translate(1px, 1px);
+  box-shadow: none;
+}
+.iconEdit {
+  background: #d7e3ef;
+  color: #3f6f9c;
+}
+.iconEdit:hover:not(:disabled) {
+  background: #3f6f9c;
+  color: #f3f8fc;
+}
+[data-theme="dark"] .iconEdit {
+  background: #26333f;
+  color: #82b6d8;
+}
+[data-theme="dark"] .iconEdit:hover:not(:disabled) {
+  background: #5a97c2;
+  color: #08161f;
+}
+
+@media (max-width: 640px) {
+  .card {
+    grid-template-columns: auto 1fr;
+  }
+  .headerActions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+}
+
+/* ---- Dashboard section ---- */
+.dashboardSection {
+  margin-top: var(--space-5);
+}
+.sectionTitle {
+  margin: 0 0 var(--space-3);
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  color: var(--text);
+}
+
+/* ---- "Compare with" — album friend-picker searchbar + dropdown ---- */
+/* Label on top of the control (like the other filters in the panel). */
+.compareControl {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: flex-start;
+}
+.compareLabel {
+  font-size: var(--text-xs);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.searchWrap {
+  position: relative;
+}
+.searchBar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 13rem;
+  padding: 0.34rem 0.6rem;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  border: var(--border-w-thin) solid var(--border);
+  cursor: text;
+  transition: background 0.14s ease;
+}
+[data-theme="dark"] .searchBar {
+  border-color: var(--border-soft);
+}
+.searchBar:hover,
+.searchBar:focus-within {
+  background: var(--surface-muted);
+}
+.searchIcon {
+  color: var(--text-subtle);
+  flex-shrink: 0;
+}
+.searchInput {
+  flex: 1;
+  min-width: 0;
   border: none;
+  background: transparent;
+  outline: none;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--text);
+  padding: 0;
+}
+.searchInput:focus {
+  outline: none;
+  box-shadow: none;
+}
+.searchInput::placeholder {
+  color: var(--text-subtle);
+}
+.comboClear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
   box-shadow: none;
   color: var(--text-subtle);
   cursor: pointer;
-  font-size: 1.1rem;
-  line-height: 1;
-  padding: 0 0.2rem;
+  border-radius: var(--radius-pill);
 }
-
-/* Keep the vertical centering on hover/active — the global button:hover rule
-   sets `transform: translate(-1px,-1px)` + a shadow, which would knock this
-   absolutely-positioned "×" out of place. Re-assert the centering and drop the
-   nudge/shadow so it stays put. */
-.comboClear:hover:not(:disabled),
-.comboClear:active:not(:disabled) {
-  transform: translateY(-50%);
+.comboClear:hover:not(:disabled) {
+  background: var(--surface);
+  color: var(--danger-text);
+  transform: none;
   box-shadow: none;
-  filter: none;
-  color: var(--text);
 }
-
+.searchChevron {
+  color: var(--text-subtle);
+  flex-shrink: 0;
+  transition: transform 0.18s ease;
+}
+.compareControl[data-open="true"] .searchChevron {
+  transform: rotate(180deg);
+}
 .comboList {
   position: absolute;
-  z-index: 20;
-  left: 0;
+  z-index: 30;
   right: 0;
-  top: calc(100% + 4px);
+  left: 0;
+  top: calc(100% + 6px);
   list-style: none;
   margin: 0;
-  padding: 0.25rem 0;
+  padding: 0.3rem;
   background: var(--surface);
   color: var(--text);
   border: var(--border-w-thin) solid var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius);
   box-shadow: var(--shadow-modal);
-  max-height: 16rem;
+  max-height: 17rem;
   overflow-y: auto;
 }
-
+[data-theme="dark"] .comboList {
+  border-color: var(--border-soft);
+  box-shadow: var(--shadow-modal), inset 0 1px 0 rgba(255, 235, 210, 0.1);
+}
 .comboItem {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.4rem;
-  padding: 0.4rem 0.7rem;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   font-size: 0.9rem;
+  color: var(--text);
 }
-
-
 .comboItem:hover,
 .comboItemActive {
   background: var(--surface-muted);
 }
-
 .comboItemActive {
-  font-weight: 600;
+  font-weight: 700;
 }
-
-/* "Spotify" option: label + brand glyph, aligned on the left of the row. */
 .comboSpotify {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.5rem;
+  font-weight: 700;
 }
-
 .comboSpotifyIcon {
-  color: #1db954; /* Spotify green — a fixed brand color, same in both themes. */
+  color: #1db954;
   flex-shrink: 0;
 }
-
 .comboEmpty {
   padding: 0.5rem 0.7rem;
   color: var(--text-subtle);
@@ -336,92 +351,148 @@
   font-style: italic;
 }
 
+/* ---- Editor ---- */
 .editor {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: var(--space-3);
 }
-
 .editor label {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
+  font-weight: 700;
   color: var(--text-muted);
 }
-
-.editor input,
-.editor textarea,
-.editor select {
+.editor input {
   background: var(--surface);
   color: var(--text);
   border: var(--border-w-thin) solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 0.45rem 0.6rem;
+  border-radius: var(--radius);
+  padding: 0.5rem 0.65rem;
   font: inherit;
 }
-
-.editor textarea {
-  resize: vertical;
-  font-family: inherit;
+.editor input:focus {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
-
 .editorActions {
   display: flex;
-  gap: 0.5rem;
-  margin-top: 0.25rem;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
 }
-
 .editorHint {
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   color: var(--text-muted);
   margin: 0;
 }
-
 .editorHint a {
-  color: var(--btn-primary-bg);
-  font-weight: 600;
+  color: var(--link);
+  font-weight: 700;
 }
 
+/* ---- Private notice ---- */
 .privateNotice {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
 }
-
 .privateNoticeIcon {
   font-size: 1.8rem;
   line-height: 1;
   flex-shrink: 0;
 }
-
 .privateNoticeTitle {
   margin: 0 0 0.2rem;
   font-size: var(--text-lg);
 }
-
 .privateNoticeHint {
   margin: 0;
   color: var(--text-muted);
   font-size: var(--text-md);
 }
 
-@media (max-width: 600px) {
-  .card {
-    grid-template-columns: 64px 1fr;
-  }
-
-  .avatar {
-    width: 64px;
-    height: 64px;
-    font-size: 1.6rem;
-  }
-
-  .headerActions {
-    grid-column: 1 / -1;
-    flex-direction: row;
-    align-items: stretch;
-    justify-content: flex-start;
-  }
+/* ---- Avatar lightbox ---- */
+.lightboxBackdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 1.5rem;
+}
+.lightbox {
+  background: var(--surface);
+  color: var(--text);
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-5);
+  max-width: min(90vw, 520px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+}
+.lightboxImg {
+  display: block;
+  max-width: 100%;
+  max-height: 70vh;
+  border-radius: var(--radius);
+  object-fit: contain;
+  /* Solid backing so a transparent (PNG) photo reads as an opaque image. */
+  background: #fff;
+}
+.lightboxFallback {
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--data) 100%);
+  color: #3a2c14;
+  font-family: var(--font-display);
+  font-size: 6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+.lightboxActions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.lightboxBtnPrimary,
+.lightboxBtnDanger,
+.lightboxBtnGhost {
+  padding: 0.5rem 1.1rem;
+  border-radius: var(--radius);
+  border: var(--border-w-thin) solid var(--border);
+  font-weight: 800;
+  font-size: 0.9rem;
+  cursor: pointer;
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.12s ease;
+}
+.lightboxBtnPrimary:hover:not(:disabled),
+.lightboxBtnDanger:hover:not(:disabled),
+.lightboxBtnGhost:hover:not(:disabled) {
+  transform: translate(-1px, -1px);
+  box-shadow: var(--shadow-pop);
+}
+.lightboxBtnPrimary {
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+}
+.lightboxBtnDanger {
+  background: var(--btn-danger-bg);
+  color: var(--btn-danger-fg);
+}
+.lightboxBtnGhost {
+  background: var(--surface);
+  color: var(--text);
 }

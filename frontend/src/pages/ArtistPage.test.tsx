@@ -64,15 +64,15 @@ describe("ArtistPage", () => {
     vi.mocked(getArtist).mockResolvedValue(DETAIL);
     renderPage();
 
-    expect(await screen.findByRole("heading", { name: "The Artist" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /open in spotify/i })).toHaveAttribute(
+    expect(await screen.findByRole("heading", { name: /The Artist/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /open on spotify/i })).toHaveAttribute(
       "href",
       "https://open.spotify.com/artist/art1"
     );
 
     expect(screen.getByLabelText("Rated")).toBeInTheDocument();
-    expect(screen.getByLabelText("In Listen Later")).toBeInTheDocument();
-    expect(screen.getByLabelText("Add to Listen Later")).toBeInTheDocument();
+    expect(screen.getByLabelText("In Listen & Rate")).toBeInTheDocument();
+    expect(screen.getByLabelText("Add to Listen & Rate")).toBeInTheDocument();
     expect(screen.getByText("7.8")).toBeInTheDocument();
     expect(screen.getByText("(98)")).toBeInTheDocument();
   });

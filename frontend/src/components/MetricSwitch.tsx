@@ -22,7 +22,13 @@ export function MetricSwitch<T extends string>({
   return (
     <div className={styles.group}>
       <span className={styles.label}>{label}</span>
-      <Tabs options={options} value={value} onChange={onChange} ariaLabel={label} />
+      <Tabs
+        options={options}
+        value={value}
+        onChange={onChange}
+        ariaLabel={label}
+        variant="pill"
+      />
     </div>
   );
 }

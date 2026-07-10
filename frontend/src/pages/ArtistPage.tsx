@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { getArtist, type ArtistDetail } from "../api/artists";
 import { AlbumCard } from "../components/AlbumCard";
 import { Alert } from "../components/Alert";
+import { ExternalLinkIcon, SpotifyIcon } from "../components/Icons";
 import { ImageLightbox } from "../components/ImageLightbox";
 import { LoadingState } from "../components/Spinner";
 import styles from "./ArtistPage.module.css";
@@ -48,15 +49,22 @@ export function ArtistPage() {
           <div className={styles.avatarPlaceholder} aria-hidden />
         )}
         <div>
-          <h1 className={styles.name}>{artist.name}</h1>
-          <a
-            className={styles.spotifyLink}
-            href={`https://open.spotify.com/artist/${artist.spotify_id}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Open in Spotify ↗
-          </a>
+          <h1 className={styles.name}>
+            {artist.name}
+            {/* Pop-out to the artist on Spotify: a small Spotify mark + arrow as a
+                superscript badge at the top-right of the name (same as the album page). */}
+            <a
+              className={styles.spotifyLink}
+              href={`https://open.spotify.com/artist/${artist.spotify_id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Open on Spotify"
+              title="Open on Spotify"
+            >
+              <ExternalLinkIcon size={19} className={styles.spotifyArrow} />
+              <SpotifyIcon size={27} className={styles.spotifyMark} />
+            </a>
+          </h1>
         </div>
       </header>
 
@@ -69,8 +77,8 @@ export function ArtistPage() {
               key={a.spotify_id}
               spotifyId={a.spotify_id}
               title={a.title}
-              artist={a.artist}
               albumArtUrl={a.album_art_url}
+              releaseDate={a.release_date}
               totalSongs={a.total_songs}
               meanScore={a.mean_score}
               numRaters={a.num_raters}

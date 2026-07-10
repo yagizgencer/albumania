@@ -42,7 +42,15 @@ const B_COLOR = chartPalette.coral;
 const PAIR_COLOR = chartPalette.sky;
 const MEAN_COLOR = chartPalette.ink;
 
-export function FriendDashboard({ source }: { source: ComparisonSource }) {
+export function FriendDashboard({
+  source,
+  compareSlot,
+}: {
+  source: ComparisonSource;
+  /** The parent's "Compare with" control, rendered on the right of the controls
+   *  box (so switching back to solo / another friend stays with the filters). */
+  compareSlot?: ReactNode;
+}) {
   const navigate = useNavigate();
 
   const [data, setData] = useState<FriendDashboardResponse | null>(null);
@@ -264,6 +272,8 @@ export function FriendDashboard({ source }: { source: ComparisonSource }) {
           To
           <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
         </label>
+
+        {compareSlot && <div className={styles.controlsRight}>{compareSlot}</div>}
       </section>
 
       <section className={styles.chartCard}>

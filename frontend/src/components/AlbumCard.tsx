@@ -4,15 +4,16 @@ import { createRating } from "../api/ratings";
 import { getAlbum } from "../api/albums";
 import type { AlbumStatus } from "../api/artists";
 import { isRateable, RATEABLE_RULE_TEXT } from "../lib/albumRules";
-import { CheckIcon, HeadphonesIcon, PlusIcon } from "./Icons";
+import { formatDate } from "../lib/date";
+import { CheckIcon, DiscIcon, HeadphonesIcon, PlusIcon } from "./Icons";
 import { ScoreMeter } from "./ScoreMeter";
 import styles from "./AlbumCard.module.css";
 
 interface AlbumCardProps {
   spotifyId: string;
   title: string;
-  artist: string;
   albumArtUrl: string | null;
+  releaseDate: string;
   totalSongs: number;
   meanScore: number | null;
   numRaters: number;
@@ -23,15 +24,15 @@ const STATIC_BADGE: Record<
   "draft" | "published",
   { className: string; label: string; icon: typeof CheckIcon }
 > = {
-  draft: { className: styles.badgeDraft, label: "In Listen Later", icon: HeadphonesIcon },
+  draft: { className: styles.badgeDraft, label: "In Listen & Rate", icon: HeadphonesIcon },
   published: { className: styles.badgePublished, label: "Rated", icon: CheckIcon },
 };
 
 export function AlbumCard({
   spotifyId,
   title,
-  artist,
   albumArtUrl,
+  releaseDate,
   totalSongs,
   meanScore,
   numRaters,
@@ -72,15 +73,15 @@ export function AlbumCard({
               className={`${styles.badge} ${styles.badgeNone} ${styles.badgeBtn}`}
               role="button"
               tabIndex={0}
-              aria-label="Add to Listen Later"
+              aria-label="Add to Listen & Rate"
               aria-busy={adding}
-              title="Add to Listen Later"
+              title="Add to Listen & Rate"
               onClick={handleAdd}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") handleAdd(e);
               }}
             >
-              <PlusIcon size={16} />
+              <PlusIcon size={19} />
             </span>
           ) : (
             <span
@@ -88,7 +89,7 @@ export function AlbumCard({
               aria-label={RATEABLE_RULE_TEXT}
               title={RATEABLE_RULE_TEXT}
             >
-              <PlusIcon size={16} />
+              <PlusIcon size={19} />
             </span>
           )
         ) : (
@@ -99,13 +100,20 @@ export function AlbumCard({
           >
             {(() => {
               const Icon = STATIC_BADGE[currentStatus].icon;
-              return <Icon size={16} />;
+              return <Icon size={19} />;
             })()}
           </span>
         )}
       </div>
-      <div className={styles.title}>{title}</div>
-      <div className={styles.artist}>{artist}</div>
+      <div className={styles.title} title={title}>
+        {title}
+      </div>
+      <div className={styles.meta}>
+        <span className={styles.metaChip}>
+          <DiscIcon size={13} className={styles.metaChipIcon} />
+          <span className={styles.metaChipText}>{formatDate(releaseDate)}</span>
+        </span>
+      </div>
       <div className={styles.footer}>
         {numRaters === 0 || meanScore === null ? (
           <span className={styles.rating}>—</span>

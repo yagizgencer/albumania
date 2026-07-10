@@ -466,6 +466,37 @@ export function PencilIcon({ size = 24, className }: IconProps) {
   );
 }
 
+/** Notepad + text lines + pencil — indicates a track has a written note. */
+export function NoteIcon({ size = 24, className }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={sketchStroke(size)}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      {/* notepad body */}
+      <rect x="4" y="5" width="16" height="15" rx="2.5" />
+      {/* spiral-binding tabs */}
+      <path d="M8.5 3v3" />
+      <path d="M12 3v3" />
+      <path d="M15.5 3v3" />
+      {/* written lines (shorter where the pencil sits) */}
+      <path d="M8 11h8" />
+      <path d="M8 14h6" />
+      <path d="M8 17h3" />
+      {/* pencil, writing at the bottom-right */}
+      <path d="M17.8 13.2a1.9 1.9 0 0 1 2.7 2.7l-5 5-3.4 1 1-3.4z" />
+    </svg>
+  );
+}
+
 /** Trash can — delete action. Outline style for menu items. */
 export function TrashIcon({ size = 24, className }: IconProps) {
   return (
@@ -485,6 +516,235 @@ export function TrashIcon({ size = 24, className }: IconProps) {
       <path d="M9 7V5c0-.6.4-1 1-1h4c.6 0 1 .4 1 1v2" />
       <path d="M6 7l1 12c0 .6.4 1 1 1h8c.6 0 1-.4 1-1l1-12" />
       <path d="M10 11v6M14 11v6" />
+    </svg>
+  );
+}
+
+/** Person with a plus — "add friend". */
+export function UserPlusIcon({ size = 24, className }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={sketchStroke(size)}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <circle cx="9" cy="8" r="3.4" />
+      <path d="M3.5 20c0-3.3 2.5-5.5 5.5-5.5s5.5 2.2 5.5 5.5" />
+      <path d="M18 8.5v5M15.5 11h5" />
+    </svg>
+  );
+}
+
+/** Calendar — "member since" / date glyph. */
+export function CalendarIcon({ size = 24, className }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={sketchStroke(size)}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <rect x="4" y="5" width="16" height="15" rx="2" />
+      <path d="M4 9.5h16" />
+      <path d="M8 3v4M16 3v4" />
+    </svg>
+  );
+}
+
+/** Padlock — "friends only" / private glyph. */
+export function LockIcon({ size = 24, className }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={sketchStroke(size)}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <rect x="5" y="11" width="14" height="9" rx="2" />
+      <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+    </svg>
+  );
+}
+
+/** X — a small close / remove glyph. */
+export function CloseIcon({ size = 24, className }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={sketchStroke(size)}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M6 6l12 12M18 6 6 18" />
+    </svg>
+  );
+}
+
+/** Floppy disk — "save draft". */
+export function SaveIcon({ size = 24, className }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={sketchStroke(size)}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M5 3.5h11l3 3v13a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 19.5V5A1.5 1.5 0 0 1 5 3.5z" />
+      <path d="M8 3.5v5h7" />
+      <rect x="8" y="13" width="8" height="6.5" rx="0.5" />
+    </svg>
+  );
+}
+
+export function EyeIcon({ size = 24, className }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={sketchStroke(size)}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" />
+      <circle cx="12" cy="12" r="3.1" />
+    </svg>
+  );
+}
+
+export function EyeOffIcon({ size = 24, className }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={sketchStroke(size)}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      {/* Open eye with a slash — reads as "hidden" without a cartoon face. */}
+      <path d="M4.5 9C3.4 10.1 2.5 12 2.5 12S6 18.5 12 18.5c1.5 0 2.8-.3 4-.9" />
+      <path d="M9.8 6C10.5 5.7 11.2 5.5 12 5.5 18 5.5 21.5 12 21.5 12s-1 1.8-2.8 3.4" />
+      <path d="M9.9 9.9a3.1 3.1 0 0 0 4.3 4.3" />
+      <line x1="4" y1="4" x2="20" y2="20" />
+    </svg>
+  );
+}
+
+export function SunIcon({ size = 24, className }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={sketchStroke(size)}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.5 1.5M17.9 17.9l1.5 1.5M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.5-1.5M17.9 6.1l1.5-1.5" />
+    </svg>
+  );
+}
+
+export function MoonIcon({ size = 24, className }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={sketchStroke(size)}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M20 14.2A8 8 0 0 1 9.8 4 8 8 0 1 0 20 14.2z" />
+    </svg>
+  );
+}
+
+export function MonitorIcon({ size = 24, className }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={sketchStroke(size)}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <rect x="2.7" y="4" width="18.6" height="12" rx="1.5" />
+      <path d="M8.5 20h7M12 16v4" />
+    </svg>
+  );
+}
+
+export function ShieldCheckIcon({ size = 24, className }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={sketchStroke(size)}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M12 3 5 5.6v5.2c0 4.3 2.9 8.3 7 9.5 4.1-1.2 7-5.2 7-9.5V5.6L12 3z" />
+      <path d="M8.8 11.8 11 14l4.2-4.4" />
     </svg>
   );
 }

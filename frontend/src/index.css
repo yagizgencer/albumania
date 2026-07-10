@@ -360,13 +360,16 @@ a:hover {
   font-family: var(--font-body);
   letter-spacing: normal;
   text-transform: none;
+  /* Own line-height so hosts with line-height:0 (e.g. an avatar link) don't
+     squash the tooltip text. */
+  line-height: 1.4;
   white-space: nowrap;
   padding: 0.2rem 0.5rem;
   border-radius: 6px;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.12s ease;
-  z-index: 60;
+  z-index: 200;
 }
 [data-tip]:hover::before,
 [data-tip]:focus-visible::before {
@@ -378,4 +381,15 @@ a:hover {
 [data-tip][data-tip-pos="above"]::before {
   top: auto;
   bottom: calc(100% + 7px);
+}
+
+/* `data-tip-pos="left"` puts the chip to the left of the element — for buttons
+   inside scrollable/clipping panels (search results, request lists) where a
+   below/above chip would be clipped by the container's overflow. */
+[data-tip][data-tip-pos="left"]::before {
+  top: 50%;
+  bottom: auto;
+  left: auto;
+  right: calc(100% + 7px);
+  transform: translateY(-50%);
 }
