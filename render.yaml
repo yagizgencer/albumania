@@ -11,6 +11,12 @@ services:
         sync: false
       - key: JWT_SECRET
         generateValue: true
+      # Cross-site cookie flow (Vercel frontend → Render API) needs SameSite=None
+      # + Secure, which cookie_secure enables. Without this the refresh cookie is
+      # SameSite=Lax and never sent on /auth/refresh, logging users out after the
+      # access token expires (~15 min).
+      - key: COOKIE_SECURE
+        value: "true"
       - key: SPOTIFY_CLIENT_ID
         sync: false
       - key: SPOTIFY_CLIENT_SECRET

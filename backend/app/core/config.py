@@ -1,6 +1,11 @@
 from functools import lru_cache
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# The out-of-the-box JWT secret. Fine for local dev; a security hole in prod
+# (anyone who knows it can forge tokens), so `_guard_prod_secrets` rejects it there.
+INSECURE_JWT_DEFAULT = "dev-secret-change-me"
 
 
 class Settings(BaseSettings):
@@ -11,7 +16,7 @@ class Settings(BaseSettings):
     )
 
     database_url: str = "sqlite:///./albumania.db"
-    jwt_secret: str = "dev-secret-change-me"
+    jwt_secret: str = INSECURE_JWT_DEFAULT
     jwt_access_ttl_minutes: int = 15
     jwt_refresh_ttl_days: int = 30
     spotify_client_id: str = ""
@@ -47,6 +52,19 @@ class Settings(BaseSettings):
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    @model_validator(mode="after")
+    def _guard_prod_secrets(self) -> "Settings":
+        # cookie_secure is only true in production (Render), so it doubles as a
+        # "this is prod" signal. Booting prod with the default dev secret would
+        # let anyone forge JWTs — fail fast instead of shipping it. Local dev and
+        # tests leave cookie_secure=False, so this is a no-op there.
+        if self.cookie_secure and self.jwt_secret == INSECURE_JWT_DEFAULT:
+            raise ValueError(
+                "JWT_SECRET must be set to a real secret in production "
+                "(cookie_secure is true but JWT_SECRET is still the dev default)."
+            )
+        return self
 
 
 @lru_cache
