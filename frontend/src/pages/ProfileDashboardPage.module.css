@@ -61,34 +61,31 @@
   margin-left: auto;
 }
 
-/* Scoped to the filter inputs (inside labels) so it doesn't style the compare
-   searchbar's borderless input, which also lives in this controls box. */
-.controls label select,
-.controls label input[type="text"],
-.controls label input[type="date"] {
+/* Scoped with `>` to the filter fields that are DIRECT children of a label (the
+   artist/album text input + the sort select), so it doesn't touch the compare
+   searchbar's borderless input or the custom <DatePicker>'s inner input (both
+   nested deeper). The date fields are styled in DatePicker.module.css. */
+.controls label > select,
+.controls label > input[type="text"] {
   padding: 0.35rem 0.55rem;
   border-radius: var(--radius);
   border: var(--border-w-thin) solid var(--border);
   background: var(--surface);
   color: var(--text);
   font: inherit;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
 }
 /* Dark: the near-black border vanishes on the dark surface — lighten it so the
    fields keep their outline/form. */
-[data-theme="dark"] .controls label select,
-[data-theme="dark"] .controls label input[type="text"],
-[data-theme="dark"] .controls label input[type="date"] {
+[data-theme="dark"] .controls label > select,
+[data-theme="dark"] .controls label > input[type="text"] {
   border-color: color-mix(in srgb, var(--border-soft) 60%, var(--text-subtle));
 }
-.controls label input:focus,
-.controls label select:focus {
+.controls label > input:focus,
+.controls label > select:focus {
   outline: none;
+  border-color: var(--select);
   box-shadow: var(--focus-ring);
-}
-/* Dark: the browser's native date-picker calendar glyph is dark ink — invert it
-   so it's visible on the dark field. */
-[data-theme="dark"] .controls label input[type="date"]::-webkit-calendar-picker-indicator {
-  filter: invert(0.8);
 }
 
 .controls input[type="checkbox"] {

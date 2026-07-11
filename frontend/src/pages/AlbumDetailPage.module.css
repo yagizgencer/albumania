@@ -10,10 +10,6 @@
   margin: 2rem auto;
   padding: 0 0.35rem;
   color: var(--text);
-  /* Dark-mode ring for the similarity-tile avatars + Spotify circle: the same
-     warm broken-white as the album/artist name text (--text in dark), so the
-     outline reads clearly on the dark surface. */
-  --avatar-ring-dark: var(--text);
 }
 
 /* Back-to-dashboard: a breadcrumb pill sitting OUTSIDE (above) the card — quiet
@@ -423,11 +419,6 @@
 .simAvatarLink > span {
   border-width: 1px;
 }
-/* Dark mode: lift the outline to the album/artist name text colour so it reads
-   against the dark surface (the default near-black --border vanishes there). */
-[data-theme="dark"] .simAvatarLink > span {
-  border-color: var(--avatar-ring-dark);
-}
 
 .simDash {
   color: var(--text-subtle);
@@ -452,9 +443,6 @@
   background: #1db954;
   color: #1db954;
   flex-shrink: 0;
-}
-[data-theme="dark"] .simSpotify {
-  border-color: var(--avatar-ring-dark);
 }
 .simSpotify svg {
   width: 100%;

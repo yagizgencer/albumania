@@ -138,7 +138,14 @@
   --paper: #211b16;
   --surface: #2c251f;
   --surface-muted: #38302a;
-  --border: #0f0b08;           /* deep line so the sticker shadow still reads */
+  --border: #c4b8a2;           /* "kırık beyaz" (broken white): near-black vanishes
+                                  on the dark surface, so borders/lines lift to a
+                                  warm, dimmed broken-white — darker than --text so
+                                  edges read as edges, not bright lines. */
+  /* Thinner borders in dark mode: a bright line at the light-mode width reads too
+     heavy against the dark ground, so drop each width by ~1px. */
+  --border-w: 2px;
+  --border-w-thin: 1px;
   --border-soft: #4a4038;
   --text: #ece0cf;             /* warm broken white — not a stark pure white */
   --text-muted: #bcaf9f;

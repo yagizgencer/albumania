@@ -501,6 +501,12 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+/* The sticker is flush into the card's bottom-right corner, so the hard black
+   offset from --shadow-soft pokes out past the card's top/right edges and reads
+   as a black corner in dark mode. Keep only the warm inset bevel (no offset). */
+[data-theme="dark"] .scoreSticker {
+  box-shadow: inset 1.5px 1.5px 0 rgba(255, 235, 210, 0.28);
+}
 .scoreStickerOut {
   font-size: 0.72rem;
   opacity: 0.7;
@@ -649,11 +655,6 @@
   font-weight: 800;
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
-}
-/* Subtle thin outline: dark ink in light mode, a warm light hairline in dark. */
-[data-theme="dark"] .lwAvatar,
-[data-theme="dark"] .lwMore {
-  border-color: color-mix(in srgb, var(--text) 52%, transparent);
 }
 /* Dropdown opens downward from the chip. */
 .comboList {

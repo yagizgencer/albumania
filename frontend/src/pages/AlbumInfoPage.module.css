@@ -428,11 +428,10 @@
 }
 
 [data-theme="dark"] .statCount {
-  /* A bit lighter green than light mode so the light number reads on it, and a
-     dark hairline outline to lift it off the amber pill. */
+  /* A bit lighter green than light mode so the light number reads on it. The
+     hairline outline follows the global --border (light in dark mode). */
   background: #3aa088;
   color: #04231c;
-  border-color: var(--border);
 }
 
 .statCountIcon {
@@ -854,7 +853,6 @@ button.tracksToggle:active:not(:disabled) {
 [data-theme="dark"] .friendCount {
   background: #3aa088;
   color: #04231c;
-  border-color: var(--border);
 }
 .friendCount svg {
   width: 11px;

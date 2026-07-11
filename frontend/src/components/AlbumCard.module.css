@@ -63,6 +63,9 @@
 
 .badgeBtn:hover {
   background: var(--primary);
+  /* Dark ink that reads on the coral fill in both themes — the resting
+     --text-muted glyph would vanish on coral in dark mode. */
+  color: var(--on-primary);
   transform: scale(1.15);
   filter: brightness(1.05);
 }
@@ -77,7 +80,9 @@
 }
 
 .badgeDisabled {
-  background: var(--border);
+  /* A muted disc for the disabled state. Uses --surface-muted (not --border)
+     so it stays a quiet grey in dark mode instead of flipping to the light ink. */
+  background: var(--surface-muted);
   opacity: 0.55;
   cursor: not-allowed;
 }

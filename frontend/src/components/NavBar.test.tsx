@@ -87,4 +87,33 @@ describe("NavBar", () => {
       expect(within(screen.getByRole("listbox")).getByText("Artist")).toBeInTheDocument();
     });
   });
+
+  it("orders results by relevance, mixing albums and artists (not artists-first)", async () => {
+    // The album's title matches the query exactly; the artist only contains it.
+    // A relevance mix must therefore surface the album ABOVE the artist, even
+    // though artists used to always come first.
+    vi.mocked(searchAlbums).mockResolvedValue([
+      { ...ALBUM, spotify_id: "exact", title: "Halcyon" },
+    ]);
+    vi.mocked(searchArtists).mockResolvedValue([
+      { spotify_id: "loose", name: "Halcyon Days Band", image_url: null },
+    ]);
+
+    renderNav();
+    const input = screen.getByLabelText(/search albums and artists/i);
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: "halcyon" } });
+
+    const list = await screen.findByRole("listbox");
+    await waitFor(() => {
+      expect(within(list).getByText("Halcyon")).toBeInTheDocument();
+    });
+
+    const options = within(list).getAllByRole("option");
+    // Exact-title album first, looser artist match second.
+    expect(options[0]).toHaveTextContent("Halcyon");
+    expect(options[0]).toHaveTextContent("Album");
+    expect(options[1]).toHaveTextContent("Halcyon Days Band");
+    expect(options[1]).toHaveTextContent("Artist");
+  });
 });

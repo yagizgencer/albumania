@@ -51,7 +51,6 @@
 }
 .avatar {
   border: var(--border-w-thin) solid var(--border);
-  box-shadow: var(--shadow-soft);
 }
 
 /* ---- Header info ---- */

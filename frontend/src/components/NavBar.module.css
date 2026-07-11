@@ -175,12 +175,6 @@ button.item:active:not(:disabled) {
 .profileBtn > span {
   border-width: 1px;
 }
-/* The profile avatar carries an ink ring in light mode (its own border), but in
-   dark mode that near-black ring vanishes against the navbar — lift it to the
-   album/artist name text colour (--text), matching the comparison-page avatars. */
-[data-theme="dark"] .profileBtn > span {
-  border-color: var(--text);
-}
 
 .menu {
   position: absolute;

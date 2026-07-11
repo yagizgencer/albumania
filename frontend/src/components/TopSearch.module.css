@@ -153,7 +153,8 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--text-subtle);
+  /* Match the text to the outline colour (--border) — lighter in dark mode. */
+  color: var(--border);
   border: 1.5px solid var(--border);
   border-radius: 999px;
   padding: 0.1rem 0.5rem;

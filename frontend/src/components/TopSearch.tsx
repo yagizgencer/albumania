@@ -16,6 +16,49 @@ const FILTERS: { value: Filter; label: string }[] = [
   { value: "artists", label: "Artists" },
 ];
 
+/**
+ * How strongly a result's name matches the typed query — a lower number is a
+ * better match. Spotify returns each type (artists, albums) already ranked by
+ * its own relevance, but the two lists arrive separately; scoring on the name
+ * lets us interleave them into one Spotify-like "most relevant first" list
+ * instead of always showing every artist before every album.
+ */
+function matchTier(name: string, q: string): number {
+  const n = name.trim().toLowerCase();
+  if (n === q) return 0; // exact
+  if (n.startsWith(q)) return 1; // prefix
+  if (n.includes(q)) return 2; // contains
+  return 3; // fuzzy / Spotify thought it relevant even without a substring hit
+}
+
+/**
+ * Merge Spotify's separately-ranked artist + album lists into one relevance-
+ * ordered list. Primary key: how well the name matches the query; tie-break:
+ * each item's original position in its Spotify bucket (that bucket's own
+ * relevance rank). A stable sort keeps that ordering within a tier.
+ */
+function mixByRelevance(
+  q: string,
+  artists: ArtistSearchResult[],
+  albums: AlbumSearchResult[],
+): SearchHit[] {
+  const query = q.trim().toLowerCase();
+  const scored = [
+    ...artists.map((artist, rank) => ({
+      hit: { kind: "artist" as const, artist },
+      tier: matchTier(artist.name, query),
+      rank,
+    })),
+    ...albums.map((album, rank) => ({
+      hit: { kind: "album" as const, album },
+      tier: matchTier(album.title, query),
+      rank,
+    })),
+  ];
+  scored.sort((a, b) => a.tier - b.tier || a.rank - b.rank);
+  return scored.map((s) => s.hit);
+}
+
 export function TopSearch() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
@@ -47,11 +90,7 @@ export function TopSearch() {
           wantAlbums ? searchAlbums(q) : Promise.resolve([]),
           wantArtists ? searchArtists(q) : Promise.resolve([]),
         ]);
-        const next: SearchHit[] = [
-          ...artists.map((artist): SearchHit => ({ kind: "artist", artist })),
-          ...albums.map((album): SearchHit => ({ kind: "album", album })),
-        ];
-        setHits(next);
+        setHits(mixByRelevance(q, artists, albums));
       } catch {
         setError("Search failed. Please try again.");
         setHits([]);

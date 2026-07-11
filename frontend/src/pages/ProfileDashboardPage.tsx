@@ -3,9 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { getDashboard, type DashboardEntry } from "../api/dashboard";
 import { chartFill, chartPalette } from "../lib/chartTheme";
 import { usePersistentState } from "../lib/usePersistentState";
-import { formatDate } from "../lib/date";
+import { formatDate, todayIso } from "../lib/date";
 import { Alert } from "../components/Alert";
 import { LoadingState } from "../components/Spinner";
+import { DatePicker } from "../components/DatePicker";
 import { DashboardChart, type ChartView } from "../components/DashboardChart";
 import { DashboardAlbumCell } from "../components/DashboardAlbumCell";
 import { MetricSwitch } from "../components/MetricSwitch";
@@ -180,12 +181,23 @@ export function ProfileDashboard({
 
         <label>
           From
-          <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
+          <DatePicker
+            value={fromDate}
+            onChange={setFromDate}
+            ariaLabel="From date"
+            max={toDate || todayIso()}
+          />
         </label>
 
         <label>
           To
-          <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+          <DatePicker
+            value={toDate}
+            onChange={setToDate}
+            ariaLabel="To date"
+            min={fromDate || undefined}
+            max={todayIso()}
+          />
         </label>
 
         {compareSlot && <div className={styles.controlsRight}>{compareSlot}</div>}
