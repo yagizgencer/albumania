@@ -50,6 +50,14 @@ export async function publishRating(ratingId: number): Promise<Rating> {
   return data;
 }
 
+// Re-publish an already-published rating after edits. Unlike publish, this does
+// not notify the together-listened friend; it just bumps the rating back to the
+// top of the activity feed.
+export async function republishRating(ratingId: number): Promise<Rating> {
+  const { data } = await apiClient.post<Rating>(`/ratings/${ratingId}/republish`);
+  return data;
+}
+
 export async function deleteRating(ratingId: number): Promise<void> {
   await apiClient.delete(`/ratings/${ratingId}`);
 }

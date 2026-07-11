@@ -195,6 +195,25 @@
   color: #2a2110;
 }
 
+/* Edit (pencil) replaces the star once published — same gold family, so the
+   primary "into the editor" action keeps a consistent hue in both themes. */
+.iconEdit {
+  background: #f6e4b8;
+  color: #98700f;
+}
+.iconEdit:hover:not(:disabled) {
+  background: #e6b545;
+  color: #3a2c14;
+}
+[data-theme="dark"] .iconEdit {
+  background: #3d3318;
+  color: #f0c66a;
+}
+[data-theme="dark"] .iconEdit:hover:not(:disabled) {
+  background: #f0c66a;
+  color: #2a2110;
+}
+
 .iconListen {
   background: #d7e3ef;
   color: #3f6f9c;

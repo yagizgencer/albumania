@@ -320,17 +320,20 @@
   flex-shrink: 0;
 }
 
-.iconBtn:hover:not(:disabled) {
+.iconBtn:hover:not(:disabled):not([aria-disabled="true"]) {
   transform: translate(-1px, -1px);
   box-shadow: var(--shadow-pop);
 }
 
-.iconBtn:active:not(:disabled) {
+.iconBtn:active:not(:disabled):not([aria-disabled="true"]) {
   transform: translate(1px, 1px);
   box-shadow: none;
 }
 
-.iconBtn:disabled {
+/* `aria-disabled` (used so the hover tooltip still shows) mirrors the muted
+   look of a real :disabled button. */
+.iconBtn:disabled,
+.iconBtn[aria-disabled="true"] {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -347,7 +350,7 @@
   background: #2f8f77;
   color: #fbf1e2;
 }
-.iconPublish:hover:not(:disabled) {
+.iconPublish:hover:not(:disabled):not([aria-disabled="true"]) {
   background: #267a65;
 }
 .iconRemove {

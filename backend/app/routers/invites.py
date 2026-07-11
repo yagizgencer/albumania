@@ -420,6 +420,37 @@ def get_listen_later(
     return entries
 
 
+@listen_later_router.get("/completed", response_model=list[ListenLaterEntry])
+def get_listen_later_completed(user: CurrentUser, db: DB) -> list[ListenLaterEntry]:
+    """The "Completed" tab: all of my published ratings, newest-completed first.
+    Unlike the active view this deliberately shows no participant chips — we don't
+    surface who an album was rated with once it's completed."""
+    me = user.username
+
+    published = list(
+        db.scalars(
+            select(Rating)
+            .options(selectinload(Rating.notes))
+            .where(Rating.username == me, Rating.status == RatingStatus.published)
+            .order_by(Rating.completed_at.desc())
+        )
+    )
+    if not published:
+        return []
+    album_ids = {r.album_id for r in published}
+    album_map = {a.id: a for a in db.scalars(select(Album).where(Album.id.in_(album_ids)))}
+
+    return [
+        ListenLaterEntry(
+            album=_album_out(album_map[rating.album_id]),
+            rating=rating,
+            participants=[],
+        )
+        for rating in published  # already ordered by completed_at desc
+        if rating.album_id in album_map
+    ]
+
+
 @listen_later_router.delete("/{album_id}", status_code=status.HTTP_204_NO_CONTENT)
 def remove_from_listen_later(album_id: int, user: CurrentUser, db: DB) -> None:
     """Remove an album from my Listen Later, whatever put it there. Deletes my

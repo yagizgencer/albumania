@@ -16,6 +16,7 @@ import {
   getMyRatingForAlbum,
   patchRating,
   publishRating,
+  republishRating,
 } from "../api/ratings";
 
 vi.mock("../api/albums", () => ({ getAlbum: vi.fn() }));
@@ -24,6 +25,7 @@ vi.mock("../api/ratings", () => ({
   createRating: vi.fn(),
   patchRating: vi.fn(),
   publishRating: vi.fn(),
+  republishRating: vi.fn(),
   deleteRating: vi.fn(),
 }));
 vi.mock("../api/comments", () => ({ createComment: vi.fn() }));
@@ -114,6 +116,37 @@ describe("RatingEditorPage", () => {
     await waitFor(() => expect(publishRating).toHaveBeenCalledWith(7));
     // (The subsequent redirect to the origin is exercised manually / by App
     // smoke tests — jsdom's fetch primitives can't complete a data-router nav.)
+  });
+
+  it("shows Republish (not Publish) and calls republishRating after an edit", async () => {
+    const published = { ...READY_DRAFT, status: "published" as const, completed_at: "2024-01-01T00:00:00Z" };
+    vi.mocked(getMyRatingForAlbum).mockResolvedValue(published as never);
+    vi.mocked(patchRating).mockResolvedValue(published as never);
+    vi.mocked(republishRating).mockResolvedValue(published as never);
+
+    renderEditor();
+    const btn = await screen.findByRole("button", { name: /republish rating/i });
+    // The first-publish action isn't offered for an already-published rating.
+    expect(screen.queryByRole("button", { name: /^publish rating$/i })).not.toBeInTheDocument();
+
+    // Make a change so republishing is allowed, then republish.
+    fireEvent.change(screen.getByRole("slider"), { target: { value: "3" } });
+    fireEvent.click(btn);
+    await waitFor(() => expect(republishRating).toHaveBeenCalledWith(7));
+    expect(publishRating).not.toHaveBeenCalled();
+  });
+
+  it("won't republish a published rating that hasn't been edited", async () => {
+    const published = { ...READY_DRAFT, status: "published" as const, completed_at: "2024-01-01T00:00:00Z" };
+    vi.mocked(getMyRatingForAlbum).mockResolvedValue(published as never);
+
+    renderEditor();
+    const btn = await screen.findByRole("button", { name: /republish rating/i });
+    // No edit yet → blocked, with a tooltip explaining why. Clicking is a no-op.
+    expect(btn).toHaveAttribute("aria-disabled", "true");
+    expect(btn).toHaveAttribute("data-tip", "Make an edit to republish");
+    fireEvent.click(btn);
+    expect(republishRating).not.toHaveBeenCalled();
   });
 
   it("blocks navigation with the unsaved-changes modal after an edit", async () => {

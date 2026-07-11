@@ -1,16 +1,18 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   acceptInvite,
   cancelInvite,
   declineInvite,
   getListenLater,
+  getListenLaterCompleted,
   listMyInvites,
   removeFromListenLater,
   type ListenInviteWithAlbum,
   type ListenLaterEntry,
   type ListenLaterParticipant,
 } from "../api/invites";
+import { deleteRating } from "../api/ratings";
 import { Avatar } from "../components/Avatar";
 import { Alert } from "../components/Alert";
 import { LoadingState } from "../components/Spinner";
@@ -20,6 +22,7 @@ import {
   DiscIcon,
   HeadphonesIcon,
   HourglassIcon,
+  PencilIcon,
   StarIcon,
   TrashIcon,
 } from "../components/Icons";
@@ -28,13 +31,19 @@ import { formatDate } from "../lib/date";
 import { formatDuration } from "../utils/duration";
 import styles from "./ListenLaterPage.module.css";
 
+type Tab = "active" | "completed";
+
 export function ListenLaterPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab: Tab = searchParams.get("tab") === "completed" ? "completed" : "active";
+
   const [entries, setEntries] = useState<ListenLaterEntry[] | null>(null);
+  const [completed, setCompleted] = useState<ListenLaterEntry[] | null>(null);
   const [incoming, setIncoming] = useState<ListenInviteWithAlbum[]>([]);
   const [outgoing, setOutgoing] = useState<ListenInviteWithAlbum[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  async function reload() {
+  async function reloadActive() {
     try {
       const [later, invites] = await Promise.all([getListenLater(), listMyInvites()]);
       setEntries(later);
@@ -45,31 +54,48 @@ export function ListenLaterPage() {
     }
   }
 
+  async function reloadCompleted() {
+    try {
+      setCompleted(await getListenLaterCompleted());
+    } catch {
+      setError("Could not load Listen & Rate.");
+    }
+  }
+
+  // Load both lists up front so each tab can show its count in the header.
   useEffect(() => {
-    void reload();
+    void reloadActive();
+    void reloadCompleted();
   }, []);
+
+  function selectTab(next: Tab) {
+    setSearchParams(next === "completed" ? { tab: "completed" } : {}, { replace: true });
+  }
 
   async function handleAccept(id: number) {
     await acceptInvite(id);
-    await reload();
+    await reloadActive();
   }
   async function handleDecline(id: number) {
     await declineInvite(id);
-    await reload();
+    await reloadActive();
   }
   async function handleCancel(id: number) {
     await cancelInvite(id);
-    await reload();
+    await reloadActive();
   }
 
   if (error) return <main className={styles.page}><Alert>{error}</Alert></main>;
-  if (entries === null) return <main className={styles.page}><LoadingState /></main>;
+
+  const activeCount = entries?.length ?? 0;
+  const completedCount = completed?.length ?? 0;
 
   return (
     <main className={styles.page}>
       <h1 className={styles.pageTitle}>Listen &amp; Rate</h1>
 
       <div className={styles.layout}>
+        {/* Invites rail stays put on both tabs; the big tabs top-align with it. */}
         <aside className={styles.rail}>
           <InviteBox title="Incoming invites" count={incoming.length} empty="No invites right now.">
             {incoming.map((inv) => (
@@ -95,15 +121,50 @@ export function ListenLaterPage() {
           </InviteBox>
         </aside>
 
-        <section>
-          {entries.length === 0 ? (
+        <section className={styles.content}>
+          <div className={styles.bigTabs} role="group" aria-label="Active or completed ratings">
+            <button
+              type="button"
+              className={`${styles.bigTab} ${tab === "active" ? styles.bigTabActive : ""}`}
+              aria-pressed={tab === "active"}
+              onClick={() => selectTab("active")}
+            >
+              Active <span className={styles.bigTabCount}>({activeCount})</span>
+            </button>
+            <button
+              type="button"
+              className={`${styles.bigTab} ${tab === "completed" ? styles.bigTabActive : ""}`}
+              aria-pressed={tab === "completed"}
+              onClick={() => selectTab("completed")}
+            >
+              Completed <span className={styles.bigTabCount}>({completedCount})</span>
+            </button>
+          </div>
+
+          {tab === "active" ? (
+            entries === null ? (
+              <LoadingState />
+            ) : entries.length === 0 ? (
+              <div className={styles.empty}>
+                Nothing here yet. Search for an album and tap “Listen & Rate”.
+              </div>
+            ) : (
+              <div className={styles.cardGrid}>
+                {entries.map((e) => (
+                  <EntryCard key={e.album.id} entry={e} mode="active" onChanged={reloadActive} />
+                ))}
+              </div>
+            )
+          ) : completed === null ? (
+            <LoadingState />
+          ) : completed.length === 0 ? (
             <div className={styles.empty}>
-              Nothing here yet. Search for an album and tap “Listen & Rate”.
+              No completed ratings yet. Publish a rating and it’ll show up here.
             </div>
           ) : (
             <div className={styles.cardGrid}>
-              {entries.map((e) => (
-                <EntryCard key={e.album.id} entry={e} onRemoved={reload} />
+              {completed.map((e) => (
+                <EntryCard key={e.album.id} entry={e} mode="completed" onChanged={reloadCompleted} />
               ))}
             </div>
           )}
@@ -235,21 +296,38 @@ function SidebarInvite({
 // Queue card
 // ---------------------------------------------------------------------------
 
-function EntryCard({ entry, onRemoved }: { entry: ListenLaterEntry; onRemoved: () => Promise<void> }) {
+function EntryCard({
+  entry,
+  mode,
+  onChanged,
+}: {
+  entry: ListenLaterEntry;
+  mode: Tab;
+  onChanged: () => Promise<void>;
+}) {
   const [confirming, setConfirming] = useState(false);
   const [removing, setRemoving] = useState(false);
+  const isCompleted = mode === "completed";
 
   async function handleRemove() {
     setRemoving(true);
     try {
-      await removeFromListenLater(entry.album.id);
-      await onRemoved();
+      // Completed removes the *published rating* itself; active only pulls the
+      // album out of the queue (draft + any invites), leaving no rating behind.
+      if (isCompleted && entry.rating) {
+        await deleteRating(entry.rating.id);
+      } else {
+        await removeFromListenLater(entry.album.id);
+      }
+      await onChanged();
     } finally {
       setRemoving(false);
     }
   }
 
-  // Pending invites don't count as a shared listen yet — treat those as solo.
+  // The "listening with" stack is an Active-only affordance — the Completed tab
+  // deliberately doesn't surface who an album was rated with. Pending invites
+  // don't count as a shared listen yet, so only accepted ones show.
   const activeParticipants = entry.participants.filter(
     (p) => p.invite_status === "accepted"
   );
@@ -267,15 +345,27 @@ function EntryCard({ entry, onRemoved }: { entry: ListenLaterEntry; onRemoved: (
       </Link>
 
       <div className={styles.qbody}>
-        <Link className={styles.entryTitle} to={`/albums/${entry.album.spotify_id}`}>
+        {/* Album + artist each get one fixed line; overflow truncates with an
+            ellipsis (full name available via the native title tooltip). */}
+        <Link
+          className={styles.entryTitle}
+          to={`/albums/${entry.album.spotify_id}`}
+          title={entry.album.title}
+        >
           {entry.album.title}
         </Link>
         {entry.album.artist_spotify_id ? (
-          <Link className={styles.entryArtist} to={`/artists/${entry.album.artist_spotify_id}`}>
+          <Link
+            className={styles.entryArtist}
+            to={`/artists/${entry.album.artist_spotify_id}`}
+            title={entry.album.artist}
+          >
             {entry.album.artist}
           </Link>
         ) : (
-          <span className={styles.entryArtist}>{entry.album.artist}</span>
+          <span className={styles.entryArtist} title={entry.album.artist}>
+            {entry.album.artist}
+          </span>
         )}
         <div className={styles.metaChips}>
           <span className={styles.metaChip}>
@@ -294,14 +384,16 @@ function EntryCard({ entry, onRemoved }: { entry: ListenLaterEntry; onRemoved: (
       <div className={styles.qFooter}>
         {confirming ? (
           <div className={styles.confirm}>
-            <span className={styles.confirmText}>Remove from Listen & Rate?</span>
+            <span className={styles.confirmText}>
+              {isCompleted ? "Delete this rating?" : "Remove from Listen & Rate?"}
+            </span>
             <div className={styles.confirmButtons}>
               <button
                 className={styles.removeConfirmBtn}
                 onClick={handleRemove}
                 disabled={removing}
               >
-                {removing ? "Removing…" : "Yes, remove"}
+                {removing ? (isCompleted ? "Deleting…" : "Removing…") : "Yes, remove"}
               </button>
               <button
                 className={styles.cancelBtn}
@@ -315,30 +407,54 @@ function EntryCard({ entry, onRemoved }: { entry: ListenLaterEntry; onRemoved: (
         ) : (
           <>
             <div className={styles.qActions}>
-              <Link
-                className={`${styles.iconBtn} ${styles.iconRate}`}
-                to={`/albums/${entry.album.spotify_id}/rate`}
-                state={{ from: "/listen-later" }}
-                aria-label="Rate"
-                data-tip="Rate"
-              >
-                <StarIcon size={22} />
-              </Link>
+              {isCompleted ? (
+                <Link
+                  className={`${styles.iconBtn} ${styles.iconEdit}`}
+                  to={`/albums/${entry.album.spotify_id}/rate`}
+                  state={{ from: "/listen-later?tab=completed" }}
+                  aria-label="Edit rating"
+                  data-tip="Edit rating"
+                >
+                  <PencilIcon size={22} />
+                </Link>
+              ) : (
+                <Link
+                  className={`${styles.iconBtn} ${styles.iconRate}`}
+                  to={`/albums/${entry.album.spotify_id}/rate`}
+                  state={{ from: "/listen-later" }}
+                  aria-label="Rate"
+                  data-tip="Rate"
+                >
+                  <StarIcon size={22} />
+                </Link>
+              )}
               <button
                 className={`${styles.iconBtn} ${styles.iconRemove}`}
                 onClick={() => setConfirming(true)}
-                aria-label="Remove"
-                data-tip="Remove"
+                aria-label={isCompleted ? "Delete rating" : "Remove"}
+                data-tip={isCompleted ? "Delete rating" : "Remove"}
               >
                 <TrashIcon size={22} />
               </button>
             </div>
-            {activeParticipants.length > 0 && (
+            {!isCompleted && activeParticipants.length > 0 && (
               <ListeningWithStack participants={activeParticipants} />
             )}
           </>
         )}
       </div>
+
+      {/* Your score, tucked into the card's lower-right corner like a sticker —
+          same amber tag as the album page. */}
+      {isCompleted && entry.rating?.score != null && (
+        <span
+          className={styles.scoreSticker}
+          aria-label={`Your score: ${entry.rating.score.toFixed(1)} out of 10`}
+        >
+          {entry.rating.score.toFixed(1)}
+          <span className={styles.scoreStickerOut}>/10</span>
+        </span>
+      )}
     </article>
   );
 }

@@ -32,4 +32,9 @@
   color: var(--text-muted);
   font-size: 0.85rem;
   line-height: 1.2;
+  /* One fixed line, matching .title: truncate overflow with an ellipsis. */
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

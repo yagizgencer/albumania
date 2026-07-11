@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -250,6 +252,50 @@ def test_edit_published_cannot_drop_below_5_tracks(authed_client: TestClient) ->
 
     r = authed_client.patch(f"/ratings/{rating_id}", json={"top_track_indices": [1, 2]})
     assert r.status_code == 422
+
+
+# ---------------------------------------------------------------------------
+# Republish (edit an already-published rating)
+# ---------------------------------------------------------------------------
+
+def test_republish_bumps_completed_at(authed_client: TestClient) -> None:
+    rating_id = _create_publishable_rating(authed_client)
+    first = authed_client.post(f"/ratings/{rating_id}/publish").json()
+
+    # Edit the score, then republish — the entry should stay published but move
+    # to "now" so it becomes the most recent activity.
+    authed_client.patch(f"/ratings/{rating_id}", json={"score": 6.0})
+    r = authed_client.post(f"/ratings/{rating_id}/republish")
+    assert r.status_code == 200
+    data = r.json()
+    assert data["status"] == "published"
+    assert data["score"] == 6.0
+    assert datetime.fromisoformat(data["completed_at"]) > datetime.fromisoformat(
+        first["completed_at"]
+    )
+
+
+def test_republish_requires_published(authed_client: TestClient) -> None:
+    # A draft that meets the publish bar still can't be *re*-published.
+    album_id = _seed_album(authed_client)
+    rating_id = authed_client.post("/ratings", json={"album_id": album_id}).json()["id"]
+    authed_client.patch(
+        f"/ratings/{rating_id}", json={"score": 9.0, "top_track_indices": [1, 2, 3, 4, 5]}
+    )
+    r = authed_client.post(f"/ratings/{rating_id}/republish")
+    assert r.status_code == 422
+
+
+def test_republish_other_users_rating_returns_403(
+    authed_client: TestClient, client: TestClient
+) -> None:
+    rating_id = _create_publishable_rating(authed_client)
+    authed_client.post(f"/ratings/{rating_id}/publish")
+
+    app.dependency_overrides[get_current_user] = lambda: _OTHER_USER
+    r = client.post(f"/ratings/{rating_id}/republish")
+    app.dependency_overrides[get_current_user] = lambda: _FAKE_USER
+    assert r.status_code == 403
 
 
 # ---------------------------------------------------------------------------

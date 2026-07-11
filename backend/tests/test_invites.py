@@ -465,6 +465,52 @@ def test_pending_incoming_invite_not_yet_in_listen_later(client: TestClient) -> 
 
 
 # ---------------------------------------------------------------------------
+# Completed view (GET /listen-later/completed)
+# ---------------------------------------------------------------------------
+
+def test_completed_lists_published_and_active_hides_it(client: TestClient) -> None:
+    alice = _seed_user("alice")
+    a1 = _seed_album()
+    _auth_as(alice)
+    _publish(client, a1)
+    # A published rating drops out of the active list but shows in completed.
+    assert client.get("/listen-later").json() == []
+    entries = client.get("/listen-later/completed").json()
+    assert len(entries) == 1
+    assert entries[0]["album"]["id"] == a1
+    assert entries[0]["rating"]["status"] == "published"
+    assert entries[0]["rating"]["score"] == 8.0
+    assert entries[0]["participants"] == []
+    _clear_auth()
+
+
+def test_completed_shows_no_participant_chips(client: TestClient) -> None:
+    alice = _seed_user("alice")
+    bob = _seed_user("bob")
+    a1 = _seed_album()
+    _send_and_accept_friendship(client, alice, bob)
+
+    _auth_as(alice)
+    iid = client.post("/invites", json={"username": "bob", "album_id": a1}).json()["id"]
+    _clear_auth()
+    _auth_as(bob)
+    client.post(f"/invites/{iid}/accept")
+    _publish(client, a1)
+    _clear_auth()
+    _auth_as(alice)
+    _publish(client, a1)
+    # Even for a shared listen, the completed view deliberately omits participants.
+    entries = client.get("/listen-later/completed").json()
+    assert len(entries) == 1
+    assert entries[0]["participants"] == []
+    _clear_auth()
+
+
+def test_completed_requires_auth(client: TestClient) -> None:
+    assert client.get("/listen-later/completed").status_code in (401, 403)
+
+
+# ---------------------------------------------------------------------------
 # Completion / dashboard wiring
 # ---------------------------------------------------------------------------
 
@@ -494,6 +540,47 @@ def test_both_publish_marks_invite_completed_and_creates_friend_dashboard_entry(
     r = client.get(f"/friendships/{fid}/dashboard")
     assert len(r.json()["entries"]) == 1
     _clear_auth()
+
+
+def test_republish_does_not_renotify_listened_with_friend(client: TestClient) -> None:
+    from app.models.notification import Notification, NotificationType
+
+    alice = _seed_user("alice")
+    bob = _seed_user("bob")
+    a1 = _seed_album()
+    _send_and_accept_friendship(client, alice, bob)
+
+    _auth_as(alice)
+    iid = client.post("/invites", json={"username": "bob", "album_id": a1}).json()["id"]
+    _clear_auth()
+    _auth_as(bob)
+    client.post(f"/invites/{iid}/accept")
+    _publish(client, a1)
+    _clear_auth()
+    _auth_as(alice)
+    rid = _publish(client, a1)
+    _clear_auth()
+
+    before = (
+        _db()
+        .query(Notification)
+        .filter(Notification.type == NotificationType.friend_published)
+        .count()
+    )
+
+    # Alice edits and republishes — bob must NOT receive another notification.
+    _auth_as(alice)
+    client.patch(f"/ratings/{rid}", json={"score": 5.0})
+    assert client.post(f"/ratings/{rid}/republish").status_code == 200
+    _clear_auth()
+
+    after = (
+        _db()
+        .query(Notification)
+        .filter(Notification.type == NotificationType.friend_published)
+        .count()
+    )
+    assert after == before
 
 
 def test_delete_rating_removes_invites(client: TestClient) -> None:

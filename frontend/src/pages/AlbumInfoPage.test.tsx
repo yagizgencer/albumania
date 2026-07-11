@@ -195,6 +195,18 @@ describe("AlbumInfoPage", () => {
     expect(screen.getByRole("button", { name: /remove rating/i })).toBeInTheDocument();
   });
 
+  it("replaces the star with an Edit button that opens the editor for a published album", async () => {
+    renderPage();
+    await screen.findByRole("link", { name: "Test Album" });
+
+    // Published → the star "Rate" is gone; an Edit pencil takes its place.
+    expect(screen.queryByRole("button", { name: /^rate$/i })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /edit rating/i }));
+    expect(navSpy).toHaveBeenCalledWith("/albums/alb1/rate", {
+      state: { from: "/albums/alb1" },
+    });
+  });
+
   it("cancels removal without deleting", async () => {
     renderPage();
     await screen.findByRole("link", { name: "Test Album" });

@@ -3,16 +3,24 @@ import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ListenLaterPage } from "./ListenLaterPage";
-import { getListenLater, listMyInvites, removeFromListenLater } from "../api/invites";
+import {
+  getListenLater,
+  getListenLaterCompleted,
+  listMyInvites,
+  removeFromListenLater,
+} from "../api/invites";
+import { deleteRating } from "../api/ratings";
 
 vi.mock("../api/invites", () => ({
   getListenLater: vi.fn(),
+  getListenLaterCompleted: vi.fn(),
   listMyInvites: vi.fn(),
   removeFromListenLater: vi.fn(),
   acceptInvite: vi.fn(),
   declineInvite: vi.fn(),
   cancelInvite: vi.fn(),
 }));
+vi.mock("../api/ratings", () => ({ deleteRating: vi.fn() }));
 
 const ENTRY = {
   album: {
@@ -41,11 +49,27 @@ const ENTRY = {
   participants: [],
 };
 
+const COMPLETED_ENTRY = {
+  ...ENTRY,
+  rating: { ...ENTRY.rating, score: 8, status: "published" as const },
+  participants: [
+    {
+      username: "bob",
+      picture_url: null,
+      direction: "outgoing" as const,
+      invite_status: "completed" as const,
+      they_published: true,
+    },
+  ],
+};
+
 describe("ListenLaterPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(listMyInvites).mockResolvedValue({ incoming: [], outgoing: [] });
     vi.mocked(removeFromListenLater).mockResolvedValue(undefined);
+    vi.mocked(getListenLaterCompleted).mockResolvedValue([]);
+    vi.mocked(deleteRating).mockResolvedValue(undefined);
   });
 
   it("removes a draft only after confirmation", async () => {
@@ -150,5 +174,51 @@ describe("ListenLaterPage", () => {
     expect(albumLink).toHaveAttribute("href", "/albums/alb1");
     const artistLink = screen.getByRole("link", { name: "The Artist" });
     expect(artistLink).toHaveAttribute("href", "/artists/art1");
+  });
+
+  it("shows completed ratings with an Edit link and score, but no participants", async () => {
+    vi.mocked(getListenLater).mockResolvedValue([]);
+    vi.mocked(getListenLaterCompleted).mockResolvedValue([COMPLETED_ENTRY] as never);
+
+    render(
+      <MemoryRouter>
+        <ListenLaterPage />
+      </MemoryRouter>
+    );
+
+    // Switch to the Completed tab.
+    fireEvent.click(await screen.findByRole("button", { name: /completed/i }));
+
+    // The published entry links into the rating editor (edit mode), not "Rate".
+    const editLink = await screen.findByRole("link", { name: "Edit rating" });
+    expect(editLink).toHaveAttribute("href", "/albums/alb1/rate");
+    expect(screen.queryByRole("link", { name: "Rate" })).not.toBeInTheDocument();
+    // The score sticker shows; the "listened with" stack is intentionally absent.
+    expect(screen.getByText("8.0")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /bob/i })).not.toBeInTheDocument();
+  });
+
+  it("deletes a completed rating after confirmation", async () => {
+    vi.mocked(getListenLater).mockResolvedValue([]);
+    vi.mocked(getListenLaterCompleted)
+      .mockResolvedValueOnce([COMPLETED_ENTRY] as never)
+      .mockResolvedValue([]);
+
+    render(
+      <MemoryRouter>
+        <ListenLaterPage />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: /completed/i }));
+    await screen.findByRole("link", { name: "Edit rating" });
+
+    // Confirm-gated, and it deletes the *rating* (by id 7), not the queue entry.
+    fireEvent.click(screen.getByRole("button", { name: "Delete rating" }));
+    expect(screen.getByText(/delete this rating\?/i)).toBeInTheDocument();
+    expect(deleteRating).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: /yes, remove/i }));
+    await waitFor(() => expect(deleteRating).toHaveBeenCalledWith(7));
+    await waitFor(() => expect(screen.queryByText("Test Album")).not.toBeInTheDocument());
   });
 });

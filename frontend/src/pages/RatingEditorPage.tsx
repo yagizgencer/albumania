@@ -23,6 +23,7 @@ import {
   getMyRatingForAlbum,
   patchRating,
   publishRating,
+  republishRating,
   type Rating,
 } from "../api/ratings";
 import { createComment, type Visibility } from "../api/comments";
@@ -417,6 +418,21 @@ export function RatingEditorPage() {
     } finally { setSaving(false); }
   }
 
+  // Re-publish an already-published rating after edits. No comment (the composer
+  // is hidden once published) and no friend notification — the backend skips it.
+  async function handleRepublish() {
+    if (!rating) return;
+    setSaving(true); setError(null);
+    try {
+      await handleSave();
+      await republishRating(rating.id);
+      setPendingNav(origin);
+    } catch (e: unknown) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setError((e as any)?.response?.data?.detail ?? "Republish failed.");
+    } finally { setSaving(false); }
+  }
+
   async function handleRemove() {
     if (!rating) return;
     setSaving(true); setError(null);
@@ -523,11 +539,19 @@ export function RatingEditorPage() {
   const activeTrackIndex = activeId ? parseInt(activeId.split("-")[1], 10) : null;
   const activeTrack = activeTrackIndex !== null ? trackMap.get(activeTrackIndex) : null;
 
-  // Publish gating message (shown as the button's tooltip when disabled).
+  // Republishing requires an actual change vs. the last published state — an
+  // unedited republish would pointlessly bump the feed. First publish only needs
+  // the score + 5 tracks.
+  const publishBlocked = !canPublish || (isPublished && !isDirty);
+  // Publish/republish gating message (shown as the button's tooltip on hover).
   const publishTip = !hasScore
     ? "Set a score before publishing"
     : filledCount !== TOP_5_SIZE
     ? "Fill all 5 Top 5 slots before publishing"
+    : isPublished
+    ? isDirty
+      ? "Republish rating"
+      : "Make an edit to republish"
     : "Publish rating";
 
   return (
@@ -612,28 +636,37 @@ export function RatingEditorPage() {
 
           {/* Icon actions */}
           <div className={styles.iconBar}>
-            <button
-              type="button"
-              className={`${styles.iconBtn} ${styles.iconSave}`}
-              onClick={handleSave}
-              disabled={saving}
-              aria-label="Save draft"
-              data-tip={saving ? "Saving…" : "Save draft"}
-            >
-              <SaveIcon size={24} />
-            </button>
+            {/* A published rating is edited in place: the primary action is
+                Republish (save + bump the feed), so no separate "Save draft". */}
             {!isPublished && (
               <button
                 type="button"
-                className={`${styles.iconBtn} ${styles.iconPublish}`}
-                onClick={handlePublish}
-                disabled={saving || !canPublish}
-                aria-label="Publish rating"
-                data-tip={publishTip}
+                className={`${styles.iconBtn} ${styles.iconSave}`}
+                onClick={handleSave}
+                disabled={saving}
+                aria-label="Save draft"
+                data-tip={saving ? "Saving…" : "Save draft"}
               >
-                <PaperPlaneIcon size={24} />
+                <SaveIcon size={24} />
               </button>
             )}
+            {/* Blocked states use aria-disabled (not the disabled attribute) so
+                the hover tooltip explaining why still appears. */}
+            <button
+              type="button"
+              className={`${styles.iconBtn} ${styles.iconPublish}`}
+              onClick={() => {
+                if (saving || publishBlocked) return;
+                if (isPublished) void handleRepublish();
+                else void handlePublish();
+              }}
+              disabled={saving}
+              aria-disabled={publishBlocked || undefined}
+              aria-label={isPublished ? "Republish rating" : "Publish rating"}
+              data-tip={publishTip}
+            >
+              <PaperPlaneIcon size={24} />
+            </button>
             <button
               type="button"
               className={`${styles.iconBtn} ${styles.iconRemove}`}

@@ -35,6 +35,7 @@ import {
   HeadphonesIcon,
   HourglassIcon,
   PaperPlaneIcon,
+  PencilIcon,
   PeopleIcon,
   SearchIcon,
   SpotifyIcon,
@@ -250,6 +251,17 @@ export function AlbumInfoPage() {
       className: styles.iconRate,
       tip: "Rate",
       icon: <StarIcon size={26} />,
+      onClick: handleRate,
+      disabled: busy || !rateable,
+    },
+    {
+      // Once published, the star is replaced by an Edit pencil that opens the
+      // same editor (now in republish mode).
+      key: "edit",
+      show: isPublished,
+      className: styles.iconEdit,
+      tip: "Edit rating",
+      icon: <PencilIcon size={26} />,
       onClick: handleRate,
       disabled: busy || !rateable,
     },

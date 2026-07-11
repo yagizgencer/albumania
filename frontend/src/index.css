@@ -358,8 +358,12 @@ a:hover {
   font-size: var(--text-xs);
   font-weight: 700;
   font-family: var(--font-body);
+  font-style: normal;
   letter-spacing: normal;
   text-transform: none;
+  /* Pin decoration so the chip reads the same whether its host is a <button> or
+     an <a> (anchors otherwise leak their underline onto this pseudo-element). */
+  text-decoration: none;
   /* Own line-height so hosts with line-height:0 (e.g. an avatar link) don't
      squash the tooltip text. */
   line-height: 1.4;

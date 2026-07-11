@@ -40,6 +40,21 @@ def _require_owner(rating: Rating, user: User) -> None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your rating")
 
 
+def _require_complete(rating: Rating) -> None:
+    """A rating can go live (publish/republish) only with a score and all 5
+    top tracks filled in."""
+    errors: list[str] = []
+    if rating.score is None:
+        errors.append("score is required")
+    top = rating.top_track_indices or []
+    if len(top) != 5 or any(i is None for i in top):
+        errors.append("exactly 5 top tracks are required")
+    if errors:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="; ".join(errors)
+        )
+
+
 @router.post("", response_model=RatingOut, status_code=status.HTTP_201_CREATED)
 def create_rating(body: RatingCreate, user: CurrentUser, db: DB) -> Rating:
     album = db.scalar(select(Album).where(Album.id == body.album_id))
@@ -138,24 +153,44 @@ def publish_rating(rating_id: int, user: CurrentUser, db: DB) -> Rating:
     if rating.status == RatingStatus.published:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Already published")
 
-    errors: list[str] = []
-    if rating.score is None:
-        errors.append("score is required")
-    top = rating.top_track_indices or []
-    if len(top) != 5 or any(i is None for i in top):
-        errors.append("exactly 5 top tracks are required")
-    if errors:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="; ".join(errors)
-        )
+    _require_complete(rating)
 
+    now = datetime.now(timezone.utc)
     rating.status = RatingStatus.published
-    rating.completed_at = datetime.now(timezone.utc)
-    rating.last_edited_at = datetime.now(timezone.utc)
+    rating.completed_at = now
+    rating.last_edited_at = now
     db.commit()
     db.refresh(rating, ["notes"])
     rebuild_for_user(db, user.username)
     maybe_complete_invites_for_rating(db, user.username, rating.album_id)
+    return rating
+
+
+@router.post("/{rating_id}/republish", response_model=RatingOut)
+def republish_rating(rating_id: int, user: CurrentUser, db: DB) -> Rating:
+    """Re-publish an already-published rating after edits. Unlike the first
+    publish this deliberately does NOT notify a together-listened friend. Bumping
+    completed_at moves the (single) feed entry to the top so the edit replaces the
+    old publish as the most recent activity."""
+    rating = _get_rating_or_404(rating_id, db)
+    _require_owner(rating, user)
+
+    if rating.status != RatingStatus.published:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Rating is not published",
+        )
+
+    _require_complete(rating)
+
+    now = datetime.now(timezone.utc)
+    rating.completed_at = now
+    rating.last_edited_at = now
+    db.commit()
+    db.refresh(rating, ["notes"])
+    rebuild_for_user(db, user.username)
+    # Intentionally no maybe_complete_invites_for_rating: republishing must not
+    # re-notify the friend we listened with.
     return rating
 
 

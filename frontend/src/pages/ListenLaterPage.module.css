@@ -14,6 +14,71 @@
   margin: 0 0.3rem var(--space-4);
 }
 
+/* Right-hand column: the big Active/Completed tabs on top of the card grid. */
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+/* The content column split into two halves — Active | Completed — as a subtle
+   underline tab bar (top-aligned with the invites rail). Each half is a plain
+   display-font label on a shared hairline; the active half carries a quiet teal
+   underline. */
+.bigTabs {
+  display: flex;
+  border-bottom: var(--border-w-thin) solid var(--border-soft);
+}
+.bigTab {
+  flex: 1;
+  position: relative;
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.55rem 1rem 0.7rem;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  line-height: 1.1;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  cursor: pointer;
+  transition: color 0.12s ease, background 0.12s ease;
+}
+.bigTab:hover:not(.bigTabActive) {
+  color: var(--text);
+  background: color-mix(in srgb, var(--select) 7%, transparent);
+}
+.bigTabActive {
+  color: var(--text);
+}
+.bigTabActive::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(-1 * var(--border-w-thin));
+  height: 3px;
+  background: var(--select);
+  border-radius: 3px 3px 0 0;
+}
+/* Count in parentheses — the muted "Tracks (N)" treatment from the album pages. */
+.bigTabCount {
+  font-size: 1.05rem;
+  color: var(--text-subtle);
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 560px) {
+  .bigTab {
+    font-size: 1.25rem;
+    padding: 0.5rem 0.6rem 0.6rem;
+  }
+}
+
 .layout {
   display: grid;
   grid-template-columns: 340px 1fr;
@@ -230,6 +295,16 @@
   background: #e6b545;
   color: #3a2c14;
 }
+/* Edit (pencil) — the completed-card equivalent of Rate; same amber family so
+   it reads as the primary "into the editor" action. */
+.iconEdit {
+  background: #f6e4b8;
+  color: #98700f;
+}
+.iconEdit:hover:not(:disabled) {
+  background: #e6b545;
+  color: #3a2c14;
+}
 .iconRemove {
   background: #f4d8d3;
   color: #c2554e;
@@ -254,11 +329,13 @@
   background: #c2554e;
   color: #fbf1e2;
 }
-[data-theme="dark"] .iconRate {
+[data-theme="dark"] .iconRate,
+[data-theme="dark"] .iconEdit {
   background: #3d3318;
   color: #f0c66a;
 }
-[data-theme="dark"] .iconRate:hover:not(:disabled) {
+[data-theme="dark"] .iconRate:hover:not(:disabled),
+[data-theme="dark"] .iconEdit:hover:not(:disabled) {
   background: #f0c66a;
   color: #2a2110;
 }
@@ -288,6 +365,7 @@
   gap: var(--space-4);
 }
 .qcard {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
@@ -342,6 +420,12 @@
   line-height: 1.05;
   color: var(--text);
   text-decoration: none;
+  /* One fixed line: truncate the overflow with an ellipsis (full name on hover
+     via the native title tooltip). */
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .entryTitle:hover {
   text-decoration: underline;
@@ -393,6 +477,33 @@
 }
 [data-theme="dark"] .metaChipIcon {
   color: #d0c3ae;
+}
+/* Your score on a completed card: the album page's amber tag, tucked flush into
+   the card's lower-right corner like a sticker (rounded inner corner, its outer
+   corner matching the card's). */
+.scoreSticker {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  padding: 0.25rem 0.7rem;
+  background: var(--data);
+  color: var(--on-data);
+  border: var(--border-w-thin) solid var(--border);
+  border-radius: 12px 0 var(--radius-lg) 0;
+  box-shadow: var(--shadow-soft);
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.scoreStickerOut {
+  font-size: 0.72rem;
+  opacity: 0.7;
 }
 /* Footer: actions on the left, the listening-with stack on the right. */
 .qFooter {

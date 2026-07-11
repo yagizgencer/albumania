@@ -73,6 +73,14 @@ export async function getListenLater(): Promise<ListenLaterEntry[]> {
   return data;
 }
 
+/** The "Completed" tab: all my published ratings (newest first), with the same
+ *  participant chips as the active list so the cards render identically. Each
+ *  entry's `rating` is always present here (published). */
+export async function getListenLaterCompleted(): Promise<ListenLaterEntry[]> {
+  const { data } = await apiClient.get<ListenLaterEntry[]>("/listen-later/completed");
+  return data;
+}
+
 /** Remove an album from my Listen Later — deletes my draft (if any) and
  *  withdraws me from any invite for it, so accepted-invite rows with no draft
  *  can be removed too. */
