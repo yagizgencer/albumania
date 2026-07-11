@@ -2,6 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
+from spotipy.exceptions import SpotifyException
 
 from app.core.deps import get_current_user
 from app.db.session import get_db
@@ -168,6 +169,28 @@ def test_get_album_backfills_missing_tracks(authed_client: TestClient) -> None:
     r = authed_client.get("/albums/big")
     assert r.status_code == 200
     assert len(r.json()["tracks"]) == 60
+
+
+def test_get_album_backfill_spotify_404_returns_404(authed_client: TestClient) -> None:
+    # An existing row missing artist_spotify_id/upc triggers a backfill get_album.
+    # If Spotify 404s that call, the endpoint must surface a clean 404, not a 500.
+    db = next(app.dependency_overrides[get_db]())
+    album = Album(
+        spotify_id="stale", title="Stale", artist="A", artist_spotify_id=None, upc=None,
+        release_date="2024-01-01", total_songs=10,
+    )
+    db.add(album)
+    db.flush()
+    for i in range(1, 11):
+        db.add(AlbumTrack(album_id=album.id, index=i, name=f"T{i}", spotify_url=None, duration_ms=None))
+    db.commit()
+
+    mock: MagicMock = app.dependency_overrides[get_spotify_client]()
+    mock.get_album.side_effect = SpotifyException(404, -1, "not found")
+
+    r = authed_client.get("/albums/stale")
+    assert r.status_code == 404
+    assert r.json()["detail"] == "Not found on Spotify"
 
 
 # ---------------------------------------------------------------------------
