@@ -40,15 +40,17 @@ def _require_owner(rating: Rating, user: User) -> None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your rating")
 
 
-def _require_complete(rating: Rating) -> None:
+def _require_complete(rating: Rating, album: Album) -> None:
     """A rating can go live (publish/republish) only with a score and all 5
-    top tracks filled in."""
+    top tracks filled in, each a valid 1-based track number for the album."""
     errors: list[str] = []
     if rating.score is None:
         errors.append("score is required")
     top = rating.top_track_indices or []
     if len(top) != 5 or any(i is None for i in top):
         errors.append("exactly 5 top tracks are required")
+    elif any(not (1 <= i <= album.total_songs) for i in top):
+        errors.append(f"top tracks must be between 1 and {album.total_songs}")
     if errors:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="; ".join(errors)
@@ -153,7 +155,8 @@ def publish_rating(rating_id: int, user: CurrentUser, db: DB) -> Rating:
     if rating.status == RatingStatus.published:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Already published")
 
-    _require_complete(rating)
+    album = db.scalar(select(Album).where(Album.id == rating.album_id))
+    _require_complete(rating, album)
 
     now = datetime.now(timezone.utc)
     rating.status = RatingStatus.published
@@ -181,7 +184,8 @@ def republish_rating(rating_id: int, user: CurrentUser, db: DB) -> Rating:
             detail="Rating is not published",
         )
 
-    _require_complete(rating)
+    album = db.scalar(select(Album).where(Album.id == rating.album_id))
+    _require_complete(rating, album)
 
     now = datetime.now(timezone.utc)
     rating.completed_at = now

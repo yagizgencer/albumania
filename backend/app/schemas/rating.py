@@ -2,6 +2,10 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field, model_validator
 
+# Song notes are short per-track jottings; the long-form field is the album
+# comment (capped separately at 10 000). Kept modest to bound stored text.
+MAX_NOTE_LEN = 2000
+
 
 class SongNoteOut(BaseModel):
     track_index: int
@@ -39,11 +43,15 @@ class RatingPatch(BaseModel):
     notes: dict[int, str] | None = None
 
     @model_validator(mode="after")
-    def validate_top_tracks(self) -> "RatingPatch":
+    def validate_patch(self) -> "RatingPatch":
         if self.top_track_indices is not None:
             if len(self.top_track_indices) > 5:
                 raise ValueError("top_track_indices cannot have more than 5 entries")
             non_null = [i for i in self.top_track_indices if i is not None]
             if len(non_null) != len(set(non_null)):
                 raise ValueError("top_track_indices must be distinct")
+        if self.notes is not None:
+            for text in self.notes.values():
+                if len(text) > MAX_NOTE_LEN:
+                    raise ValueError(f"note text cannot exceed {MAX_NOTE_LEN} characters")
         return self

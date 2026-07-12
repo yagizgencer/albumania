@@ -329,3 +329,83 @@ def test_delete_other_users_rating_returns_403(authed_client: TestClient, client
     r = client.delete(f"/ratings/{rating_id}")
     app.dependency_overrides[get_current_user] = lambda: _FAKE_USER
     assert r.status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# Publish rejects top-track indices outside the album's real track range
+# ---------------------------------------------------------------------------
+
+def test_publish_rejects_out_of_range_top_track(authed_client: TestClient) -> None:
+    album_id = _seed_album(authed_client, total_songs=10)
+    rating_id = authed_client.post("/ratings", json={"album_id": album_id}).json()["id"]
+    authed_client.patch(
+        f"/ratings/{rating_id}", json={"score": 8.0, "top_track_indices": [1, 2, 3, 4, 999]}
+    )
+    r = authed_client.post(f"/ratings/{rating_id}/publish")
+    assert r.status_code == 422
+    assert "between 1 and 10" in r.json()["detail"]
+
+
+def test_publish_rejects_zero_index(authed_client: TestClient) -> None:
+    # Track numbers are 1-based; 0 is below the valid range.
+    album_id = _seed_album(authed_client, total_songs=10)
+    rating_id = authed_client.post("/ratings", json={"album_id": album_id}).json()["id"]
+    authed_client.patch(
+        f"/ratings/{rating_id}", json={"score": 8.0, "top_track_indices": [0, 1, 2, 3, 4]}
+    )
+    r = authed_client.post(f"/ratings/{rating_id}/publish")
+    assert r.status_code == 422
+    assert "between 1 and 10" in r.json()["detail"]
+
+
+def test_publish_accepts_boundary_top_track_index(authed_client: TestClient) -> None:
+    # The last track (index == total_songs) is valid.
+    album_id = _seed_album(authed_client, total_songs=10)
+    rating_id = authed_client.post("/ratings", json={"album_id": album_id}).json()["id"]
+    authed_client.patch(
+        f"/ratings/{rating_id}", json={"score": 8.0, "top_track_indices": [6, 7, 8, 9, 10]}
+    )
+    r = authed_client.post(f"/ratings/{rating_id}/publish")
+    assert r.status_code == 200
+
+
+def test_publish_boundary_album_5_tracks(authed_client: TestClient) -> None:
+    # Minimum rateable album: all 5 tracks are the top 5.
+    album_id = _seed_album(authed_client, total_songs=5)
+    rating_id = authed_client.post("/ratings", json={"album_id": album_id}).json()["id"]
+    authed_client.patch(
+        f"/ratings/{rating_id}", json={"score": 8.0, "top_track_indices": [1, 2, 3, 4, 5]}
+    )
+    r = authed_client.post(f"/ratings/{rating_id}/publish")
+    assert r.status_code == 200
+
+
+def test_publish_boundary_album_25_tracks(authed_client: TestClient) -> None:
+    # Maximum rateable album: indices near the top of the range are valid.
+    album_id = _seed_album(authed_client, total_songs=25)
+    rating_id = authed_client.post("/ratings", json={"album_id": album_id}).json()["id"]
+    authed_client.patch(
+        f"/ratings/{rating_id}", json={"score": 8.0, "top_track_indices": [21, 22, 23, 24, 25]}
+    )
+    r = authed_client.post(f"/ratings/{rating_id}/publish")
+    assert r.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# Song-note length cap
+# ---------------------------------------------------------------------------
+
+def test_patch_rejects_overlong_note(authed_client: TestClient) -> None:
+    album_id = _seed_album(authed_client)
+    rating_id = authed_client.post("/ratings", json={"album_id": album_id}).json()["id"]
+    r = authed_client.patch(f"/ratings/{rating_id}", json={"notes": {"1": "x" * 2001}})
+    assert r.status_code == 422
+
+
+def test_patch_accepts_note_at_max_length(authed_client: TestClient) -> None:
+    album_id = _seed_album(authed_client)
+    rating_id = authed_client.post("/ratings", json={"album_id": album_id}).json()["id"]
+    r = authed_client.patch(f"/ratings/{rating_id}", json={"notes": {"1": "x" * 2000}})
+    assert r.status_code == 200
+    notes = {n["track_index"]: n["note_text"] for n in r.json()["notes"]}
+    assert len(notes[1]) == 2000

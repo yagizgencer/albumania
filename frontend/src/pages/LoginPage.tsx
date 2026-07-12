@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { AxiosError } from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import { login as loginRequest } from "../api/auth";
+import { getErrorMessage } from "../lib/apiError";
 import { useAuth } from "../context/AuthContext";
 import { Alert } from "../components/Alert";
 import { AuthLayout } from "../components/AuthLayout";
@@ -23,8 +25,15 @@ export function LoginPage() {
       const token = await loginRequest(identifier, password);
       login(token);
       navigate("/");
-    } catch {
-      setError("Invalid login or password");
+    } catch (err) {
+      // A real 401 means bad credentials — keep the deliberately vague message so
+      // we don't reveal whether the account exists. Anything else (server down,
+      // network error) shows the actual reason instead of blaming the password.
+      if (err instanceof AxiosError && err.response?.status === 401) {
+        setError("Invalid login or password");
+      } else {
+        setError(getErrorMessage(err, "Invalid login or password"));
+      }
     } finally {
       setSubmitting(false);
     }
