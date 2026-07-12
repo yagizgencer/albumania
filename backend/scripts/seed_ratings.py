@@ -36,7 +36,7 @@ RANKINGS = [
     {"album": "Disintegration", "spotify_id": "6DZNOsLXIU2zOQfQDwDpIS", "date": "09.07.2025", "Yagiz": [5, 3, 6, 1, 9], "Tugba": [3, 9, 5, 1, 4], "yagiz_score": 7.1, "tugba_score": 8.3},
     {"album": "The Silver Scream", "spotify_id": "3DVjLNjzyZBVc8eZcJoulz", "date": "13.07.2025", "Yagiz": [2, 12, 6, 7, 0], "Tugba": [5, 2, 12, 0, 11], "yagiz_score": 9.2, "tugba_score": 9.0},
     {"album": "(What's the Story) Morning Glory?", "spotify_id": "6Srtm8a14PDdrpRUdvUdEO", "date": "23.07.2025", "Yagiz": [11, 3, 2, 9, 1], "Tugba": [11, 3, 2, 9, 6], "yagiz_score": 7.5, "tugba_score": 8.8},
-    {"album": "Stargazer", "spotify_id": "6xKM5VYZoDt0H0mPu2Blru", "date": "29.07.2025", "Yagiz": [10, 6, 9, 1, 8], "Tugba": [1, 4, 5, 7, 2], "yagiz_score": 8.3, "tugba_score": 8.4},
+    {"album": "Stargazer", "spotify_id": "1XD2eflndfACkOIf8baanB", "date": "29.07.2025", "Yagiz": [10, 6, 9, 1, 8], "Tugba": [1, 4, 5, 7, 2], "yagiz_score": 8.3, "tugba_score": 8.4},
     {"album": "Humbug", "spotify_id": "5IEoiwkThhRmSMBANhpxl2", "date": "10.08.2025", "Yagiz": [1, 8, 2, 9, 0], "Tugba": [1, 8, 3, 7, 0], "yagiz_score": 7.3, "tugba_score": 8.6},
     {"album": "People Watching", "spotify_id": "1PRvYCv9h0rlR4AP54yOnN", "date": "17.08.2025", "Yagiz": [3, 1, 6, 8, 13], "Tugba": [4, 3, 7, 0, 13], "yagiz_score": 8.3, "tugba_score": 7.6},
     {"album": "X&Y", "spotify_id": "4E7bV0pzG0LciBSWTszra6", "date": "24.08.2025", "Yagiz": [9, 1, 0, 6, 3], "Tugba": [3, 6, 4, 5, 0], "yagiz_score": 7.8, "tugba_score": 9.4},

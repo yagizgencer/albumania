@@ -41,7 +41,8 @@
   --success-bg: #a9d9c0;
   --success-text: #1f5540;
   --danger-bg: #eaa0a0;
-  --danger-text: #8a2f2f;
+  --danger-text: #8a2f2f;         /* danger ink ON the --danger-bg fill (Alerts) */
+  --danger-on-surface: #8a2f2f;   /* danger ink on the PAGE (bare error text) */
   --danger-tint: rgba(180, 70, 70, 0.12);   /* faint hover wash for danger */
   --info-bg: #a9cfe0;
   --info-text: #22505f;
@@ -159,7 +160,8 @@
   --success-bg: #6fbf9c;
   --success-text: #0c3325;
   --danger-bg: #e59191;
-  --danger-text: #3a1414;
+  --danger-text: #3a1414;         /* dark ink reads on the light --danger-bg fill */
+  --danger-on-surface: #ef9d9d;  /* light red so bare error text reads on the dark page */
   --danger-tint: rgba(229, 145, 145, 0.14);
   --info-bg: #7fb6cc;
   --info-text: #10333f;
@@ -335,7 +337,10 @@ a:hover {
 }
 
 .error {
-  color: var(--danger-text);
+  /* Bare error text sits on the page, not on a danger fill — use the on-surface
+     danger ink so it stays legible in dark mode (--danger-text is tuned for the
+     Alert's light red fill and goes near-black/invisible on the dark page). */
+  color: var(--danger-on-surface);
   font-size: var(--text-sm);
 }
 

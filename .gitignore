@@ -27,6 +27,9 @@ dist/
 *.sqlite
 *.sqlite3
 
+# Neon DB backups (contain user data — never commit)
+backend/backups/
+
 # OS / editor
 .DS_Store
 .idea/

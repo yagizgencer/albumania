@@ -73,30 +73,47 @@ look was liked, so the change is deliberately scoped to the border color only.
   the browser and only follows the OS light/dark (via `color-scheme`), so it
   could never match the in-website theme toggle or the cozy Warm Peach look. New
   files:
-  - `frontend/src/components/DatePicker.tsx` — a trigger button + our own themed
-    calendar popover, modeled on the existing custom `<Select>` (same
-    outside-click / Escape / focus conventions). Takes/emits an ISO
-    `"YYYY-MM-DD"` string (drop-in for the existing `fromDate`/`toDate` state) and
-    displays the selection via the app's `formatDate` (`DD.MM.YYYY`). Monday-first
-    grid, Today/Clear quick links, `CalendarIcon` in the trigger.
+  - `frontend/src/components/DatePicker.tsx` — a writable text field + a calendar
+    button that opens our own themed popover, modeled on the custom `<Select>`
+    (same outside-click / Escape / focus conventions). Takes/emits an ISO
+    `"YYYY-MM-DD"` string (drop-in for the existing `fromDate`/`toDate` state).
+    Features: type a date as `DD.MM.YYYY` (lenient `. / -` separators, validated
+    on blur/Enter and reverted if invalid/out-of-range); month + year quick-select
+    dropdowns to jump without clicking arrows; optional `min`/`max` props that
+    disable out-of-range days and reject out-of-range typed dates (month-nav
+    arrows stay always-available — the range only limits day selection);
+    Monday-first grid, Today/Clear quick links.
   - `frontend/src/components/DatePicker.module.css` — mirrors `Select.module.css`:
     surface trigger with a soft hairline (flat, no shadow, teal focus ring), a
     flat popover (`--border-soft` hairline in dark), teal "selected" day with the
     sketch border, month title in the `--font-display` handwritten face, dates in
     the body font with `tabular-nums` (the earlier native field rendered the date
-    oddly). Fully token-driven, identical in light and dark. Polish: placeholder
-    ("Any date") and a filled value share the exact same type (only colour
-    differs); month-nav arrows are purpose-drawn ‹/› chevrons whose
+    oddly). Fully token-driven, identical in light and dark. Polish: the field's
+    inner input suppresses the global `input:focus` ring so only the wrapping
+    `.field` shows one ring (no double highlight while typing); month-nav arrows
+    are purpose-drawn ‹/› chevrons whose
     path is centred in the 24×24 box (both a `‹`/`›` text glyph and a rotated
     down-chevron sat off-centre); day cells centre a fixed 2rem pill inside
     each grid track so the selected teal fill has even breathing room and never
     hugs a neighbour or the popover wall.
+  - `frontend/src/lib/date.ts` — added `todayIso()` helper.
   - `frontend/src/pages/ProfileDashboardPage.tsx` + `FriendDashboardPage.tsx` —
-    swapped both From/To native inputs for `<DatePicker>`.
+    swapped both From/To native inputs for `<DatePicker>`, wired with constraints:
+    both capped at `todayIso()` (no future dates), To gets `min={fromDate}` and
+    From gets `max={toDate || today}` (so the range can't invert).
   - `frontend/src/pages/ProfileDashboardPage.module.css` — deleted all the native
     `input[type="date"]` styling (calendar-indicator data-URI SVGs, datetime-edit
     resets, `color-scheme`); the shared `select` / `input[type="text"]` field
     styling stays for the artist-name filter.
+
+## Dark-mode error text (login / register / profile)
+
+- `frontend/src/index.css` — the global `.error` class (bare validation/error text
+  on the page) used `--danger-text`, which is tuned to sit on the Alert's light red
+  `--danger-bg` fill and goes near-black/invisible on the dark page. Added a
+  `--danger-on-surface` token (`#8a2f2f` light / `#ef9d9d` dark) and pointed `.error`
+  at it. The `<Alert>` component is unchanged (still `--danger-text` on
+  `--danger-bg`). Fixes the register field hints and the ProfilePage error line.
 
 ## Verification
 
