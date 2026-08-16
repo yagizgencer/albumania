@@ -29,7 +29,8 @@ export function VerifyBanner() {
           </button>
         }
       >
-        Verify your email to unlock friends and listen invites.
+        Verify your email to unlock friends and listen invites. If you don't see the
+        verification email, please check your spam folder.
       </Alert>
     </div>
   );
