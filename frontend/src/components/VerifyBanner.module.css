@@ -1,0 +1,60 @@
+.card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  margin: var(--space-1) 0;
+  background: var(--surface);
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+}
+
+.body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.message {
+  flex: 1;
+  font-size: var(--text-md);
+}
+
+.action {
+  flex-shrink: 0;
+}
+
+.iconBadge {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background: var(--data);
+  color: var(--on-data);
+  border: var(--border-w-thin) solid var(--border);
+}
+
+.amberBorder {
+  border-color: var(--data-hover);
+}
+
+/* Doubled class selector (.x.x) bumps specificity above the Button component's
+   single-class intent rule (.secondary) without !important. Resting shadow is
+   dropped — the button sits inside a card that already has its own shadow, and
+   stacking two of the same offset shadow at different scales read as too heavy.
+   A modest shadow still appears on hover for interactive feedback. */
+.btnAmberFill.btnAmberFill {
+  background: var(--data);
+  color: var(--on-data);
+  border-color: var(--border);
+  box-shadow: none;
+}
+.btnAmberFill.btnAmberFill:hover:not(:disabled):not([aria-disabled="true"]) {
+  box-shadow: var(--shadow-soft);
+}

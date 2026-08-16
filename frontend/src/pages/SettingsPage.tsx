@@ -1,6 +1,6 @@
 import { useState, type ComponentType } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { changePassword, resendVerification } from "../api/auth";
+import { changePassword } from "../api/auth";
 import { updateMe, type ProfileVisibility, type UserProfile } from "../api/users";
 import { useAuth } from "../context/AuthContext";
 import { useTheme, type ThemePreference } from "../context/ThemeContext";
@@ -12,6 +12,7 @@ import { LoadingState } from "../components/Spinner";
 import { PasswordInput } from "../components/PasswordInput";
 import { Select } from "../components/Select";
 import {
+  HourglassIcon,
   MonitorIcon,
   MoonIcon,
   ShieldCheckIcon,
@@ -104,17 +105,6 @@ function Panel({
 }
 
 function AccountTab({ profile }: { profile: UserProfile }) {
-  const [resent, setResent] = useState(false);
-
-  async function onResend() {
-    try {
-      await resendVerification();
-      setResent(true);
-    } catch {
-      // best-effort; ignore
-    }
-  }
-
   return (
     <Panel title="Email" description="The address you use to sign in.">
       <div className={styles.emailRow}>
@@ -126,23 +116,14 @@ function AccountTab({ profile }: { profile: UserProfile }) {
           </span>
         ) : (
           <span className={`${styles.badge} ${styles.badgeWarn}`}>
-            <ShieldCheckIcon size={15} />
+            <HourglassIcon size={15} />
             Not verified
           </span>
         )}
       </div>
-      {!profile.email_verified && (
-        <Alert
-          variant="info"
-          action={
-            <Button intent="secondary" size="sm" onClick={onResend} disabled={resent}>
-              {resent ? "Sent" : "Resend"}
-            </Button>
-          }
-        >
-          Verify your email to unlock friends and listen invites.
-        </Alert>
-      )}
+      {/* No inline resend prompt here — the persistent VerifyBanner (shown site-wide
+          under the nav) already covers this, so a second copy here would be
+          redundant every time this tab is open. */}
     </Panel>
   );
 }
