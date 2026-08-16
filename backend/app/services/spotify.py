@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 import spotipy
+from spotipy.exceptions import SpotifyException
 from spotipy.oauth2 import SpotifyClientCredentials
 
 from app.core.config import get_settings
@@ -87,14 +88,23 @@ class SpotifyClient:
         )
 
     def get_artists(self, artist_ids: list[str]) -> dict[str, str | None]:
-        """Batch `artist_id -> image_url` lookup (Spotify's `artists` endpoint takes
-        up to 50 ids per call). Used to attach photos to trending artists."""
+        """`artist_id -> image_url` lookup. Used to attach photos to trending
+        artists. One request per artist, not batched — Spotify's February 2026
+        Development Mode changes removed the batch "Get Several Artists"
+        endpoint (`GET /artists?ids=...`) for newly created apps; the
+        single-item endpoint remains supported, so this fetches one at a time
+        instead (see the migration guide's "fetch items individually instead").
+        An id that fails on its own (bad id, transient error) is skipped
+        rather than failing the whole lookup, matching the batch endpoint's
+        original behaviour of silently omitting unresolvable ids."""
         images: dict[str, str | None] = {}
-        for i in range(0, len(artist_ids), 50):
-            batch = artist_ids[i : i + 50]
-            for item in self._sp.artists(batch)["artists"]:
-                if item:
-                    images[item["id"]] = item["images"][0]["url"] if item["images"] else None
+        for artist_id in artist_ids:
+            try:
+                item = self._sp.artist(artist_id)
+            except SpotifyException:
+                continue
+            if item:
+                images[item["id"]] = item["images"][0]["url"] if item["images"] else None
         return images
 
     def get_artist_albums(self, artist_id: str) -> list[SpotifyAlbumResult]:
@@ -134,19 +144,23 @@ class SpotifyClient:
         return tracks
 
     def get_top5_popular_indices(self, spotify_id: str) -> list[int]:
-        """Return the 5 most-popular track numbers (1-based) for the album, sorted by popularity desc."""
+        """Return the 5 most-popular track numbers (1-based) for the album, sorted
+        by popularity desc. One request per track, not batched — see
+        get_artists()'s docstring for why (Spotify's Feb 2026 Development Mode
+        changes removed the batch "Get Several Tracks" endpoint for newly
+        created apps; the single-item endpoint remains supported)."""
         album = self._sp.album(spotify_id)
         track_ids = [t["id"] for t in album["tracks"]["items"]]
         track_numbers = {t["id"]: t["track_number"] for t in album["tracks"]["items"]}
 
         popularity_map: dict[str, int] = {}
-        # Spotify's tracks endpoint accepts up to 50 IDs at once
-        for i in range(0, len(track_ids), 50):
-            batch = track_ids[i : i + 50]
-            results = self._sp.tracks(batch)["tracks"]
-            for t in results:
-                if t:
-                    popularity_map[t["id"]] = t["popularity"]
+        for track_id in track_ids:
+            try:
+                t = self._sp.track(track_id)
+            except SpotifyException:
+                continue
+            if t:
+                popularity_map[t["id"]] = t["popularity"]
 
         sorted_tracks = sorted(track_ids, key=lambda tid: popularity_map.get(tid, 0), reverse=True)
         return [track_numbers[tid] for tid in sorted_tracks[:5]]
