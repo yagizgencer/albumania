@@ -8,16 +8,24 @@ or network.
 """
 from __future__ import annotations
 
+import mimetypes
 from pathlib import Path
 from typing import Protocol
 
 from app.core.config import Settings, get_settings
 
 
+class ObjectNotFoundError(Exception):
+    """Raised by `Storage.get()` when `key` doesn't exist, regardless of
+    backend — callers (the `/media` route) don't need to know whether that
+    means a missing file, a missing dict entry, or an S3 404."""
+
+
 class Storage(Protocol):
     def save(self, key: str, data: bytes, content_type: str) -> str: ...
     def delete(self, key: str) -> None: ...
     def public_url(self, key: str) -> str: ...
+    def get(self, key: str) -> tuple[bytes, str]: ...
 
 
 class LocalStorage:
@@ -47,14 +55,26 @@ class LocalStorage:
     def public_url(self, key: str) -> str:
         return f"{self._api_base}/static/{key}"
 
+    def get(self, key: str) -> tuple[bytes, str]:
+        path = self._dir / key
+        try:
+            data = path.read_bytes()
+        except FileNotFoundError as exc:
+            raise ObjectNotFoundError(key) from exc
+        content_type, _ = mimetypes.guess_type(key)
+        return data, content_type or "application/octet-stream"
+
 
 class R2Storage:
     """Cloudflare R2 via boto3 (S3-compatible).
 
-    The bucket must be configured for public-read access (avatars are
-    inherently semi-public). The public URL pattern is `r2_public_url_base`
-    + `/` + key — point that at either R2's auto-assigned `r2.dev` URL or a
-    custom domain bound to the bucket.
+    Public URLs are proxied through our own `/media/{key}` route instead of
+    pointing directly at R2's `pub-xxx.r2.dev` domain. Some ISPs block that
+    domain outright at the network level (observed with a Turkish ISP: the
+    TLS handshake gets hijacked into a plain-HTTP redirect to a landing
+    page) — routing reads through our own already-reachable domain avoids
+    that entirely, at the cost of one extra hop through the backend per
+    image load. Fine at this app's scale.
     """
 
     def __init__(self, settings: Settings):
@@ -65,7 +85,6 @@ class R2Storage:
             and settings.r2_access_key_id
             and settings.r2_secret_access_key
             and settings.r2_bucket
-            and settings.r2_public_url_base
         ):
             raise RuntimeError(
                 "STORAGE_BACKEND=r2 but R2 settings are incomplete"
@@ -80,7 +99,7 @@ class R2Storage:
             region_name="auto",
         )
         self._bucket = settings.r2_bucket
-        self._public_base = settings.r2_public_url_base.rstrip("/")
+        self._api_base = settings.api_base_url.rstrip("/")
 
     def save(self, key: str, data: bytes, content_type: str) -> str:
         self._client.put_object(
@@ -95,7 +114,16 @@ class R2Storage:
         self._client.delete_object(Bucket=self._bucket, Key=key)
 
     def public_url(self, key: str) -> str:
-        return f"{self._public_base}/{key}"
+        return f"{self._api_base}/media/{key}"
+
+    def get(self, key: str) -> tuple[bytes, str]:
+        from botocore.exceptions import ClientError
+
+        try:
+            obj = self._client.get_object(Bucket=self._bucket, Key=key)
+        except ClientError as exc:
+            raise ObjectNotFoundError(key) from exc
+        return obj["Body"].read(), obj.get("ContentType", "application/octet-stream")
 
 
 class InMemoryStorage:
@@ -118,6 +146,12 @@ class InMemoryStorage:
 
     def public_url(self, key: str) -> str:
         return f"{self._public_base}/{key}"
+
+    def get(self, key: str) -> tuple[bytes, str]:
+        try:
+            return self.objects[key], self.content_types[key]
+        except KeyError as exc:
+            raise ObjectNotFoundError(key) from exc
 
 
 def _build_storage(settings: Settings) -> Storage:

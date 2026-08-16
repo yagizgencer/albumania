@@ -22,6 +22,7 @@ from app.routers import (
     friendships,
     home,
     invites,
+    media,
     notifications,
     ratings,
     users,
@@ -61,6 +62,7 @@ if settings.storage_backend.lower() == "local":
 
 app.include_router(auth.router)
 app.include_router(users.router)
+app.include_router(media.router)
 app.include_router(albums.router)
 app.include_router(artists.router)
 app.include_router(comments.router)
