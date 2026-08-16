@@ -109,25 +109,38 @@ class SpotifyClient:
 
     def get_artist_albums(self, artist_id: str) -> list[SpotifyAlbumResult]:
         """Full studio-album discography, de-duped by name (Spotify returns many
-        editions: deluxe, remasters, regional variants, etc.)."""
-        data = self._sp.artist_albums(artist_id, album_type="album", limit=50)
+        editions: deluxe, remasters, regional variants, etc.). Paginated at 10
+        per page — Spotify's February 2026 Development Mode changes reject
+        limit=50 outright with a 400 "Invalid limit" for newly created apps,
+        so this can no longer fetch everything in one call."""
         results: list[SpotifyAlbumResult] = []
         seen_names: set[str] = set()
-        for item in data["items"]:
-            name_key = item["name"].strip().lower()
-            if name_key in seen_names:
-                continue
-            seen_names.add(name_key)
-            results.append(_album_result_from_item(item))
+        offset = 0
+        while True:
+            data = self._sp.artist_albums(
+                artist_id, album_type="album", limit=10, offset=offset
+            )
+            items = data["items"]
+            for item in items:
+                name_key = item["name"].strip().lower()
+                if name_key in seen_names:
+                    continue
+                seen_names.add(name_key)
+                results.append(_album_result_from_item(item))
+            if len(items) < 10 or not data.get("next"):
+                break
+            offset += 10
         return results
 
     def get_album_tracks(self, spotify_id: str) -> list[SpotifyTrack]:
         # The album object only embeds the first 50 tracks, so page through the
-        # dedicated endpoint to get every track for long albums.
+        # dedicated endpoint to get every track for long albums. Page size is 10,
+        # not 50 — Spotify's February 2026 Development Mode changes reject
+        # limit=50 outright with a 400 "Invalid limit" for newly created apps.
         tracks = []
         offset = 0
         while True:
-            page = self._sp.album_tracks(spotify_id, limit=50, offset=offset)
+            page = self._sp.album_tracks(spotify_id, limit=10, offset=offset)
             items = page["items"]
             for track in items:
                 tracks.append(
@@ -138,9 +151,9 @@ class SpotifyClient:
                         duration_ms=track.get("duration_ms"),
                     )
                 )
-            if len(items) < 50 or not page.get("next"):
+            if len(items) < 10 or not page.get("next"):
                 break
-            offset += 50
+            offset += 10
         return tracks
 
     def get_top5_popular_indices(self, spotify_id: str) -> list[int]:
