@@ -279,8 +279,11 @@ export function RatingEditorPage() {
   const [commentText, setCommentText] = useState("");
   const [commentVisibility, setCommentVisibility] = useState<Visibility>("public");
   // Serialized snapshot of the last saved rating state; used to detect unsaved
-  // edits. Reset by applyRating (load/save).
-  const savedSnapshotRef = useRef<string>("");
+  // edits. Reset by applyRating (load/save). Seeded from the same initial
+  // values the state above starts with (not "") — otherwise isDirty is true
+  // from the very first render, before the real rating has even loaded,
+  // which occasionally raced the unsaved-changes guard in tests.
+  const savedSnapshotRef = useRef<string>(serialize(false, 5, makeEmptySlots(), {}));
   // A pending programmatic navigation (publish / remove) performed once the
   // dirty flag has cleared, so our own redirect isn't blocked by the guard.
   const [pendingNav, setPendingNav] = useState<string | null>(null);
