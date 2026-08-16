@@ -13,10 +13,7 @@ from app.models.rating import Rating, RatingStatus, SongNote
 from app.models.user import User
 from app.schemas.rating import RatingCreate, RatingOut, RatingPatch
 from app.services.friend_dashboard import rebuild_for_user
-from app.services.invite import (
-    delete_invites_for_user_album,
-    maybe_complete_invites_for_rating,
-)
+from app.services.invite import maybe_complete_invites_for_rating, withdraw_from_accepted_invite
 
 router = APIRouter(prefix="/ratings", tags=["ratings"])
 
@@ -206,6 +203,9 @@ def delete_rating(rating_id: int, user: CurrentUser, db: DB) -> None:
     album_id = rating.album_id
     db.delete(rating)
     db.commit()
-    delete_invites_for_user_album(db, user.username, album_id)
+    # Only withdraws from an ACCEPTED invite (ends an established shared listen
+    # for this user). A still-pending invite is left alone — see
+    # withdraw_from_accepted_invite's docstring for why.
+    withdraw_from_accepted_invite(db, user.username, album_id)
     if was_published:
         rebuild_for_user(db, user.username)

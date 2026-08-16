@@ -240,7 +240,7 @@ export function AlbumInfoPage() {
       key: "listen",
       show: !isPublished && !rating && !hasActiveInvite,
       className: styles.iconListen,
-      tip: "Listen & Rate",
+      tip: "Listen Later",
       icon: <HeadphonesIcon size={26} />,
       onClick: handleAddToListenLater,
       disabled: busy || !rateable,

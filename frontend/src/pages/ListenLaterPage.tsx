@@ -146,7 +146,7 @@ export function ListenLaterPage() {
               <LoadingState />
             ) : entries.length === 0 ? (
               <div className={styles.empty}>
-                Nothing here yet. Search for an album and tap “Listen & Rate”.
+                Nothing here yet. Search for an album and tap either “Listen Later” or “Rate” directly.
               </div>
             ) : (
               <div className={styles.cardGrid}>

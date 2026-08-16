@@ -79,14 +79,21 @@ def maybe_complete_invites_for_rating(db: Session, username: str, album_id: int)
         rebuild_for_pair(db, fid)
 
 
-def delete_invites_for_user_album(db: Session, username: str, album_id: int) -> None:
-    """When a user deletes their rating for an album, withdraw them from every
-    invite involving that album — both directions, any status. The album drops
-    off their (and their would-be participants') Listen Later list.
+def withdraw_from_accepted_invite(db: Session, username: str, album_id: int) -> None:
+    """When a user removes their draft for an album, withdraw them from an
+    ACCEPTED invite involving it (either direction) — the shared listen they
+    were part of ends for them, so their participant chip disappears from the
+    other party's view.
+
+    A still-PENDING invite is deliberately left alone: it's a durable, standalone
+    record until someone responds, not tied to either party's draft. If the
+    other party accepts it later, accept_invite's own logic recreates this
+    user's draft, reconnecting the shared listen with no extra handling needed.
     """
     db.execute(
         delete(ListenInvite).where(
             ListenInvite.album_id == album_id,
+            ListenInvite.status == ListenInviteStatus.accepted,
             or_(
                 ListenInvite.sender_username == username,
                 ListenInvite.receiver_username == username,
