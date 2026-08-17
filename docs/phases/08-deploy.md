@@ -31,7 +31,13 @@
 
 1. Sign up at https://render.com
 2. **New → Web Service → Connect a repository** → select `yagizgencer/albumania`
-3. Root directory: `backend` — Render will pick up `render.yaml` automatically
+3. Root directory: `backend`
+
+   > **This service is dashboard-managed, not Blueprint-managed.** `render.yaml` is only
+   > applied to services created via **New → Blueprint**; the **New → Web Service** flow
+   > above ignores it. Treat `render.yaml` as documentation of intent — the live config
+   > lives in the Render dashboard, and the two can silently drift. Change settings in
+   > both places.
 4. Under **Environment Variables** add:
 
 | Key | Value |
@@ -89,7 +95,16 @@ If you haven't already:
 
 ## Notes
 
-- **Cold start**: Render free tier idles after 15 min. First request after idle takes ~15–30 s. Acceptable for MVP.
-- **Alembic on deploy**: `preDeployCommand` in `render.yaml` runs migrations before the new instance goes live — safe zero-downtime migrations.
+- **Instance plan**: `starter`. The service ran on `free` until 2026-08-17, which spins
+  down after 15 min idle; a cold `/health` was measured at **41.5 s** vs **0.33 s** warm.
+  Because `AuthContext` blocks first paint on `POST /auth/refresh`, that cold start
+  stalled the entire site — including for logged-out visitors with no refresh cookie.
+  Starter does not spin down. Neon (~1.2 s resume) and Vercel (CDN) were measured and
+  ruled out as causes; both stay on free.
+- **Alembic on deploy**: migrations run via the **Pre-Deploy Command**, not the start
+  command. This matters for failure behaviour: a failed migration aborts the deploy and
+  leaves the previous version serving, whereas folding it into `startCommand` (the setup
+  through 2026-08-17) meant a bad migration stopped the instance from booting at all.
+  Pre-deploy commands are a paid-tier feature — free instances ignore them.
 - **R2 vs local**: `STORAGE_BACKEND=r2` is hardcoded for production. Local dev still uses `local` (default in `config.py`).
 - **JWT_SECRET**: `generateValue: true` in `render.yaml` means Render creates a secure random value on first deploy and persists it. Don't override it unless you want to invalidate all existing sessions.

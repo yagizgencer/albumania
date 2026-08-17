@@ -2,6 +2,10 @@ services:
   - type: web
     name: albumania-api
     runtime: python
+    # Not `free`: free instances spin down after 15 min idle, and the next visitor
+    # waits ~40 s for a cold boot while the whole SPA blocks on /auth/refresh.
+    # Starter also unlocks preDeployCommand below, which free tier ignores.
+    plan: starter
     rootDir: backend
     buildCommand: pip install uv && uv sync --no-dev
     startCommand: uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT
