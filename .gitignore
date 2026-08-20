@@ -15,8 +15,10 @@ dist/
 
 # Env
 .env
-.env.local
-.env.*.local
+# Any .env variant — backups, per-environment copies, scratch files. These hold
+# live credentials and one nearly reached GitHub as a committed Resend API key.
+.env.*
+!.env.example
 
 # Spotipy OAuth token cache (machine-local, contains access token)
 .cache

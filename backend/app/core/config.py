@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     jwt_refresh_ttl_days: int = 30
     spotify_client_id: str = ""
     spotify_client_secret: str = ""
+    # Minimum seconds between any two Spotify API calls, process-wide. Spotify
+    # penalises "aggressive sub-second loops", and the restricted Development
+    # Mode API forces per-item fetches, so our loops are exactly that shape.
+    spotify_min_call_interval: float = 1.0
     cors_origins: str = "http://localhost:5173"
 
     # Profile-picture storage. "local" writes to backend/static/avatars (mounted at

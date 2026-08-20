@@ -8,7 +8,9 @@ from app.db.session import Base, get_db
 from app.main import app
 from app.services.similarity import reset_baseline_cache
 from app.services.spotify import SpotifyClient, get_spotify_client
+from app.services.spotify import _breaker as spotify_breaker
 from app.services.spotify import _cache as spotify_cache
+from app.services.spotify import _spacer as spotify_spacer
 from app.services.storage import InMemoryStorage, get_storage
 
 
@@ -23,6 +25,9 @@ def _clear_process_caches():
     """
     reset_baseline_cache()
     spotify_cache.clear()
+    spotify_breaker.reset()
+    # Real spacing would cost a wall-clock second per simulated call.
+    spotify_spacer.interval = 0
     yield
     reset_baseline_cache()
     spotify_cache.clear()
@@ -107,8 +112,20 @@ def client(storage):
             db.close()
 
     app.dependency_overrides[get_db] = override_get_db
+
+    # Some code legitimately needs a session outside a request — the Spotify
+    # rate-limit breaker persists its cooldown so a restart can't resume calling
+    # mid-penalty, and it has no request to borrow one from. That code reaches
+    # for the module-level SessionLocal, which the dependency override does NOT
+    # intercept: without this patch it would connect to whatever DATABASE_URL
+    # points at, i.e. the real database.
+    import app.db.session as db_session
+
+    real_session_local = db_session.SessionLocal
+    db_session.SessionLocal = TestSession
     with TestClient(app) as c:
         yield c
+    db_session.SessionLocal = real_session_local
     app.dependency_overrides.clear()
     Base.metadata.drop_all(engine)
     engine.dispose()

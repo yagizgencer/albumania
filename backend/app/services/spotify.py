@@ -2,6 +2,7 @@ import logging
 import threading
 import time
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from functools import lru_cache
 
 import requests
@@ -23,8 +24,10 @@ _REQUEST_TIMEOUT = 5
 
 # Hard ceiling on discography pagination. Spotify's Feb 2026 Development Mode
 # changes capped page size at 10, so a pathological artist could otherwise page
-# for a very long time inside a single request.
-_MAX_ALBUM_PAGES = 12
+# for a very long time inside a single request. Kept low deliberately: each page
+# is a separate call and calls are now spaced a second apart, so this bounds
+# both the quota spend and the worst-case latency of a cold artist page.
+_MAX_ALBUM_PAGES = 6
 
 
 class _RateLimitBreaker:
@@ -41,12 +44,64 @@ class _RateLimitBreaker:
     """
 
     def __init__(self) -> None:
-        self._open_until = 0.0
+        # Wall-clock, not monotonic: this has to be comparable with a value
+        # persisted across process restarts.
+        self._open_until: datetime | None = None
+        self._loaded = False
         self._consecutive_429s = 0
         self._lock = threading.Lock()
 
+    def _load_once(self) -> None:
+        """Pick up a cooldown left behind by a previous process.
+
+        Spotify escalates if you call during a penalty window, and a Render
+        deploy happens far more often than a 16-hour penalty elapses — so
+        without this, every restart would resume calling mid-lockout and earn a
+        longer one. Read lazily and cached, so this costs one query per process.
+        """
+        if self._loaded:
+            return
+        with self._lock:
+            if self._loaded:
+                return
+            try:
+                from app.db.session import SessionLocal
+                from app.models.spotify_state import SpotifyCooldown
+
+                with SessionLocal() as db:
+                    row = db.get(SpotifyCooldown, 1)
+                    if row is not None:
+                        stored = row.paused_until
+                        # SQLite has no timezone type and hands back a naive
+                        # datetime where Postgres returns an aware one. Treat
+                        # naive as UTC, which is what we wrote.
+                        if stored.tzinfo is None:
+                            stored = stored.replace(tzinfo=timezone.utc)
+                        self._open_until = stored
+            except Exception:
+                # Never let a cooldown lookup break Spotify entirely; worst case
+                # we forget a penalty, which is the old behaviour.
+                logger.exception("Could not load Spotify cooldown")
+            self._loaded = True
+
+    def _persist(self, until: datetime) -> None:
+        try:
+            from app.db.session import SessionLocal
+            from app.models.spotify_state import SpotifyCooldown
+
+            with SessionLocal() as db:
+                row = db.get(SpotifyCooldown, 1)
+                if row is None:
+                    db.add(SpotifyCooldown(id=1, paused_until=until))
+                else:
+                    row.paused_until = until
+                db.commit()
+        except Exception:
+            logger.exception("Could not persist Spotify cooldown")
+
     def is_open(self) -> bool:
-        return time.monotonic() < self._open_until
+        self._load_once()
+        return self._open_until is not None and datetime.now(timezone.utc) < self._open_until
 
     def record_success(self) -> None:
         if self._consecutive_429s:
@@ -62,18 +117,27 @@ class _RateLimitBreaker:
         consecutive failures distinguishes "we are genuinely throttled" from
         "one call was unlucky", and any success resets the count.
         """
+        until = datetime.now(timezone.utc) + timedelta(seconds=seconds)
         with self._lock:
             self._consecutive_429s += 1
             tripped = self._consecutive_429s >= _TRIP_AFTER_CONSECUTIVE_429S
-            if tripped:
-                self._open_until = max(self._open_until, time.monotonic() + seconds)
+            if tripped and (self._open_until is None or until > self._open_until):
+                self._open_until = until
+            else:
+                tripped = False
         if tripped:
-            logger.warning("Spotify rate limited; pausing calls for %.0fs", seconds)
+            logger.warning(
+                "Spotify rate limited; pausing all calls until %s (%.0fs)",
+                until.isoformat(),
+                seconds,
+            )
+            self._persist(until)
 
     def reset(self) -> None:
         with self._lock:
-            self._open_until = 0.0
+            self._open_until = None
             self._consecutive_429s = 0
+            self._loaded = True  # don't re-read the DB and undo the reset
 
 
 _breaker = _RateLimitBreaker()
@@ -81,12 +145,59 @@ _breaker = _RateLimitBreaker()
 # How long to back off after a 429. Spotify's Retry-After is honoured when
 # present, clamped into this range so one hostile header can't mute the whole
 # feature for hours, and a missing header still gets a real pause.
-_COOLDOWN_DEFAULT = 30.0
-_COOLDOWN_MAX = 120.0
+_COOLDOWN_DEFAULT = 60.0
+# Honour Retry-After in full. The breaker only *declines to call* — unlike
+# urllib3's Retry-After, which sleeps the calling thread and must never be
+# honoured — so waiting a long time here costs nothing but degraded discovery.
+# Spotify's guidance is explicit that sending anything during a penalty window
+# earns a fresh, longer lockout, so probing early is actively harmful. An
+# observed penalty was 58192s (16 hours); 24h is the ceiling on sane values.
+_COOLDOWN_MAX = 24 * 60 * 60.0
+
+# If the spacer would make a request wait longer than this, give up and let the
+# caller fall back to local data. Under load, degrading to the DB beats
+# serialising every user behind a one-per-second queue.
+_MAX_THROTTLE_WAIT = 4.0
 
 # Spotify throttles shared cloud egress IPs intermittently, so a lone 429 is not
 # evidence that we are over quota. Only stop calling after repeated failures.
 _TRIP_AFTER_CONSECUTIVE_429S = 3
+
+
+class _CallSpacer:
+    """Keeps a minimum gap between Spotify calls, process-wide.
+
+    The restricted Development Mode API removed the batch endpoints, so fetching
+    twenty trending artists is twenty HTTP calls and a discography is one per
+    page. Fired back-to-back those are precisely the "aggressive sub-second
+    loops" Spotify penalises. Spacing them costs latency on cold paths only —
+    everything hot is served from the cache or the database.
+    """
+
+    def __init__(self) -> None:
+        self._next_allowed = 0.0
+        self._lock = threading.Lock()
+        # Instance attribute rather than a constant so it can be tuned by env
+        # var in production, and set to 0 in tests (which would otherwise spend
+        # a real second per simulated call).
+        self.interval = get_settings().spotify_min_call_interval
+
+    def wait(self) -> None:
+        with self._lock:
+            now = time.monotonic()
+            wait_for = self._next_allowed - now
+            if wait_for > _MAX_THROTTLE_WAIT:
+                raise SpotifyException(
+                    429, -1, "Spotify call throttled locally (queue too long)"
+                )
+            # Reserve our slot before releasing the lock so concurrent callers
+            # queue rather than all sleeping to the same instant.
+            self._next_allowed = max(now, self._next_allowed) + self.interval
+        if wait_for > 0:
+            time.sleep(wait_for)
+
+
+_spacer = _CallSpacer()
 
 
 def _retry_after_seconds(exc: SpotifyException) -> float:
@@ -137,7 +248,7 @@ def _build_session() -> requests.Session:
 # several people typing the same query hit Spotify once.
 _ARTIST_TTL = 24 * 60 * 60
 _DISCOGRAPHY_TTL = 6 * 60 * 60
-_SEARCH_TTL = 60 * 60
+_SEARCH_TTL = 24 * 60 * 60
 
 _cache = TTLCache(max_entries=2048)
 
@@ -219,6 +330,7 @@ class SpotifyClient:
             raise SpotifyException(
                 429, -1, "Spotify rate limit cooldown in effect (not called)"
             )
+        _spacer.wait()
         try:
             result = fn(*args, **kwargs)
         except SpotifyException as exc:

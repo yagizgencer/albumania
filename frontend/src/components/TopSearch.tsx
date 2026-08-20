@@ -59,6 +59,12 @@ function mixByRelevance(
   return scored.map((s) => s.hit);
 }
 
+// Kept in step with _MIN_SEARCH_CHARS in the albums/artists routers.
+const MIN_SEARCH_CHARS = 3;
+// 600ms rather than 400: one extra pause per query, several fewer Spotify calls
+// for anyone who types in bursts.
+const SEARCH_DEBOUNCE_MS = 600;
+
 export function TopSearch() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
@@ -74,9 +80,14 @@ export function TopSearch() {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     const q = query.trim();
-    if (!q) {
+    // Every search is a live Spotify call, and Spotify penalises bursts. Below
+    // three characters the user is almost always still typing rather than
+    // expressing intent, so don't spend a call on it — the backend rejects
+    // shorter queries too, so this also avoids a guaranteed 422.
+    if (q.length < MIN_SEARCH_CHARS) {
       setHits([]);
       setError(null);
+      setLoading(false);
       return;
     }
 
@@ -97,7 +108,7 @@ export function TopSearch() {
       } finally {
         setLoading(false);
       }
-    }, 400);
+    }, SEARCH_DEBOUNCE_MS);
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);

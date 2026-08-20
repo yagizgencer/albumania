@@ -162,8 +162,15 @@ def test_retry_after_is_clamped() -> None:
     from app.services.spotify import _COOLDOWN_DEFAULT, _COOLDOWN_MAX, _retry_after_seconds
 
     assert _retry_after_seconds(SpotifyException(429, -1, "x", headers={"Retry-After": "30"})) == 30
+    # Spotify really does send these: an observed penalty was 58192s (16 hours),
+    # and its guidance says calling during the window earns a fresh lockout — so
+    # honour it in full rather than probing early.
     assert (
-        _retry_after_seconds(SpotifyException(429, -1, "x", headers={"Retry-After": "99999"}))
+        _retry_after_seconds(SpotifyException(429, -1, "x", headers={"Retry-After": "58192"}))
+        == 58192
+    )
+    assert (
+        _retry_after_seconds(SpotifyException(429, -1, "x", headers={"Retry-After": "999999"}))
         == _COOLDOWN_MAX
     )
     # A missing or junk header still earns a real pause.
@@ -195,3 +202,55 @@ def test_a_success_resets_the_failure_streak() -> None:
         assert not _breaker.is_open(), "alternating failures should never trip it"
 
     _breaker.reset()
+
+
+def test_cooldown_survives_a_restart(client) -> None:
+    """The penalty must outlive the process that earned it.
+
+    Spotify's guidance is explicit that calling during a penalty window earns a
+    fresh, longer lockout. Observed windows are 12-24 hours, while a Render
+    deploy or restart happens far more often than that — so an in-memory-only
+    breaker would resume calling mid-penalty every time we shipped.
+    """
+    from datetime import datetime, timedelta, timezone
+
+    from app.services.spotify import _breaker
+
+    _breaker.reset()
+    _breaker.record_rate_limit(58192)  # the real observed value: ~16 hours
+    _breaker.record_rate_limit(58192)
+    _breaker.record_rate_limit(58192)
+    assert _breaker.is_open()
+
+    # Simulate a restart: wipe in-memory state, forcing a reload from the DB.
+    _breaker._open_until = None
+    _breaker._loaded = False
+    _breaker._consecutive_429s = 0
+
+    assert _breaker.is_open(), "a restart must not resume calling mid-penalty"
+    assert _breaker._open_until > datetime.now(timezone.utc) + timedelta(hours=15)
+
+    _breaker.reset()
+
+
+def test_spacer_throttles_locally_without_blaming_spotify(client) -> None:
+    """Our own throttling must not count as Spotify rate-limiting us."""
+    from spotipy.exceptions import SpotifyException
+
+    from app.services.spotify import SpotifyClient, _breaker, _spacer
+
+    _breaker.reset()
+    _spacer.interval = 10.0  # force the queue to overflow immediately
+    try:
+        c = SpotifyClient.__new__(SpotifyClient)
+        c._call(lambda: "first")  # reserves the slot
+        for _ in range(5):
+            try:
+                c._call(lambda: "should not run")
+            except SpotifyException as exc:
+                assert exc.http_status == 429
+        # Local backpressure is not evidence of a Spotify penalty.
+        assert not _breaker.is_open()
+    finally:
+        _spacer.interval = 0
+        _breaker.reset()

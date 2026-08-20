@@ -25,13 +25,18 @@ logger = logging.getLogger("albumania.artists")
 
 router = APIRouter(prefix="/artists", tags=["artists"])
 
+# Discovery search costs a live Spotify call, and single-character queries are
+# almost always mid-typing rather than intent. Three characters cuts the calls a
+# session makes several-fold while still feeling responsive.
+_MIN_SEARCH_CHARS = 3
+
 
 @router.get("/search", response_model=list[ArtistOut])
 def search_artists(
     _current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
     spotify: Annotated[SpotifyClient, Depends(get_spotify_client)],
-    q: Annotated[str, Query(min_length=1)],
+    q: Annotated[str, Query(min_length=_MIN_SEARCH_CHARS)],
     limit: Annotated[int, Query(ge=1, le=50)] = 10,
 ) -> list[ArtistOut]:
     try:
