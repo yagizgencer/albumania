@@ -13,6 +13,7 @@ from app.models.artist import Artist
 from app.models.rating import Rating, RatingStatus
 from app.models.user import User
 from app.schemas.artist import ArtistAlbumOut, ArtistDetailOut, ArtistOut
+from app.services import local_search
 from app.services.spotify import (
     SpotifyAlbumResult,
     SpotifyArtist,
@@ -28,13 +29,20 @@ router = APIRouter(prefix="/artists", tags=["artists"])
 @router.get("/search", response_model=list[ArtistOut])
 def search_artists(
     _current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
     spotify: Annotated[SpotifyClient, Depends(get_spotify_client)],
     q: Annotated[str, Query(min_length=1)],
     limit: Annotated[int, Query(ge=1, le=50)] = 10,
 ) -> list[ArtistOut]:
+    try:
+        found = spotify.search_artists(q, limit=limit)
+    except SpotifyException:
+        # See the album search: Spotify is not dependable enough to gate search on.
+        found = local_search.search_artists(db, q, limit)
+        logger.warning("Artist search for %r served from local catalogue", q)
     return [
         ArtistOut(spotify_id=a.spotify_id, name=a.name, image_url=a.image_url)
-        for a in spotify.search_artists(q, limit=limit)
+        for a in found
     ]
 
 

@@ -119,7 +119,11 @@ def test_breaker_short_circuits_after_rate_limit() -> None:
     """
     from spotipy.exceptions import SpotifyException
 
-    from app.services.spotify import SpotifyClient, _breaker
+    from app.services.spotify import (
+        _TRIP_AFTER_CONSECUTIVE_429S,
+        SpotifyClient,
+        _breaker,
+    )
 
     _breaker.reset()
     client = SpotifyClient.__new__(SpotifyClient)  # skip real credentials
@@ -129,20 +133,23 @@ def test_breaker_short_circuits_after_rate_limit() -> None:
         calls.append(1)
         raise SpotifyException(429, -1, "rate limited", headers={"Retry-After": "30"})
 
-    # First call reaches Spotify and trips the breaker.
-    try:
-        client._call(rate_limited)
-    except SpotifyException as exc:
-        assert exc.http_status == 429
-    assert len(calls) == 1
+    # Tripping on a single 429 was too blunt — Spotify throttles shared cloud IPs
+    # intermittently, so one unlucky call would take search and everything else
+    # offline for the whole cooldown. It takes repeated failures to open.
+    for _ in range(_TRIP_AFTER_CONSECUTIVE_429S):
+        try:
+            client._call(rate_limited)
+        except SpotifyException as exc:
+            assert exc.http_status == 429
+    assert len(calls) == _TRIP_AFTER_CONSECUTIVE_429S
 
-    # Subsequent calls fail locally without spending any quota.
+    # Now open: further calls fail locally without spending any quota.
     for _ in range(5):
         try:
             client._call(rate_limited)
         except SpotifyException as exc:
             assert exc.http_status == 429
-    assert len(calls) == 1, "breaker should have prevented further Spotify calls"
+    assert len(calls) == _TRIP_AFTER_CONSECUTIVE_429S, "breaker should have stopped calls"
 
     _breaker.reset()
     client._call(lambda: "ok")  # recovers once the cooldown clears
@@ -161,3 +168,30 @@ def test_retry_after_is_clamped() -> None:
     )
     # A missing or junk header still earns a real pause.
     assert _retry_after_seconds(SpotifyException(429, -1, "x")) == _COOLDOWN_DEFAULT
+
+
+def test_a_success_resets_the_failure_streak() -> None:
+    """Intermittent 429s must not accumulate into an outage.
+
+    A shared cloud IP sees occasional throttling; only a sustained run of them
+    means we are genuinely rate limited.
+    """
+    from spotipy.exceptions import SpotifyException
+
+    from app.services.spotify import SpotifyClient, _breaker
+
+    _breaker.reset()
+    client = SpotifyClient.__new__(SpotifyClient)
+
+    def rate_limited():
+        raise SpotifyException(429, -1, "rate limited")
+
+    for _ in range(10):
+        try:
+            client._call(rate_limited)
+        except SpotifyException:
+            pass
+        client._call(lambda: "ok")  # a success in between
+        assert not _breaker.is_open(), "alternating failures should never trip it"
+
+    _breaker.reset()

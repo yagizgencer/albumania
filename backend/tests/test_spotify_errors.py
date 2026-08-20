@@ -15,6 +15,7 @@ from app.core.deps import get_current_user
 from app.db.session import get_db
 from app.main import app
 from app.models.album import Album
+from app.models.artist import Artist
 from app.models.rating import Rating, RatingStatus
 from app.models.user import User
 from app.services.spotify import SpotifyClient, get_spotify_client
@@ -77,10 +78,32 @@ def test_get_album_malformed_json_returns_502(client: TestClient, spotify_mock: 
 # GET /albums/search
 # ---------------------------------------------------------------------------
 
-def test_search_albums_rate_limit_returns_503(client: TestClient, spotify_mock: MagicMock) -> None:
+def test_search_albums_falls_back_to_local_catalogue(
+    client: TestClient, spotify_mock: MagicMock
+) -> None:
+    """Search must survive a Spotify outage rather than 503.
+
+    Spotify throttles shared cloud egress IPs, so search can fail for reasons
+    unrelated to our own usage. Serving our own catalogue is narrower but keeps
+    the app usable; a dead search box makes the whole site feel broken.
+    """
+    db = next(app.dependency_overrides[get_db]())
+    db.add(
+        Album(
+            spotify_id="local1",
+            title="Local Album",
+            artist="Local Artist",
+            artist_spotify_id="art_local",
+            release_date="2024-01-01",
+            total_songs=10,
+        )
+    )
+    db.commit()
+
     spotify_mock.search_albums.side_effect = SpotifyException(429, -1, "rate limited")
-    r = client.get("/albums/search?q=test")
-    assert r.status_code == 503
+    r = client.get("/albums/search?q=Local")
+    assert r.status_code == 200
+    assert [a["title"] for a in r.json()] == ["Local Album"]
 
 
 def test_search_albums_network_error_returns_502(client: TestClient, spotify_mock: MagicMock) -> None:
@@ -106,10 +129,18 @@ def test_get_artist_rate_limit_returns_503(client: TestClient, spotify_mock: Mag
     assert r.status_code == 503
 
 
-def test_search_artists_upstream_error_returns_502(client: TestClient, spotify_mock: MagicMock) -> None:
+def test_search_artists_falls_back_to_local_catalogue(
+    client: TestClient, spotify_mock: MagicMock
+) -> None:
+    """Same as album search: degrade to what we know rather than failing."""
+    db = next(app.dependency_overrides[get_db]())
+    db.add(Artist(spotify_id="art_local", name="Local Artist", image_url=None))
+    db.commit()
+
     spotify_mock.search_artists.side_effect = SpotifyException(500, -1, "server error")
-    r = client.get("/artists/search?q=test")
-    assert r.status_code == 502
+    r = client.get("/artists/search?q=Local")
+    assert r.status_code == 200
+    assert [a["name"] for a in r.json()] == ["Local Artist"]
 
 
 # ---------------------------------------------------------------------------

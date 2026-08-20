@@ -1,3 +1,4 @@
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -18,9 +19,12 @@ from app.schemas.album import (
     AlbumStats,
     TrackOut,
 )
+from app.services import local_search
 from app.services.avatars import picture_url
 from app.services.spotify import SpotifyClient, get_spotify_client
 from app.services.storage import Storage, get_storage
+
+logger = logging.getLogger("albumania.albums")
 
 router = APIRouter(prefix="/albums", tags=["albums"])
 
@@ -28,11 +32,18 @@ router = APIRouter(prefix="/albums", tags=["albums"])
 @router.get("/search", response_model=list[AlbumSearchResult])
 def search_albums(
     _current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
     spotify: Annotated[SpotifyClient, Depends(get_spotify_client)],
     q: Annotated[str, Query(min_length=1)],
     limit: Annotated[int, Query(ge=1, le=50)] = 10,
 ) -> list[AlbumSearchResult]:
-    results = spotify.search_albums(q, limit=limit)
+    try:
+        results = spotify.search_albums(q, limit=limit)
+    except SpotifyException:
+        # Spotify throttles shared cloud IPs, so search must not depend on it.
+        # Fall back to our own catalogue: narrower, but the app stays usable.
+        results = local_search.search_albums(db, q, limit)
+        logger.warning("Album search for %r served from local catalogue", q)
     return [
         AlbumSearchResult(
             spotify_id=r.spotify_id,

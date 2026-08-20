@@ -42,19 +42,38 @@ class _RateLimitBreaker:
 
     def __init__(self) -> None:
         self._open_until = 0.0
+        self._consecutive_429s = 0
         self._lock = threading.Lock()
 
     def is_open(self) -> bool:
         return time.monotonic() < self._open_until
 
-    def trip(self, seconds: float) -> None:
+    def record_success(self) -> None:
+        if self._consecutive_429s:
+            with self._lock:
+                self._consecutive_429s = 0
+
+    def record_rate_limit(self, seconds: float) -> None:
+        """Open the breaker only after repeated 429s.
+
+        Tripping on a single 429 was too blunt: Spotify throttles shared cloud
+        IPs intermittently, so one unlucky call would take search and every
+        other Spotify-backed feature offline for the whole cooldown. Requiring
+        consecutive failures distinguishes "we are genuinely throttled" from
+        "one call was unlucky", and any success resets the count.
+        """
         with self._lock:
-            self._open_until = max(self._open_until, time.monotonic() + seconds)
-        logger.warning("Spotify rate limited; pausing calls for %.0fs", seconds)
+            self._consecutive_429s += 1
+            tripped = self._consecutive_429s >= _TRIP_AFTER_CONSECUTIVE_429S
+            if tripped:
+                self._open_until = max(self._open_until, time.monotonic() + seconds)
+        if tripped:
+            logger.warning("Spotify rate limited; pausing calls for %.0fs", seconds)
 
     def reset(self) -> None:
         with self._lock:
             self._open_until = 0.0
+            self._consecutive_429s = 0
 
 
 _breaker = _RateLimitBreaker()
@@ -62,8 +81,12 @@ _breaker = _RateLimitBreaker()
 # How long to back off after a 429. Spotify's Retry-After is honoured when
 # present, clamped into this range so one hostile header can't mute the whole
 # feature for hours, and a missing header still gets a real pause.
-_COOLDOWN_DEFAULT = 60.0
-_COOLDOWN_MAX = 300.0
+_COOLDOWN_DEFAULT = 30.0
+_COOLDOWN_MAX = 120.0
+
+# Spotify throttles shared cloud egress IPs intermittently, so a lone 429 is not
+# evidence that we are over quota. Only stop calling after repeated failures.
+_TRIP_AFTER_CONSECUTIVE_429S = 3
 
 
 def _retry_after_seconds(exc: SpotifyException) -> float:
@@ -197,11 +220,13 @@ class SpotifyClient:
                 429, -1, "Spotify rate limit cooldown in effect (not called)"
             )
         try:
-            return fn(*args, **kwargs)
+            result = fn(*args, **kwargs)
         except SpotifyException as exc:
             if exc.http_status == 429:
-                _breaker.trip(_retry_after_seconds(exc))
+                _breaker.record_rate_limit(_retry_after_seconds(exc))
             raise
+        _breaker.record_success()
+        return result
 
     def search_albums(self, query: str, limit: int = 10) -> list[SpotifyAlbumResult]:
         def load() -> list[SpotifyAlbumResult]:
