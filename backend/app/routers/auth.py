@@ -1,6 +1,14 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Cookie,
+    Depends,
+    HTTPException,
+    Response,
+    status,
+)
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
@@ -48,6 +56,7 @@ def _cookie_opts() -> dict:
 def register(
     body: UserCreate,
     response: Response,
+    background: BackgroundTasks,
     db: Annotated[Session, Depends(get_db)],
 ) -> TokenResponse:
     if db.scalar(select(User).where(User.email == body.email)):
@@ -66,8 +75,10 @@ def register(
     db.refresh(user)
 
     # Soft gate: the user is logged in immediately but must verify their email
-    # to unlock social actions. Email send is best-effort.
-    send_verification_email(user, create_email_token(user.username))
+    # to unlock social actions. Email send is best-effort, and runs after the
+    # response so a slow Resend call (10 s timeout) doesn't keep the request —
+    # and its pooled DB connection — alive while the user waits.
+    background.add_task(send_verification_email, user, create_email_token(user.username))
 
     response.set_cookie(_REFRESH_COOKIE, create_refresh_token(user.username), **_cookie_opts())
     return TokenResponse(access_token=create_access_token(user.username))
@@ -151,16 +162,20 @@ def verify_email(
 
 @router.post("/resend-verification", status_code=status.HTTP_204_NO_CONTENT)
 def resend_verification(
+    background: BackgroundTasks,
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> None:
     if current_user.email_verified:
         return
-    send_verification_email(current_user, create_email_token(current_user.username))
+    background.add_task(
+        send_verification_email, current_user, create_email_token(current_user.username)
+    )
 
 
 @router.post("/forgot-password", status_code=status.HTTP_202_ACCEPTED)
 def forgot_password(
     body: ForgotPasswordRequest,
+    background: BackgroundTasks,
     db: Annotated[Session, Depends(get_db)],
 ) -> dict[str, str]:
     """Email a password-reset link. Always returns the same response whether or
@@ -168,13 +183,16 @@ def forgot_password(
     email = body.email.strip().lower()
     user = db.scalar(select(User).where(User.email == email))
     if user is not None:
-        send_password_reset_email(user, create_password_reset_token(user.username))
+        background.add_task(
+            send_password_reset_email, user, create_password_reset_token(user.username)
+        )
     return {"detail": "If that email is registered, we've sent a reset link."}
 
 
 @router.post("/reset-password", status_code=status.HTTP_204_NO_CONTENT)
 def reset_password(
     body: ResetPasswordRequest,
+    background: BackgroundTasks,
     db: Annotated[Session, Depends(get_db)],
 ) -> None:
     try:
@@ -194,12 +212,13 @@ def reset_password(
 
     user.password_hash = hash_password(body.new_password)
     db.commit()
-    send_password_changed_email(user)
+    background.add_task(send_password_changed_email, user)
 
 
 @router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)
 def change_password(
     body: ChangePasswordRequest,
+    background: BackgroundTasks,
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> None:
@@ -209,4 +228,4 @@ def change_password(
         )
     current_user.password_hash = hash_password(body.new_password)
     db.commit()
-    send_password_changed_email(current_user)
+    background.add_task(send_password_changed_email, current_user)

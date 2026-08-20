@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from spotipy.exceptions import SpotifyException
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
@@ -179,6 +180,16 @@ def get_or_import_album(
 
     track_data = spotify.get_album_tracks(spotify_id)
 
+    # Fetch the Spotify top-5 once, here, at import. Dashboards used to do this
+    # lazily on first view, which meant one request per track multiplied by every
+    # album on the page. Import already pays Spotify latency and happens once per
+    # album ever, so it's the right place. Best-effort: a failure here must not
+    # block the import — scripts/backfill_spotify_top5.py can fill the gap.
+    try:
+        top5 = spotify.get_top5_popular_indices(spotify_id)
+    except SpotifyException:
+        top5 = None
+
     album = Album(
         spotify_id=album_data.spotify_id,
         upc=album_data.upc,
@@ -188,6 +199,7 @@ def get_or_import_album(
         release_date=album_data.release_date,
         total_songs=album_data.total_songs,
         album_art_url=album_data.album_art_url,
+        spotify_top5_indices=top5,
     )
     db.add(album)
     db.flush()

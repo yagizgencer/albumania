@@ -8,11 +8,28 @@ services:
     plan: starter
     rootDir: backend
     buildCommand: pip install uv && uv sync --no-dev
-    startCommand: uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    # One worker on purpose. The instance has 0.5 CPU, so a second process would
+    # double memory and add context-switching without adding throughput — the
+    # workload is I/O-bound (Spotify, R2, Postgres), and the 40-thread anyio pool
+    # already covers that. It also keeps the in-process Spotify cache coherent,
+    # which a multi-worker setup would not.
+    # --timeout-keep-alive 65 sits above typical proxy idle timeouts so
+    # connections aren't torn down mid-keepalive.
+    startCommand: uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT --timeout-keep-alive 65
     preDeployCommand: uv run alembic upgrade head
     envVars:
+      # Use Neon's POOLED endpoint (the host with `-pooler` in it). The direct
+      # endpoint caps connections at the compute size and drops idle ones; the
+      # pooler fronts them with pgbouncer. psycopg2 doesn't use server-side
+      # prepared statements by default, so transaction pooling is safe here.
       - key: DATABASE_URL
         sync: false
+      # Sized to anyio's 40-thread pool so a sync endpoint never waits on a
+      # connection. See backend/app/db/session.py.
+      - key: DB_POOL_SIZE
+        value: "20"
+      - key: DB_MAX_OVERFLOW
+        value: "20"
       - key: JWT_SECRET
         generateValue: true
       # Cross-site cookie flow (Vercel frontend → Render API) needs SameSite=None

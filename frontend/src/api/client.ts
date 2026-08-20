@@ -39,6 +39,43 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
+// Called when a silent refresh fails, so AuthContext can clear the session.
+// Without this the app keeps rendering as logged-in against a dead session:
+// ProtectedRoute still lets pages mount, every request 401s, and the notification
+// poller retries a doomed refresh every minute forever.
+let onAuthFailure: (() => void) | null = null;
+
+export function setOnAuthFailure(handler: (() => void) | null): void {
+  onAuthFailure = handler;
+}
+
+// Single-flight guard. A page that fires several requests at once (the album page
+// fires six) would otherwise get N parallel 401s and send N parallel refreshes.
+// They all currently succeed — refresh tokens are stateless and non-rotating — so
+// today it's wasted load; the moment rotation is added it would become random
+// logouts. One shared promise, everyone waits on it.
+let refreshPromise: Promise<string> | null = null;
+
+export function refreshAccessToken(): Promise<string> {
+  if (!refreshPromise) {
+    refreshPromise = apiClient
+      .post<{ access_token: string }>("/auth/refresh")
+      .then(({ data }) => {
+        setAccessToken(data.access_token);
+        return data.access_token;
+      })
+      .catch((err) => {
+        setAccessToken(null);
+        onAuthFailure?.();
+        throw err;
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+  return refreshPromise;
+}
+
 // On 401, attempt one silent refresh using the httpOnly cookie, then retry.
 // Skip auth/login and auth/refresh themselves — retrying those would loop forever.
 apiClient.interceptors.response.use(
@@ -49,14 +86,11 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401 && !original._retry && !isAuthEndpoint) {
       original._retry = true;
       try {
-        const { data } = await apiClient.post<{ access_token: string }>(
-          "/auth/refresh"
-        );
-        setAccessToken(data.access_token);
-        original.headers.Authorization = `Bearer ${data.access_token}`;
+        const token = await refreshAccessToken();
+        original.headers.Authorization = `Bearer ${token}`;
         return apiClient(original);
       } catch {
-        setAccessToken(null);
+        // refreshAccessToken already cleared the token and notified AuthContext.
       }
     }
     return Promise.reject(error);

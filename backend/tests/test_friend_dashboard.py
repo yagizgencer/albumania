@@ -50,6 +50,9 @@ def _seed_album(spotify_id: str = "spot1", total_songs: int = 10) -> int:
         artist="Artist",
         release_date="2024-01-01",
         total_songs=total_songs,
+        # Dashboards no longer backfill this from Spotify at request time, so
+        # seed it the way the import path / backfill script would.
+        spotify_top5_indices=[1, 2, 3, 4, 5],
     )
     db.add(album)
     db.commit()

@@ -1,10 +1,10 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models.album import Album, BaselineStat
+from app.models.album import Album
 from app.models.friendship import FriendDashboardEntry, Friendship, FriendshipStatus
 from app.models.rating import Rating, RatingStatus
-from app.services.similarity import compute_ranking_loss, compute_similarity_score
+from app.services.similarity import compute_ranking_loss, compute_similarity_score, get_baseline
 
 
 def rebuild_for_pair(db: Session, friendship_id: int) -> None:
@@ -80,7 +80,8 @@ def _users_similarity(db: Session, a_top5: list[int], b_top5: list[int], k: int)
     if not a_top5 or not b_top5:
         return None
     loss = compute_ranking_loss(a_top5, b_top5)
-    stat = db.scalar(select(BaselineStat).where(BaselineStat.k == k))
-    if stat is None:
+    baseline = get_baseline(db, k)
+    if baseline is None:
         return None
-    return compute_similarity_score(loss, stat.mean, stat.std)
+    mean, std = baseline
+    return compute_similarity_score(loss, mean, std)

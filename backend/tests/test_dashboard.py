@@ -40,6 +40,7 @@ def _seed_user_with_published_rating(
     visibility: ProfileVisibility = ProfileVisibility.public,
     top_track_indices: list[int] | None = None,
     status: RatingStatus = RatingStatus.published,
+    spotify_top5: list[int] | None = [1, 2, 3, 4, 5],
 ) -> tuple[User, Album]:
     db = next(app.dependency_overrides[get_db]())
 
@@ -58,6 +59,7 @@ def _seed_user_with_published_rating(
         artist="Artist",
         release_date="2024-01-01",
         total_songs=10,
+        spotify_top5_indices=spotify_top5,
     )
     db.add(album)
     db.flush()
@@ -143,14 +145,26 @@ def test_dashboard_excludes_drafts(client: TestClient, spotify_mock: MagicMock) 
     _clear_auth()
 
 
-def test_dashboard_caches_spotify_top5(client: TestClient, spotify_mock: MagicMock) -> None:
-    _seed_user_with_published_rating()
+def test_dashboard_never_calls_spotify(client: TestClient, spotify_mock: MagicMock) -> None:
+    """The dashboard must be pure SQL, even when top-5 data is missing.
+
+    This is the regression that took the site down: the old code backfilled
+    `spotify_top5_indices` inline, and `get_top5_popular_indices` costs one
+    request per *track*. A 20-album dashboard meant hundreds of sequential
+    Spotify calls in a single request, holding a DB connection throughout, which
+    exhausted the pool and broke logins for everyone else.
+    """
+    _seed_user_with_published_rating(spotify_top5=None)
     _auth_as(_OWNER)
 
-    client.get("/users/owner/dashboard")
-    client.get("/users/owner/dashboard")
-    # Spotify call should only happen once — second request hits the cached column.
-    assert spotify_mock.get_top5_popular_indices.call_count == 1
+    r = client.get("/users/owner/dashboard")
+    assert r.status_code == 200
+    spotify_mock.get_top5_popular_indices.assert_not_called()
+
+    # Missing data degrades gracefully rather than erroring.
+    entry = r.json()["entries"][0]
+    assert entry["spotify_top5_indices"] == []
+    assert entry["similarity_user_vs_spotify"] is None
 
     _clear_auth()
 

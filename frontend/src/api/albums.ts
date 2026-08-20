@@ -1,3 +1,4 @@
+import { cachedFetch } from "./cache";
 import { apiClient } from "./client";
 
 export interface AlbumSearchResult {
@@ -40,8 +41,12 @@ export async function searchAlbums(
 }
 
 export async function getAlbum(spotifyId: string): Promise<Album> {
-  const { data } = await apiClient.get<Album>(`/albums/${spotifyId}`);
-  return data;
+  // Album metadata is immutable in practice (title, artist, track list), and
+  // this is the request every album page blocks on before it can fire the rest.
+  return cachedFetch(`album:${spotifyId}`, async () => {
+    const { data } = await apiClient.get<Album>(`/albums/${spotifyId}`);
+    return data;
+  });
 }
 
 export interface AlbumStats {

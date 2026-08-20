@@ -5,6 +5,7 @@ from sqlalchemy import (
     DateTime,
     Enum,
     ForeignKey,
+    Index,
     SmallInteger,
     Text,
     UniqueConstraint,
@@ -27,6 +28,11 @@ class CommentVisibility(str, enum.Enum):
 
 class Comment(Base):
     __tablename__ = "comments"
+
+    __table_args__ = (
+        # An album's comment list, newest first; also feeds the activity feed.
+        Index("ix_comments_album_created", "album_id", "created_at"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     username: Mapped[str] = mapped_column(ForeignKey("users.username"), nullable=False, index=True)

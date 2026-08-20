@@ -9,7 +9,7 @@ from app.models.notification import Notification
 
 from app.core.deps import get_current_user, require_verified_email
 from app.db.session import get_db
-from app.models.album import Album, BaselineStat
+from app.models.album import Album
 from app.models.friendship import FriendDashboardEntry, Friendship, FriendshipStatus
 from app.models.invite import ListenInvite
 from app.models.rating import Rating, RatingStatus
@@ -26,8 +26,7 @@ from app.services.avatars import picture_url_map
 from app.services.friend_dashboard import rebuild_for_pair
 from app.services.friendship import get_friendship, ordered_pair
 from app.services.notifications import create_notification, resolve_notifications
-from app.services.similarity import compute_ranking_loss, compute_similarity_score
-from app.services.spotify import SpotifyClient, get_spotify_client
+from app.services.similarity import compute_ranking_loss, compute_similarity_score, get_baseline
 from app.services.storage import Storage, get_storage
 
 router = APIRouter(prefix="/friendships", tags=["friendships"])
@@ -234,7 +233,6 @@ def get_friend_dashboard(
     friendship_id: int,
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
-    spotify: Annotated[SpotifyClient, Depends(get_spotify_client)],
     storage: Annotated[Storage, Depends(get_storage)],
 ) -> FriendDashboardResponse:
     friendship = _get_for_user(db, friendship_id, current_user.username)
@@ -269,11 +267,8 @@ def get_friend_dashboard(
 
     entries: list[FriendDashboardEntryOut] = []
     for entry, album in rows:
-        if album.spotify_top5_indices is None:
-            album.spotify_top5_indices = spotify.get_top5_popular_indices(album.spotify_id)
-            db.add(album)
-            db.commit()
-
+        # No inline Spotify backfill — see get_user_dashboard in routers/users.py
+        # for why (this loop was ~260 sequential Spotify calls on a cold dashboard).
         sim_a_s = _sim_vs_spotify(db, a_top.get(album.id, []), album.spotify_top5_indices or [], album.total_songs)
         sim_b_s = _sim_vs_spotify(db, b_top.get(album.id, []), album.spotify_top5_indices or [], album.total_songs)
 
@@ -310,10 +305,11 @@ def _sim_vs_spotify(db: Session, user_top5: list[int], spotify_top5: list[int], 
     if not user_top5 or not spotify_top5:
         return None
     loss = compute_ranking_loss(user_top5, spotify_top5)
-    stat = db.scalar(select(BaselineStat).where(BaselineStat.k == k))
-    if stat is None:
+    baseline = get_baseline(db, k)
+    if baseline is None:
         return None
-    return compute_similarity_score(loss, stat.mean, stat.std)
+    mean, std = baseline
+    return compute_similarity_score(loss, mean, std)
 
 
 def _get_for_user(db: Session, friendship_id: int, username: str) -> Friendship:

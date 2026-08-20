@@ -1,7 +1,7 @@
 import enum
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, Float, ForeignKey, Integer, JSON, Text, UniqueConstraint, func
+from sqlalchemy import DateTime, Enum, Float, ForeignKey, Index, Integer, JSON, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.session import Base
@@ -36,7 +36,13 @@ class Rating(Base):
         "SongNote", back_populates="rating", cascade="all, delete-orphan"
     )
 
-    __table_args__ = (UniqueConstraint("username", "album_id", name="uq_rating_user_album"),)
+    __table_args__ = (
+        UniqueConstraint("username", "album_id", name="uq_rating_user_album"),
+        # Album stats / artist-page aggregates: an album's published ratings.
+        Index("ix_ratings_album_status", "album_id", "status"),
+        # The activity feed: one user's published ratings, newest first.
+        Index("ix_ratings_username_status_completed", "username", "status", "completed_at"),
+    )
 
 
 class SongNote(Base):

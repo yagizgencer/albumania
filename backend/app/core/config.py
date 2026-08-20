@@ -16,6 +16,12 @@ class Settings(BaseSettings):
     )
 
     database_url: str = "sqlite:///./albumania.db"
+    # Connection-pool sizing (Postgres only; SQLite ignores these). The default
+    # 20 + 20 covers anyio's 40-thread pool, so a sync endpoint never waits on a
+    # connection. Tunable by env var so prod can be adjusted without a code change.
+    db_pool_size: int = 20
+    db_max_overflow: int = 20
+    db_pool_timeout: int = 10
     jwt_secret: str = INSECURE_JWT_DEFAULT
     jwt_access_ttl_minutes: int = 15
     jwt_refresh_ttl_days: int = 30

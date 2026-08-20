@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.core.deps import get_current_user
 from app.db.session import get_db
 from app.models.album import Album
+from app.models.artist import Artist
 from app.models.rating import Rating, RatingStatus
 from app.models.user import User
 from app.schemas.artist import ArtistAlbumOut, ArtistDetailOut, ArtistOut
@@ -36,9 +37,27 @@ def get_artist(
     spotify: Annotated[SpotifyClient, Depends(get_spotify_client)],
 ) -> ArtistDetailOut:
     """Artist header + full studio discography from Spotify, each album enriched
-    with the viewer's rating status and the global mean score / rater count."""
+    with the viewer's rating status and the global mean score / rater count.
+
+    Both Spotify calls are cached in-process (24 h for the header, 6 h for the
+    discography) and coalesced, so several people opening the same artist at once
+    cost one upstream fetch between them. Uncached, the discography is
+    `1 + ceil(editions/10)` sequential requests — Spotify's Feb 2026 changes
+    capped the page size at 10 — which is what made this the slowest page.
+    """
     artist = spotify.get_artist(artist_id)
     spotify_albums = spotify.get_artist_albums(artist_id)
+
+    # Mirror the header so trending artist photos don't need Spotify at all.
+    if db.get(Artist, artist.spotify_id) is None:
+        db.add(
+            Artist(
+                spotify_id=artist.spotify_id,
+                name=artist.name,
+                image_url=artist.image_url,
+            )
+        )
+        db.commit()
 
     # Map the Spotify albums to any rows we already have, so we can look up
     # ratings (which key on our integer album id).

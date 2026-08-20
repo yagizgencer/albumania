@@ -46,6 +46,8 @@ def _make_spotify_mock() -> MagicMock:
     mock.search_albums.return_value = [_FAKE_ALBUM]
     mock.get_album.return_value = _FAKE_ALBUM
     mock.get_album_tracks.return_value = _FAKE_TRACKS
+    # Import now fetches the Spotify top-5 once, so dashboards never have to.
+    mock.get_top5_popular_indices.return_value = [1, 2, 3, 4, 5]
     return mock
 
 

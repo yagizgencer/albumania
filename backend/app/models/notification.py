@@ -1,7 +1,7 @@
 import enum
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, func
+from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Index, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.session import Base
@@ -29,6 +29,15 @@ class Notification(Base):
 
     __tablename__ = "notifications"
 
+    __table_args__ = (
+        # The badge poll: unread rows for one recipient. This is the most-called
+        # query in the app, so it gets a covering composite rather than relying
+        # on the recipient index plus a heap filter on `read`.
+        Index("ix_notifications_recipient_read", "recipient_username", "read"),
+        # The notification list and the read-row prune, both newest-first.
+        Index("ix_notifications_recipient_created", "recipient_username", "created_at"),
+    )
+
     id: Mapped[int] = mapped_column(primary_key=True)
     recipient_username: Mapped[str] = mapped_column(
         ForeignKey("users.username"), nullable=False, index=True
@@ -37,7 +46,7 @@ class Notification(Base):
         Enum(NotificationType), nullable=False
     )
     actor_username: Mapped[str | None] = mapped_column(
-        ForeignKey("users.username"), nullable=True
+        ForeignKey("users.username"), nullable=True, index=True
     )
     friendship_id: Mapped[int | None] = mapped_column(
         ForeignKey("friendships.id", ondelete="CASCADE"), nullable=True, index=True
@@ -46,7 +55,7 @@ class Notification(Base):
         ForeignKey("listen_invites.id", ondelete="CASCADE"), nullable=True, index=True
     )
     album_id: Mapped[int | None] = mapped_column(
-        ForeignKey("albums.id"), nullable=True
+        ForeignKey("albums.id"), nullable=True, index=True
     )
     comment_id: Mapped[int | None] = mapped_column(
         ForeignKey("comments.id", ondelete="CASCADE"), nullable=True, index=True

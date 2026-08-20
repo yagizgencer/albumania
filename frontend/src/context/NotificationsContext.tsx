@@ -24,7 +24,10 @@ const ZERO: NotificationSummary = { bell: 0, listen_invites: 0, friend_requests:
 
 const NotificationsContext = createContext<NotificationsContextValue | null>(null);
 
-const POLL_INTERVAL_MS = 30_000;
+// 60s rather than 30s, and only while the tab is actually visible. This is a
+// badge count — every open tab was previously hitting the API twice a minute
+// forever, including tabs left in the background overnight.
+const POLL_INTERVAL_MS = 60_000;
 
 export function NotificationsProvider({ children }: { children: React.ReactNode }) {
   const { username } = useAuth();
@@ -71,8 +74,23 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
       return;
     }
     void refresh();
-    const id = window.setInterval(() => void refresh(), POLL_INTERVAL_MS);
-    return () => window.clearInterval(id);
+    const id = window.setInterval(() => {
+      // A hidden tab's badge is invisible, so polling it is pure server load.
+      if (document.visibilityState === "hidden") return;
+      void refresh();
+    }, POLL_INTERVAL_MS);
+
+    // Coming back to the tab is exactly when a stale badge is worth correcting,
+    // so catch up immediately rather than waiting out the interval.
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [username, refresh]);
 
   return (

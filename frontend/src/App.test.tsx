@@ -15,6 +15,8 @@ vi.mock("./api/client", () => ({
   },
   setAccessToken: vi.fn(),
   getAccessToken: vi.fn(() => null),
+  setOnAuthFailure: vi.fn(),
+  refreshAccessToken: vi.fn().mockRejectedValue(new Error("no session")),
 }));
 
 describe("App", () => {

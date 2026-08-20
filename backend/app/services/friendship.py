@@ -1,7 +1,25 @@
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.models.friendship import Friendship, FriendshipStatus
+
+
+def accepted_friend_usernames(db: Session, username: str) -> set[str]:
+    """Everyone `username` is actually friends with, in one query.
+
+    Use this instead of calling `are_friends` in a loop — the comment list was
+    firing one query per comment to answer the same question.
+    """
+    rows = db.execute(
+        select(Friendship.user_a_username, Friendship.user_b_username).where(
+            Friendship.status == FriendshipStatus.accepted,
+            or_(
+                Friendship.user_a_username == username,
+                Friendship.user_b_username == username,
+            ),
+        )
+    ).all()
+    return {b if a == username else a for a, b in rows}
 
 
 def ordered_pair(a: str, b: str) -> tuple[str, str]:

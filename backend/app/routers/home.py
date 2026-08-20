@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.core.deps import get_current_user
 from app.db.session import get_db
 from app.models.album import Album
+from app.models.artist import Artist
 from app.models.comment import Comment, CommentVisibility
 from app.models.friendship import Friendship, FriendshipStatus
 from app.models.rating import Rating, RatingStatus
@@ -323,7 +324,34 @@ def trending_artists(
         return []
 
     ids = [aid for aid, _, _ in rows]
-    images = spotify.get_artists(ids)  # single batched Spotify call
+
+    # Read photos from our own mirror first. Spotify removed the batch
+    # "Get Several Artists" endpoint in Feb 2026, so `get_artists` is one HTTP
+    # request per id — up to 20 sequential round-trips on every home-page load
+    # before this table existed. Now we only call Spotify for ids we've never
+    # seen, which after the first view is none of them.
+    known = {
+        a.spotify_id: a
+        for a in db.scalars(select(Artist).where(Artist.spotify_id.in_(ids)))
+    }
+    images: dict[str, str | None] = {
+        sid: a.image_url for sid, a in known.items()
+    }
+
+    missing = [aid for aid in ids if aid not in known]
+    if missing:
+        fetched = spotify.get_artists(missing)
+        images.update(fetched)
+        name_by_id = {aid: name for aid, _, name in rows}
+        for aid, image_url in fetched.items():
+            db.add(
+                Artist(
+                    spotify_id=aid,
+                    name=name_by_id.get(aid, ""),
+                    image_url=image_url,
+                )
+            )
+        db.commit()
     return [
         TrendingArtist(
             rank=rank,

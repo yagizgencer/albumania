@@ -13,6 +13,8 @@ import {
   getListenLater,
   listMyInvites,
   type ListenInvite,
+  type ListenInviteListResponse,
+  type ListenLaterEntry,
   type ListenLaterParticipant,
 } from "../api/invites";
 import {
@@ -88,22 +90,28 @@ export function AlbumInfoPage() {
     getAlbum(spotifyId)
       .then(async (a) => {
         setAlbum(a);
-        try {
-          setRating(await getMyRatingForAlbum(a.id));
-        } catch {
-          setRating(null);
-        }
-        try {
-          setStats(await getAlbumStats(spotifyId));
-        } catch {
-          setStats(null);
-        }
-        try {
-          setFriendRatings(await getAlbumFriendRatings(spotifyId));
-        } catch {
-          setFriendRatings([]);
-        }
-        await loadInviteState(a.id);
+        // Only the album fetch is a real dependency (the rest need `a.id` or
+        // just the spotify id), so run the remaining five together instead of
+        // one after another. That turns six serial round-trips into two.
+        const [rating, stats, friendRatings, invites, listenLater] =
+          await Promise.allSettled([
+            getMyRatingForAlbum(a.id),
+            getAlbumStats(spotifyId),
+            getAlbumFriendRatings(spotifyId),
+            listMyInvites(),
+            getListenLater(),
+          ]);
+
+        setRating(rating.status === "fulfilled" ? rating.value : null);
+        setStats(stats.status === "fulfilled" ? stats.value : null);
+        setFriendRatings(
+          friendRatings.status === "fulfilled" ? friendRatings.value : []
+        );
+        applyInviteState(
+          a.id,
+          invites.status === "fulfilled" ? invites.value : null,
+          listenLater.status === "fulfilled" ? listenLater.value : null
+        );
       })
       .catch(() => setError("Could not load album."))
       .finally(() => setLoading(false));
@@ -114,33 +122,42 @@ export function AlbumInfoPage() {
     //    appear in Listen Later until someone accepts).
   //  - getListenLater → this album's accepted participants (committed shared
   //    listen, either direction).
+  // Split from the fetching so the initial load can request both endpoints in
+  // parallel with the rest of the page and still funnel through one place.
+  // A null argument means that request failed — fall back to empty.
+  function applyInviteState(
+    albumId: number,
+    invites: ListenInviteListResponse | null,
+    listenLater: ListenLaterEntry[] | null
+  ) {
+    setPendingInvitees(
+      new Set(
+        (invites?.outgoing ?? [])
+          .filter((i) => i.album_id === albumId && i.status === "pending")
+          .map((i) => i.receiver_username)
+      )
+    );
+    setPendingInviters(
+      new Set(
+        (invites?.incoming ?? [])
+          .filter((i) => i.album_id === albumId && i.status === "pending")
+          .map((i) => i.sender_username)
+      )
+    );
+    const entry = (listenLater ?? []).find((e) => e.album.id === albumId);
+    setParticipants(entry?.participants ?? []);
+  }
+
   async function loadInviteState(albumId: number) {
-    try {
-      const invites = await listMyInvites();
-      setPendingInvitees(
-        new Set(
-          invites.outgoing
-            .filter((i) => i.album_id === albumId && i.status === "pending")
-            .map((i) => i.receiver_username)
-        )
-      );
-      setPendingInviters(
-        new Set(
-          invites.incoming
-            .filter((i) => i.album_id === albumId && i.status === "pending")
-            .map((i) => i.sender_username)
-        )
-      );
-    } catch {
-      setPendingInvitees(new Set());
-      setPendingInviters(new Set());
-    }
-    try {
-      const entry = (await getListenLater()).find((e) => e.album.id === albumId);
-      setParticipants(entry?.participants ?? []);
-    } catch {
-      setParticipants([]);
-    }
+    const [invites, listenLater] = await Promise.allSettled([
+      listMyInvites(),
+      getListenLater(),
+    ]);
+    applyInviteState(
+      albumId,
+      invites.status === "fulfilled" ? invites.value : null,
+      listenLater.status === "fulfilled" ? listenLater.value : null
+    );
   }
 
   const isPublished = rating?.status === "published";

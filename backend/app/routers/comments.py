@@ -20,7 +20,7 @@ from app.schemas.comment import (
     CommentAuthorOut,
 )
 from app.services.avatars import picture_url
-from app.services.friendship import are_friends
+from app.services.friendship import accepted_friend_usernames
 from app.services.notifications import create_notification
 from app.services.storage import Storage, get_storage
 
@@ -46,25 +46,25 @@ def _viewer_reaction(comment: Comment, viewer: str) -> Literal["up", "down"] | N
     return None
 
 
-def _author_visible(comment: Comment, viewer: str, db: Session) -> bool:
+def _author_visible(comment: Comment, viewer: str, friends: set[str]) -> bool:
     if comment.username == viewer:
         return True
     if comment.visibility == CommentVisibility.public:
         return True
     if comment.visibility == CommentVisibility.friends:
-        return are_friends(db, viewer, comment.username)
+        return comment.username in friends
     return False  # private → only the author (handled above)
 
 
 def _to_comment_out(
     comment: Comment,
     viewer: str,
-    db: Session,
+    friends: set[str],
     storage: Storage,
     author_info: dict[str, tuple[str, str | None]],
 ) -> CommentOut:
     author: CommentAuthorOut | None = None
-    if _author_visible(comment, viewer, db):
+    if _author_visible(comment, viewer, friends):
         display_name, key = author_info.get(comment.username, (comment.username, None))
         author = CommentAuthorOut(
             username=comment.username,
@@ -134,7 +134,10 @@ def list_comments(
         )
     )
     info = _author_info(db, {c.username for c in comments})
-    out = [_to_comment_out(c, user.username, db, storage, info) for c in comments]
+    # One friend lookup for the whole page. This used to be `are_friends` per
+    # comment — a query per row to answer the same question.
+    friends = accepted_friend_usernames(db, user.username)
+    out = [_to_comment_out(c, user.username, friends, storage, info) for c in comments]
 
     reverse = order == "desc"
     if sort == "score":
@@ -168,7 +171,8 @@ def create_comment(
     db.refresh(comment)
     db.refresh(comment, ["reactions"])
     info = _author_info(db, {comment.username})
-    return _to_comment_out(comment, user.username, db, storage, info)
+    # Own comment: _author_visible short-circuits, so no friend lookup is needed.
+    return _to_comment_out(comment, user.username, set(), storage, info)
 
 
 @router.patch("/comments/{comment_id}", response_model=CommentOut)
@@ -198,7 +202,8 @@ def update_comment(
         db.refresh(comment, ["reactions"])
 
     info = _author_info(db, {comment.username})
-    return _to_comment_out(comment, user.username, db, storage, info)
+    # Own comment: _author_visible short-circuits, so no friend lookup is needed.
+    return _to_comment_out(comment, user.username, set(), storage, info)
 
 
 @router.delete("/comments/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)

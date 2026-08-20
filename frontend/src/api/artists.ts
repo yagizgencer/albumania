@@ -1,3 +1,4 @@
+import { cachedFetch } from "./cache";
 import { apiClient } from "./client";
 
 export interface ArtistSearchResult {
@@ -43,6 +44,11 @@ export interface ArtistDetail {
 }
 
 export async function getArtist(artistId: string): Promise<ArtistDetail> {
-  const { data } = await apiClient.get<ArtistDetail>(`/artists/${artistId}`);
-  return data;
+  // The slowest endpoint in the app: uncached it's a Spotify header fetch plus a
+  // paginated discography. Caching it here means going back to an artist you
+  // just viewed doesn't touch the network at all.
+  return cachedFetch(`artist:${artistId}`, async () => {
+    const { data } = await apiClient.get<ArtistDetail>(`/artists/${artistId}`);
+    return data;
+  });
 }

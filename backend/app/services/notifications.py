@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
 from app.models.notification import Notification, NotificationType
@@ -74,16 +74,19 @@ def resolve_notifications(
 def summary_counts(db: Session, username: str) -> dict[str, int]:
     """Counts powering the three nav badges. Each is unread-count filtered
     to the relevant type(s)."""
+    # Aggregate in SQL, not Python. This is the most-called query in the app (the
+    # nav badge poll), and it used to transfer every unread row just to count
+    # them. GROUP BY returns at most one row per notification type instead, and
+    # ix_notifications_recipient_read covers the filter.
     rows = db.execute(
-        select(Notification.type)
+        select(Notification.type, func.count(Notification.id))
         .where(
             Notification.recipient_username == username,
             Notification.read.is_(False),
         )
+        .group_by(Notification.type)
     ).all()
-    by_type: dict[NotificationType, int] = {}
-    for (t,) in rows:
-        by_type[t] = by_type.get(t, 0) + 1
+    by_type: dict[NotificationType, int] = {t: n for t, n in rows}
     return {
         "bell": sum(by_type.values()),
         "listen_invites": by_type.get(NotificationType.listen_invite, 0),

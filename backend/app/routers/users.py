@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.core.deps import get_current_user
 from app.db.session import get_db
-from app.models.album import Album, BaselineStat
+from app.models.album import Album
 from app.models.rating import Rating, RatingStatus
 from app.models.user import ProfileVisibility, User
 from app.schemas.dashboard import DashboardAlbum, DashboardEntry, DashboardResponse
@@ -26,8 +26,7 @@ from app.schemas.friendship import UserSearchResult
 from app.schemas.user import UserResponse, UserUpdate
 from app.services.avatars import picture_url
 from app.services.friendship import are_friends
-from app.services.similarity import compute_ranking_loss, compute_similarity_score
-from app.services.spotify import SpotifyClient, get_spotify_client
+from app.services.similarity import compute_ranking_loss, compute_similarity_score, get_baseline
 from app.services.storage import Storage, get_storage
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -102,12 +101,16 @@ def update_me(
 
 
 @router.post("/me/avatar", response_model=UserResponse)
-async def upload_avatar(
+def upload_avatar(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
     storage: Annotated[Storage, Depends(get_storage)],
     file: Annotated[UploadFile, File(...)],
 ) -> UserResponse:
+    # Deliberately sync. This was `async def`, which meant the blocking R2 upload
+    # and the psycopg2 calls below ran directly on the event loop and froze every
+    # other request for the duration of the upload. As a plain `def` it runs in
+    # the threadpool like every other endpoint here.
     if file.content_type not in ALLOWED_AVATAR_TYPES:
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
@@ -115,7 +118,9 @@ async def upload_avatar(
         )
 
     max_bytes = get_settings().avatar_max_bytes
-    data = await file.read(max_bytes + 1)
+    # `file.file` is the underlying sync SpooledTemporaryFile — the awaitable
+    # UploadFile.read() is only needed inside a coroutine.
+    data = file.file.read(max_bytes + 1)
     if len(data) > max_bytes:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
@@ -197,7 +202,6 @@ def get_user_dashboard(
     username: str,
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
-    spotify: Annotated[SpotifyClient, Depends(get_spotify_client)],
     compare_to: Annotated[Literal["spotify"], Query()] = "spotify",
 ) -> DashboardResponse:
     user = db.scalar(select(User).where(User.username == username))
@@ -215,11 +219,12 @@ def get_user_dashboard(
 
     entries: list[DashboardEntry] = []
     for rating, album in rows:
-        if album.spotify_top5_indices is None:
-            album.spotify_top5_indices = spotify.get_top5_popular_indices(album.spotify_id)
-            db.add(album)
-            db.commit()
-
+        # No Spotify backfill here. This used to call get_top5_popular_indices()
+        # per album, which is 1 + one-request-per-track — a 20-album dashboard
+        # meant ~260 sequential Spotify calls in a single request, holding a DB
+        # connection the whole time. Albums missing the data render without the
+        # Spotify comparison (similarity returns None for an empty top-5) and get
+        # filled in at import time or by scripts/backfill_spotify_top5.py.
         similarity = _similarity_against_spotify(
             user_top5=rating.top_track_indices or [],
             spotify_top5=album.spotify_top5_indices or [],
@@ -247,10 +252,11 @@ def _similarity_against_spotify(
     if not user_top5 or not spotify_top5:
         return None
     loss = compute_ranking_loss(user_top5, spotify_top5)
-    stat = db.scalar(select(BaselineStat).where(BaselineStat.k == k))
-    if stat is None:
+    baseline = get_baseline(db, k)
+    if baseline is None:
         return None
-    return compute_similarity_score(loss, stat.mean, stat.std)
+    mean, std = baseline
+    return compute_similarity_score(loss, mean, std)
 
 
 @router.get("/{username}/comparison", response_model=FriendDashboardResponse)
@@ -258,7 +264,6 @@ def get_user_comparison(
     username: str,
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
-    spotify: Annotated[SpotifyClient, Depends(get_spotify_client)],
     storage: Annotated[Storage, Depends(get_storage)],
 ) -> FriendDashboardResponse:
     """Live pair comparison between the current user (A) and any *viewable* user
@@ -297,11 +302,7 @@ def get_user_comparison(
         if album is None or ra.completed_at is None or rb.completed_at is None:
             continue
 
-        if album.spotify_top5_indices is None:
-            album.spotify_top5_indices = spotify.get_top5_popular_indices(album.spotify_id)
-            db.add(album)
-            db.commit()
-
+        # See get_user_dashboard: no inline Spotify backfill.
         a_top = ra.top_track_indices or []
         b_top = rb.top_track_indices or []
         spotify_top = album.spotify_top5_indices or []
@@ -343,7 +344,8 @@ def _pair_similarity(db: Session, a_top5: list[int], b_top5: list[int], k: int) 
     if not a_top5 or not b_top5:
         return None
     loss = compute_ranking_loss(a_top5, b_top5)
-    stat = db.scalar(select(BaselineStat).where(BaselineStat.k == k))
-    if stat is None:
+    baseline = get_baseline(db, k)
+    if baseline is None:
         return None
-    return compute_similarity_score(loss, stat.mean, stat.std)
+    mean, std = baseline
+    return compute_similarity_score(loss, mean, std)

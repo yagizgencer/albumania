@@ -257,6 +257,34 @@ def test_trending_artists_grouped_with_images(client: TestClient) -> None:
     app.dependency_overrides.pop(get_spotify_client, None)
 
 
+def test_trending_artists_reuses_stored_images(client: TestClient) -> None:
+    """Once an artist's photo is mirrored locally, Spotify is not asked again.
+
+    Spotify removed the batch "Get Several Artists" endpoint, so `get_artists` is
+    one HTTP request per id — up to 20 sequential round-trips on every home-page
+    load. The `artists` table exists to make that zero.
+    """
+    alice = _seed_user("alice")
+    a1 = _seed_album("a1", artist_sid="artX")
+    _rate("alice", a1, 8.0, _at(1))
+
+    spotify_mock = MagicMock(spec=SpotifyClient)
+    spotify_mock.get_artists.return_value = {"artX": "https://img/x.jpg"}
+    app.dependency_overrides[get_spotify_client] = lambda: spotify_mock
+    _auth_as(alice)
+
+    first = client.get("/trending/artists", params={"period": "all"}).json()
+    assert first[0]["image_url"] == "https://img/x.jpg"
+    assert spotify_mock.get_artists.call_count == 1
+
+    # Second load reads the mirror — no further Spotify traffic.
+    second = client.get("/trending/artists", params={"period": "all"}).json()
+    assert second[0]["image_url"] == "https://img/x.jpg"
+    assert spotify_mock.get_artists.call_count == 1
+
+    app.dependency_overrides.pop(get_spotify_client, None)
+
+
 def test_trending_requires_auth(client: TestClient) -> None:
     assert client.get("/trending/albums").status_code in (401, 403)
     assert client.get("/trending/artists").status_code in (401, 403)

@@ -23,7 +23,9 @@ class Album(Base):
     total_songs: Mapped[int] = mapped_column(Integer, nullable=False)
     album_art_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
     # Cached Spotify top-5 track indices (1-based, sorted by popularity desc).
-    # Populated lazily on first dashboard request.
+    # Populated at import (see the albums router); scripts/backfill_spotify_top5.py
+    # catches up rows imported before that. Deliberately NOT fetched during
+    # dashboard requests — it costs one Spotify call per track.
     spotify_top5_indices: Mapped[list | None] = mapped_column(JSON, nullable=True)
 
     tracks: Mapped[list["AlbumTrack"]] = relationship(

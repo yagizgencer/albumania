@@ -5,8 +5,36 @@ import {
   useEffect,
   useState,
 } from "react";
-import { apiClient, setAccessToken } from "../api/client";
+import {
+  apiClient,
+  refreshAccessToken,
+  setAccessToken,
+  setOnAuthFailure,
+} from "../api/client";
 import { getUser, type UserProfile } from "../api/users";
+
+// A hint that this browser has logged in before. The refresh token itself is an
+// httpOnly cookie we can't read, so without this marker every anonymous visitor
+// blocks the whole SPA on a boot-time /auth/refresh that is guaranteed to 401.
+const SESSION_HINT_KEY = "albumania.hasSession";
+
+function hasSessionHint(): boolean {
+  try {
+    return localStorage.getItem(SESSION_HINT_KEY) === "1";
+  } catch {
+    // Safari private mode and similar — fall back to attempting the refresh.
+    return true;
+  }
+}
+
+function setSessionHint(value: boolean): void {
+  try {
+    if (value) localStorage.setItem(SESSION_HINT_KEY, "1");
+    else localStorage.removeItem(SESSION_HINT_KEY);
+  } catch {
+    // Non-fatal: we just lose the optimisation.
+  }
+}
 
 interface AuthState {
   username: string | null;
@@ -48,6 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(
     (token: string) => {
       setAccessToken(token);
+      setSessionHint(true);
       const username = parseUsername(token);
       setState({ username, profile: null, isLoading: false });
       void loadProfile(username);
@@ -62,6 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // ignore — cookie is cleared server-side on best-effort basis
     }
     setAccessToken(null);
+    setSessionHint(false);
     setState({ username: null, profile: null, isLoading: false });
   }, []);
 
@@ -70,13 +100,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await loadProfile(state.username);
   }, [loadProfile, state.username]);
 
+  // A failed silent refresh anywhere in the app means the session is gone —
+  // clear it here so ProtectedRoute stops rendering pages that can only 401.
+  useEffect(() => {
+    setOnAuthFailure(() => {
+      setSessionHint(false);
+      setState({ username: null, profile: null, isLoading: false });
+    });
+    return () => setOnAuthFailure(null);
+  }, []);
+
   // On mount, try a silent refresh so users don't have to log in again
   // after closing the tab (as long as the httpOnly refresh cookie is still valid).
+  // Skipped entirely for browsers that have never logged in — otherwise every
+  // visitor to the public landing page waits on a round-trip that must fail.
   useEffect(() => {
-    apiClient
-      .post<{ access_token: string }>("/auth/refresh")
-      .then(({ data }) => login(data.access_token))
-      .catch(() => setState({ username: null, profile: null, isLoading: false }));
+    if (!hasSessionHint()) {
+      setState({ username: null, profile: null, isLoading: false });
+      return;
+    }
+    refreshAccessToken()
+      .then((token) => login(token))
+      .catch(() => {
+        setSessionHint(false);
+        setState({ username: null, profile: null, isLoading: false });
+      });
   }, [login]);
 
   return (

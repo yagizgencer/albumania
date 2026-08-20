@@ -1,3 +1,38 @@
+import threading
+
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from app.models.album import BaselineStat
+
+# `baseline_stats` is static seed data (a handful of rows keyed by track count),
+# but it was being re-queried once per album — three times per album on the
+# comparison page, so ~90 queries to read the same few rows. Load it once per
+# process instead.
+_baselines: dict[int, tuple[float, float]] | None = None
+_baselines_lock = threading.Lock()
+
+
+def get_baseline(db: Session, k: int) -> tuple[float, float] | None:
+    """`(mean, std)` for albums of `k` tracks, or None if we have no baseline."""
+    global _baselines
+    if _baselines is None:
+        with _baselines_lock:
+            if _baselines is None:
+                _baselines = {
+                    row.k: (row.mean, row.std)
+                    for row in db.scalars(select(BaselineStat))
+                }
+    return _baselines.get(k)
+
+
+def reset_baseline_cache() -> None:
+    """Drop the cached table. Used by tests, which build a fresh DB per case."""
+    global _baselines
+    with _baselines_lock:
+        _baselines = None
+
+
 def compute_ranking_loss(a: list[int], b: list[int]) -> int:
     """
     Total absolute rank-difference loss over the union of two top-5 lists.

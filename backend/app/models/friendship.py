@@ -7,6 +7,7 @@ from sqlalchemy import (
     Enum,
     Float,
     ForeignKey,
+    Index,
     String,
     UniqueConstraint,
     func,
@@ -55,6 +56,10 @@ class Friendship(Base):
     __table_args__ = (
         UniqueConstraint("user_a_username", "user_b_username", name="uq_friendship_pair"),
         CheckConstraint("user_a_username < user_b_username", name="ck_friendship_ordered_pair"),
+        # "Who am I friends with" is an OR across the two username columns with a
+        # status filter, so both sides need status folded into the index.
+        Index("ix_friendships_user_a_status", "user_a_username", "status"),
+        Index("ix_friendships_user_b_status", "user_b_username", "status"),
     )
 
 

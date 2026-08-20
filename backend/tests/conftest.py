@@ -6,8 +6,26 @@ from sqlalchemy.pool import StaticPool
 
 from app.db.session import Base, get_db
 from app.main import app
+from app.services.similarity import reset_baseline_cache
 from app.services.spotify import SpotifyClient, get_spotify_client
+from app.services.spotify import _cache as spotify_cache
 from app.services.storage import InMemoryStorage, get_storage
+
+
+@pytest.fixture(autouse=True)
+def _clear_process_caches():
+    """Reset the process-wide caches between tests.
+
+    In production these live for the lifetime of the uvicorn process, which is
+    the point. In tests every case builds a fresh in-memory DB, so a cached
+    `baseline_stats` table or Spotify response from one test would leak into the
+    next.
+    """
+    reset_baseline_cache()
+    spotify_cache.clear()
+    yield
+    reset_baseline_cache()
+    spotify_cache.clear()
 
 
 class _StubSpotifyClient(SpotifyClient):
