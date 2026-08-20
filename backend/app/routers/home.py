@@ -27,6 +27,10 @@ from app.services.spotify import SpotifyClient, get_spotify_client
 
 router = APIRouter(tags=["home"])
 
+# How many never-before-seen artists a single /trending/artists request will
+# fetch from Spotify. Keeps a cold home page bounded; the rest fill in next load.
+_MAX_COLD_ARTIST_FETCHES = 5
+
 CurrentUser = Annotated[User, Depends(get_current_user)]
 DB = Annotated[Session, Depends(get_db)]
 StorageDep = Annotated[Storage, Depends(get_storage)]
@@ -338,7 +342,13 @@ def trending_artists(
         sid: a.image_url for sid, a in known.items()
     }
 
-    missing = [aid for aid in ids if aid not in known]
+    # Fetch only a few unknown artists per request. `get_artists` is one HTTP
+    # call per id (Spotify removed the batch endpoint), so an uncapped cold load
+    # meant up to 20 sequential round-trips before the page could render — slow
+    # at best, and a hang if any of them hit a rate limit. Whatever isn't fetched
+    # this time renders without a photo and is picked up on the next load, so the
+    # mirror fills in within a couple of visits.
+    missing = [aid for aid in ids if aid not in known][:_MAX_COLD_ARTIST_FETCHES]
     if missing:
         fetched = spotify.get_artists(missing)
         images.update(fetched)

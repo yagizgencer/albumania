@@ -1,13 +1,63 @@
+import logging
 from dataclasses import dataclass
 from functools import lru_cache
 
+import requests
 import spotipy
+from requests.adapters import HTTPAdapter
 from spotipy.cache_handler import MemoryCacheHandler
 from spotipy.exceptions import SpotifyException
 from spotipy.oauth2 import SpotifyClientCredentials
+from urllib3.util.retry import Retry
 
 from app.core.config import get_settings
 from app.services.cache import TTLCache
+
+logger = logging.getLogger("albumania.spotify")
+
+# Socket-level timeout for every Spotify call. Note this does NOT bound retry
+# backoff — see _build_session.
+_REQUEST_TIMEOUT = 5
+
+# Hard ceiling on discography pagination. Spotify's Feb 2026 Development Mode
+# changes capped page size at 10, so a pathological artist could otherwise page
+# for a very long time inside a single request.
+_MAX_ALBUM_PAGES = 12
+
+
+def _build_session() -> requests.Session:
+    """A requests session that can never park a thread on Retry-After.
+
+    This is the fix for artist pages hanging forever. urllib3 implements
+    Retry-After as a bare, uncapped `time.sleep(retry_after)` on the calling
+    thread (`Retry.sleep_for_retry`), and `requests_timeout` does not bound it —
+    that only covers connect/read. Spotify answers a rate-limited app with a
+    Retry-After measured in minutes or hours, so a single 429 would sleep an
+    anyio worker thread (holding its DB connection) far past any sane request
+    lifetime. The browser just spins; nothing ever errors.
+
+    So: retry genuinely transient upstream failures with a short exponential
+    backoff, but never honour Retry-After, and never retry a 429 at all. A 429
+    propagates as a SpotifyException, which `core.errors` turns into a 503 the
+    frontend already knows how to display.
+    """
+    session = requests.Session()
+    retry = Retry(
+        total=2,
+        connect=2,
+        read=1,
+        status=2,
+        backoff_factor=0.3,
+        backoff_max=2,
+        # Deliberately excludes 429.
+        status_forcelist=(500, 502, 503, 504),
+        allowed_methods=frozenset(["GET", "POST"]),
+        respect_retry_after_header=False,
+    )
+    adapter = HTTPAdapter(max_retries=retry)
+    session.mount("https://", adapter)
+    session.mount("http://", adapter)
+    return session
 
 # How long each kind of Spotify lookup stays cached in-process. Artist metadata
 # and discographies effectively never change; searches are cached mostly so that
@@ -73,19 +123,17 @@ class SpotifyClient:
             # The client is a process-wide singleton now, so memory is the right
             # place for a token that lives an hour.
             cache_handler=MemoryCacheHandler(),
-            # Defaults to None, i.e. the token POST can hang forever.
-            requests_timeout=5,
+            # Defaults to None, i.e. the token POST can hang forever. The token
+            # endpoint is rate-limited too, hence the same hardened session.
+            requests_timeout=_REQUEST_TIMEOUT,
+            requests_session=_build_session(),
         )
+        # Passing a Session makes spotipy use it verbatim, so our retry policy
+        # applies instead of its default (which honours Retry-After).
         self._sp = spotipy.Spotify(
             auth_manager=auth,
-            requests_timeout=5,
-            # spotipy defaults to 3 status retries and lets urllib3 honour
-            # Spotify's Retry-After, which on a 429 can be tens of seconds. That
-            # sleep happens in a threadpool worker holding a DB connection, so
-            # keep it to one retry and surface the 429 instead (main.py maps it
-            # to a 503 the frontend already handles).
-            status_retries=1,
-            retries=1,
+            requests_timeout=_REQUEST_TIMEOUT,
+            requests_session=_build_session(),
         )
 
     def search_albums(self, query: str, limit: int = 10) -> list[SpotifyAlbumResult]:
@@ -156,7 +204,7 @@ class SpotifyClient:
             results: list[SpotifyAlbumResult] = []
             seen_names: set[str] = set()
             offset = 0
-            while True:
+            for page in range(_MAX_ALBUM_PAGES):
                 data = self._sp.artist_albums(
                     artist_id, album_type="album", limit=10, offset=offset
                 )
@@ -170,6 +218,14 @@ class SpotifyClient:
                 if len(items) < 10 or not data.get("next"):
                     break
                 offset += 10
+            else:
+                # Hit the page cap. Showing a truncated discography beats holding
+                # the request (and a DB connection) open indefinitely.
+                logger.warning(
+                    "artist %s discography truncated at %d pages",
+                    artist_id,
+                    _MAX_ALBUM_PAGES,
+                )
             return results
 
         return _cache.get_or_load(("artist_albums", artist_id), _DISCOGRAPHY_TTL, load)
@@ -181,7 +237,7 @@ class SpotifyClient:
         # limit=50 outright with a 400 "Invalid limit" for newly created apps.
         tracks = []
         offset = 0
-        while True:
+        for _page in range(_MAX_ALBUM_PAGES):
             page = self._sp.album_tracks(spotify_id, limit=10, offset=offset)
             items = page["items"]
             for track in items:
@@ -196,6 +252,10 @@ class SpotifyClient:
             if len(items) < 10 or not page.get("next"):
                 break
             offset += 10
+        else:
+            logger.warning(
+                "album %s track list truncated at %d pages", spotify_id, _MAX_ALBUM_PAGES
+            )
         return tracks
 
     def get_top5_popular_indices(self, spotify_id: str) -> list[int]:

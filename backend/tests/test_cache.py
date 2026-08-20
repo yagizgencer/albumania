@@ -3,6 +3,28 @@ import threading
 import time
 
 from app.services.cache import TTLCache
+from app.services.spotify import _build_session
+
+
+def test_session_never_sleeps_on_retry_after() -> None:
+    """The fix for artist pages hanging forever.
+
+    urllib3 implements Retry-After as an uncapped `time.sleep()` on the calling
+    thread, and `requests_timeout` does not bound it. Spotify answers a
+    rate-limited app with a Retry-After of minutes or hours, so honouring it
+    parks an anyio worker (holding its DB connection) far past any sane request
+    lifetime — the browser just spins and nothing ever errors.
+    """
+    retry = _build_session().get_adapter("https://api.spotify.com").max_retries
+
+    assert retry.respect_retry_after_header is False
+    # 429 must surface immediately rather than being retried; core.errors turns
+    # it into a 503 the frontend already renders.
+    assert 429 not in retry.status_forcelist
+    # Transient upstream failures are still worth one or two quick retries.
+    assert 500 in retry.status_forcelist
+    assert retry.total <= 2
+    assert retry.backoff_max <= 2
 
 
 def test_returns_cached_value_without_calling_loader_again() -> None:

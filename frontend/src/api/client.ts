@@ -15,6 +15,12 @@ if (import.meta.env.PROD && !import.meta.env.VITE_API_BASE_URL) {
 
 export const apiClient = axios.create({
   baseURL,
+  // axios defaults to no timeout, so a request the server never answers leaves
+  // the UI on a spinner forever with no way out. That actually happened: a
+  // Spotify 429 parked a server thread on an uncapped Retry-After sleep and
+  // artist pages simply never finished loading. The server side is fixed, but
+  // the client should never be able to hang regardless of what the server does.
+  timeout: 30_000,
   withCredentials: true, // sends the httpOnly refresh cookie
   // Serialize array params as repeated keys (`types=a&types=b`) rather than the
   // default `types[]=a` — that's the shape FastAPI's `list[...]` params expect.
