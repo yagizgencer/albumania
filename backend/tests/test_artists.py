@@ -1,12 +1,14 @@
 from unittest.mock import MagicMock
 
 import pytest
+from spotipy.exceptions import SpotifyException
 from fastapi.testclient import TestClient
 
 from app.core.deps import get_current_user
 from app.db.session import get_db
 from app.main import app
 from app.models.album import Album
+from app.models.artist import Artist
 from app.models.rating import Rating, RatingStatus
 from app.models.user import User
 from app.services.spotify import (
@@ -116,3 +118,55 @@ def test_artist_search_returns_shaped_results(authed_client: TestClient) -> None
 def test_artist_search_requires_auth(client: TestClient) -> None:
     r = client.get("/artists/search?q=test")
     assert r.status_code in (401, 403)
+
+
+def test_artist_page_falls_back_to_local_data_when_rate_limited(
+    client: TestClient,
+) -> None:
+    """A Spotify 429 must not take the artist page down.
+
+    This is what users actually hit: Spotify rate-limited the app and every
+    artist page returned "Could not load this artist". We already hold the
+    artist's header and their imported albums, so serve those instead — a
+    partial discography beats a dead page, and it stops the retry storm that
+    keeps the quota pinned.
+    """
+    _seed()
+    db = next(app.dependency_overrides[get_db]())
+    db.add(Artist(spotify_id="art1", name="Test Artist", image_url="https://img/a.jpg"))
+    db.commit()
+
+    mock = MagicMock(spec=SpotifyClient)
+    mock.get_artist.side_effect = SpotifyException(429, -1, "rate limited")
+    app.dependency_overrides[get_current_user] = lambda: _FAKE_USER
+    app.dependency_overrides[get_spotify_client] = lambda: mock
+
+    r = client.get("/artists/art1")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["artist"]["name"] == "Test Artist"
+    assert body["artist"]["image_url"] == "https://img/a.jpg"
+    # Both imported albums, with their ratings still attached.
+    titles = {a["title"] for a in body["albums"]}
+    assert titles == {"Rated Album", "Draft Album"}
+    rated = next(a for a in body["albums"] if a["title"] == "Rated Album")
+    assert rated["mean_score"] == 8.0
+    assert rated["status"] == "published"
+
+    app.dependency_overrides.pop(get_current_user, None)
+    app.dependency_overrides.pop(get_spotify_client, None)
+
+
+def test_artist_page_still_errors_when_nothing_is_known(client: TestClient) -> None:
+    """No mirror, no albums, no Spotify — there is genuinely nothing to show."""
+    _seed()
+    mock = MagicMock(spec=SpotifyClient)
+    mock.get_artist.side_effect = SpotifyException(429, -1, "rate limited")
+    app.dependency_overrides[get_current_user] = lambda: _FAKE_USER
+    app.dependency_overrides[get_spotify_client] = lambda: mock
+
+    r = client.get("/artists/unknown_artist")
+    assert r.status_code == 503
+
+    app.dependency_overrides.pop(get_current_user, None)
+    app.dependency_overrides.pop(get_spotify_client, None)

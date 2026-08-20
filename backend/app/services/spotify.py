@@ -1,4 +1,6 @@
 import logging
+import threading
+import time
 from dataclasses import dataclass
 from functools import lru_cache
 
@@ -23,6 +25,54 @@ _REQUEST_TIMEOUT = 5
 # changes capped page size at 10, so a pathological artist could otherwise page
 # for a very long time inside a single request.
 _MAX_ALBUM_PAGES = 12
+
+
+class _RateLimitBreaker:
+    """Stops calling Spotify for a cooldown once it has rate-limited us.
+
+    Without this, a throttled app never recovers: every artist page view fires
+    more calls, each earning another 429, which keeps the quota pinned. Failed
+    calls aren't cached either, so a user refreshing the page hammers hardest
+    exactly when we can least afford it.
+
+    While the breaker is open we fail immediately and locally — no HTTP at all —
+    which `core.errors` turns into the same 503 the caller would have got anyway,
+    just without spending quota to earn it.
+    """
+
+    def __init__(self) -> None:
+        self._open_until = 0.0
+        self._lock = threading.Lock()
+
+    def is_open(self) -> bool:
+        return time.monotonic() < self._open_until
+
+    def trip(self, seconds: float) -> None:
+        with self._lock:
+            self._open_until = max(self._open_until, time.monotonic() + seconds)
+        logger.warning("Spotify rate limited; pausing calls for %.0fs", seconds)
+
+    def reset(self) -> None:
+        with self._lock:
+            self._open_until = 0.0
+
+
+_breaker = _RateLimitBreaker()
+
+# How long to back off after a 429. Spotify's Retry-After is honoured when
+# present, clamped into this range so one hostile header can't mute the whole
+# feature for hours, and a missing header still gets a real pause.
+_COOLDOWN_DEFAULT = 60.0
+_COOLDOWN_MAX = 300.0
+
+
+def _retry_after_seconds(exc: SpotifyException) -> float:
+    headers = getattr(exc, "headers", None) or {}
+    raw = headers.get("Retry-After") or headers.get("retry-after")
+    try:
+        return min(max(float(raw), 1.0), _COOLDOWN_MAX)
+    except (TypeError, ValueError):
+        return _COOLDOWN_DEFAULT
 
 
 def _build_session() -> requests.Session:
@@ -136,16 +186,33 @@ class SpotifyClient:
             requests_session=_build_session(),
         )
 
+    def _call(self, fn, *args, **kwargs):
+        """Every Spotify request goes through here so the breaker is unavoidable.
+
+        Raises SpotifyException(429) without touching the network while the
+        breaker is open, and trips it whenever Spotify hands us a real 429.
+        """
+        if _breaker.is_open():
+            raise SpotifyException(
+                429, -1, "Spotify rate limit cooldown in effect (not called)"
+            )
+        try:
+            return fn(*args, **kwargs)
+        except SpotifyException as exc:
+            if exc.http_status == 429:
+                _breaker.trip(_retry_after_seconds(exc))
+            raise
+
     def search_albums(self, query: str, limit: int = 10) -> list[SpotifyAlbumResult]:
         def load() -> list[SpotifyAlbumResult]:
-            data = self._sp.search(q=query, type="album", limit=limit)
+            data = self._call(self._sp.search, q=query, type="album", limit=limit)
             return [_album_result_from_item(item) for item in data["albums"]["items"]]
 
         return _cache.get_or_load(("search_albums", query, limit), _SEARCH_TTL, load)
 
     def search_artists(self, query: str, limit: int = 10) -> list[SpotifyArtist]:
         def load() -> list[SpotifyArtist]:
-            data = self._sp.search(q=query, type="artist", limit=limit)
+            data = self._call(self._sp.search, q=query, type="artist", limit=limit)
             return [
                 SpotifyArtist(
                     spotify_id=item["id"],
@@ -158,11 +225,11 @@ class SpotifyClient:
         return _cache.get_or_load(("search_artists", query, limit), _SEARCH_TTL, load)
 
     def get_album(self, spotify_id: str) -> SpotifyAlbumResult:
-        return _album_result_from_item(self._sp.album(spotify_id))
+        return _album_result_from_item(self._call(self._sp.album, spotify_id))
 
     def get_artist(self, artist_id: str) -> SpotifyArtist:
         def load() -> SpotifyArtist:
-            item = self._sp.artist(artist_id)
+            item = self._call(self._sp.artist, artist_id)
             return SpotifyArtist(
                 spotify_id=item["id"],
                 name=item["name"],
@@ -205,8 +272,12 @@ class SpotifyClient:
             seen_names: set[str] = set()
             offset = 0
             for page in range(_MAX_ALBUM_PAGES):
-                data = self._sp.artist_albums(
-                    artist_id, album_type="album", limit=10, offset=offset
+                data = self._call(
+                    self._sp.artist_albums,
+                    artist_id,
+                    album_type="album",
+                    limit=10,
+                    offset=offset,
                 )
                 items = data["items"]
                 for item in items:
@@ -238,7 +309,7 @@ class SpotifyClient:
         tracks = []
         offset = 0
         for _page in range(_MAX_ALBUM_PAGES):
-            page = self._sp.album_tracks(spotify_id, limit=10, offset=offset)
+            page = self._call(self._sp.album_tracks, spotify_id, limit=10, offset=offset)
             items = page["items"]
             for track in items:
                 tracks.append(
@@ -264,14 +335,14 @@ class SpotifyClient:
         get_artists()'s docstring for why (Spotify's Feb 2026 Development Mode
         changes removed the batch "Get Several Tracks" endpoint for newly
         created apps; the single-item endpoint remains supported)."""
-        album = self._sp.album(spotify_id)
+        album = self._call(self._sp.album, spotify_id)
         track_ids = [t["id"] for t in album["tracks"]["items"]]
         track_numbers = {t["id"]: t["track_number"] for t in album["tracks"]["items"]}
 
         popularity_map: dict[str, int] = {}
         for track_id in track_ids:
             try:
-                t = self._sp.track(track_id)
+                t = self._call(self._sp.track, track_id)
             except SpotifyException:
                 continue
             if t:

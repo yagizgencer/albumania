@@ -108,3 +108,56 @@ def test_clear_drops_everything() -> None:
     cache.set("k", "v", 60)
     cache.clear()
     assert cache.get("k") is None
+
+
+def test_breaker_short_circuits_after_rate_limit() -> None:
+    """A 429 must stop us calling Spotify at all for a cooldown.
+
+    Otherwise a throttled app never recovers: every page view earns another 429,
+    which keeps the quota pinned, and failed calls aren't cached so refreshing
+    hammers hardest exactly when we can least afford it.
+    """
+    from spotipy.exceptions import SpotifyException
+
+    from app.services.spotify import SpotifyClient, _breaker
+
+    _breaker.reset()
+    client = SpotifyClient.__new__(SpotifyClient)  # skip real credentials
+    calls = []
+
+    def rate_limited():
+        calls.append(1)
+        raise SpotifyException(429, -1, "rate limited", headers={"Retry-After": "30"})
+
+    # First call reaches Spotify and trips the breaker.
+    try:
+        client._call(rate_limited)
+    except SpotifyException as exc:
+        assert exc.http_status == 429
+    assert len(calls) == 1
+
+    # Subsequent calls fail locally without spending any quota.
+    for _ in range(5):
+        try:
+            client._call(rate_limited)
+        except SpotifyException as exc:
+            assert exc.http_status == 429
+    assert len(calls) == 1, "breaker should have prevented further Spotify calls"
+
+    _breaker.reset()
+    client._call(lambda: "ok")  # recovers once the cooldown clears
+
+
+def test_retry_after_is_clamped() -> None:
+    """Honour Spotify's Retry-After, but never let it mute the feature for hours."""
+    from spotipy.exceptions import SpotifyException
+
+    from app.services.spotify import _COOLDOWN_DEFAULT, _COOLDOWN_MAX, _retry_after_seconds
+
+    assert _retry_after_seconds(SpotifyException(429, -1, "x", headers={"Retry-After": "30"})) == 30
+    assert (
+        _retry_after_seconds(SpotifyException(429, -1, "x", headers={"Retry-After": "99999"}))
+        == _COOLDOWN_MAX
+    )
+    # A missing or junk header still earns a real pause.
+    assert _retry_after_seconds(SpotifyException(429, -1, "x")) == _COOLDOWN_DEFAULT
