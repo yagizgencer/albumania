@@ -30,6 +30,11 @@ router = APIRouter(prefix="/artists", tags=["artists"])
 # session makes several-fold while still feeling responsive.
 _MIN_SEARCH_CHARS = 3
 
+# Spotify's Feb 2026 changes cut the search `limit` maximum from 50 to 10.
+# Anything above this is rejected upstream as a 400, which our error handler
+# turns into a 502 — so reject it here rather than spending a call to fail.
+_MAX_SEARCH_LIMIT = 10
+
 
 @router.get("/search", response_model=list[ArtistOut])
 def search_artists(
@@ -37,7 +42,7 @@ def search_artists(
     db: Annotated[Session, Depends(get_db)],
     spotify: Annotated[SpotifyClient, Depends(get_spotify_client)],
     q: Annotated[str, Query(min_length=_MIN_SEARCH_CHARS)],
-    limit: Annotated[int, Query(ge=1, le=50)] = 10,
+    limit: Annotated[int, Query(ge=1, le=_MAX_SEARCH_LIMIT)] = _MAX_SEARCH_LIMIT,
 ) -> list[ArtistOut]:
     try:
         found = spotify.search_artists(q, limit=limit)
