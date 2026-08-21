@@ -27,6 +27,13 @@ class Settings(BaseSettings):
     jwt_refresh_ttl_days: int = 30
     spotify_client_id: str = ""
     spotify_client_secret: str = ""
+    # The "your top 5 vs Spotify's most popular" comparison. Off because
+    # Spotify's Feb 2026 Development Mode changes removed `popularity` from the
+    # track object entirely, and removed Get Artist's Top Tracks too — there is
+    # nothing left to rank by. Kept as a switch rather than deleted code so it
+    # can be turned back on if the app gains Extended Quota Mode, or repointed
+    # at another source (Last.fm and Deezer both expose per-track play counts).
+    spotify_comparison_enabled: bool = False
     # Minimum seconds between any two Spotify API calls, process-wide. Spotify
     # penalises "aggressive sub-second loops", and the restricted Development
     # Mode API forces per-item fetches, so our loops are exactly that shape.

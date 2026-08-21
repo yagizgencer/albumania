@@ -14,6 +14,7 @@ import { Alert } from "../components/Alert";
 import { LoadingState } from "../components/Spinner";
 import { Avatar } from "../components/Avatar";
 import { ExternalLinkIcon, SpotifyIcon, TrashIcon } from "../components/Icons";
+import { useFeatures } from "../context/FeaturesContext";
 import { ImageLightbox } from "../components/ImageLightbox";
 import { formatDate } from "../lib/date";
 import { setDashboardCompare, type DashboardBackState } from "../lib/dashboardCompare";
@@ -127,6 +128,7 @@ export function FriendAlbumDetailPage() {
     pictureUrl: pair.user_b_picture_url,
   };
   const spotify: SimParty = "spotify";
+  const { spotifyComparison } = useFeatures();
 
   return (
     <main className={styles.page}>
@@ -213,8 +215,12 @@ export function FriendAlbumDetailPage() {
               </div>
               <div className={styles.simTiles}>
                 <SimTile left={userA} right={userB} value={entry.similarity_users} />
-                <SimTile left={userA} right={spotify} value={entry.similarity_a_vs_spotify} />
-                <SimTile left={userB} right={spotify} value={entry.similarity_b_vs_spotify} />
+                {spotifyComparison && (
+                  <>
+                    <SimTile left={userA} right={spotify} value={entry.similarity_a_vs_spotify} />
+                    <SimTile left={userB} right={spotify} value={entry.similarity_b_vs_spotify} />
+                  </>
+                )}
               </div>
             </div>
 
@@ -253,12 +259,15 @@ export function FriendAlbumDetailPage() {
           score={entry.user_b_score}
           tracks={renderList(entry.user_b_top_track_indices)}
         />
-        {/* Spotify isn't a user (no profile, no album score). */}
-        <TopList
-          title="Spotify's top 5"
-          score={null}
-          tracks={renderList(entry.spotify_top5_indices)}
-        />
+        {/* Spotify isn't a user (no profile, no album score). Hidden entirely
+            when the comparison is off — an empty third column reads as a bug. */}
+        {spotifyComparison && (
+          <TopList
+            title="Spotify's top 5"
+            score={null}
+            tracks={renderList(entry.spotify_top5_indices)}
+          />
+        )}
       </section>
     </main>
   );

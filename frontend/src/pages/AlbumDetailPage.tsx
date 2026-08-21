@@ -5,6 +5,7 @@ import { getDashboard, type DashboardEntry } from "../api/dashboard";
 import { getUser } from "../api/users";
 import { deleteRating, getMyRatingForAlbum } from "../api/ratings";
 import { useAuth } from "../context/AuthContext";
+import { useFeatures } from "../context/FeaturesContext";
 import { formatDuration } from "../utils/duration";
 import { Alert } from "../components/Alert";
 import { LoadingState } from "../components/Spinner";
@@ -19,6 +20,7 @@ import styles from "./AlbumDetailPage.module.css";
 export function AlbumDetailPage() {
   const { username, spotifyId } = useParams<{ username: string; spotifyId: string }>();
   const { username: me } = useAuth();
+  const { spotifyComparison } = useFeatures();
   const navigate = useNavigate();
   const location = useLocation();
   const isMine = !!me && me === username;
@@ -171,7 +173,10 @@ export function AlbumDetailPage() {
             </div>
 
             {/* Similarity Scores — one teal tile (this user – Spotify). The
-                album score lives on the top-5 card below. */}
+                album score lives on the top-5 card below. With the comparison
+                off this is the block's only tile, so the whole block is hidden
+                rather than left as an empty heading. */}
+            {spotifyComparison && (
             <div className={`${styles.simBlock} ${styles.simBlockSingle}`}>
               <div className={styles.simHead}>
                 <span className={styles.simRule} />
@@ -215,6 +220,7 @@ export function AlbumDetailPage() {
                 </div>
               </div>
             </div>
+            )}
 
             {/* Inline confirm shown after the Remove chip is clicked. */}
             {isMine && confirmingRemove && (
@@ -276,8 +282,10 @@ export function AlbumDetailPage() {
           </ol>
         </div>
 
+        {/* Spotify isn't rated, so its card carries no album score. Hidden
+            entirely when the comparison is off — an empty column reads as a bug. */}
+        {spotifyComparison && (
         <div className={styles.column}>
-          {/* Spotify isn't rated, so its card carries no album score. */}
           <div className={styles.columnHead}>
             <h3>Spotify's top 5</h3>
           </div>
@@ -302,6 +310,7 @@ export function AlbumDetailPage() {
             ))}
           </ol>
         </div>
+        )}
       </section>
     </main>
   );

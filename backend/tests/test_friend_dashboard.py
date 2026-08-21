@@ -159,7 +159,7 @@ def test_accept_seeds_entries_for_mutual_albums(client: TestClient) -> None:
     _clear_auth()
 
 
-def test_dashboard_includes_spotify_similarity(client: TestClient) -> None:
+def test_dashboard_includes_spotify_similarity(client: TestClient, spotify_comparison_on) -> None:
     alice = _seed_user("alice")
     bob = _seed_user("bob")
     a1 = _seed_album("spot1")

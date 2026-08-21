@@ -1,5 +1,6 @@
 import { getTrendingAlbums, getTrendingArtists } from "../api/home";
 import { useAuth } from "../context/AuthContext";
+import { useFeatures } from "../context/FeaturesContext";
 import { ActivityFeed } from "../components/ActivityFeed";
 import { ButtonLink } from "../components/Button";
 import { TrendingAlbumRow, TrendingArtistRow, TrendingBox } from "../components/TrendingBox";
@@ -20,6 +21,8 @@ export function HomePage() {
 // ---------------------------------------------------------------------------
 
 function PublicLanding() {
+  // Don't promise a comparison the backend has switched off.
+  const { spotifyComparison } = useFeatures();
   return (
     <main className={styles.landing}>
       <div className={styles.landingInner}>
@@ -51,7 +54,9 @@ function PublicLanding() {
         <li className={styles.landingBullet}>
           <h3>Compare your taste</h3>
           <p>
-            See how your taste lines up with your friends and the current trend on Spotify. Visualize your ratings and similarity scores as interactive graphs.
+            {spotifyComparison
+              ? "See how your taste lines up with your friends and the current trend on Spotify. Visualize your ratings and similarity scores as interactive graphs."
+              : "See how your taste lines up with your friends. Visualize your ratings and similarity scores as interactive graphs."}
           </p>
         </li>
         </ul>

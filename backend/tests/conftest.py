@@ -132,3 +132,17 @@ def client(storage):
     app.dependency_overrides.clear()
     Base.metadata.drop_all(engine)
     engine.dispose()
+
+
+@pytest.fixture()
+def spotify_comparison_on(monkeypatch):
+    """Turn the vs-Spotify comparison on for tests that exercise it.
+
+    It ships disabled: Spotify's Feb 2026 changes removed track `popularity`, so
+    there is nothing to rank by. The feature is a switch rather than deleted
+    code, and these tests are what keep it working for the day it can be
+    switched back on.
+    """
+    from app.core.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "spotify_comparison_enabled", True)

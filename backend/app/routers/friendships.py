@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.models.notification import Notification
 
+from app.core.config import get_settings
 from app.core.deps import get_current_user, require_verified_email
 from app.db.session import get_db
 from app.models.album import Album
@@ -265,12 +266,17 @@ def get_friend_dashboard(
             target = a_top if r.username == friendship.user_a_username else b_top
             target[r.album_id] = r.top_track_indices or []
 
+    # See get_user_dashboard in routers/users.py for why this is suppressed
+    # wholesale rather than per-album.
+    comparison_enabled = get_settings().spotify_comparison_enabled
+
     entries: list[FriendDashboardEntryOut] = []
     for entry, album in rows:
         # No inline Spotify backfill — see get_user_dashboard in routers/users.py
         # for why (this loop was ~260 sequential Spotify calls on a cold dashboard).
-        sim_a_s = _sim_vs_spotify(db, a_top.get(album.id, []), album.spotify_top5_indices or [], album.total_songs)
-        sim_b_s = _sim_vs_spotify(db, b_top.get(album.id, []), album.spotify_top5_indices or [], album.total_songs)
+        spotify_top = (album.spotify_top5_indices or []) if comparison_enabled else []
+        sim_a_s = _sim_vs_spotify(db, a_top.get(album.id, []), spotify_top, album.total_songs)
+        sim_b_s = _sim_vs_spotify(db, b_top.get(album.id, []), spotify_top, album.total_songs)
 
         entries.append(
             FriendDashboardEntryOut(
@@ -279,7 +285,7 @@ def get_friend_dashboard(
                 similarity_users=entry.similarity_users,
                 similarity_a_vs_spotify=sim_a_s,
                 similarity_b_vs_spotify=sim_b_s,
-                spotify_top5_indices=album.spotify_top5_indices or [],
+                spotify_top5_indices=spotify_top,
                 user_a_top_track_indices=a_top.get(album.id, []),
                 user_b_top_track_indices=b_top.get(album.id, []),
                 mean_score=entry.mean_score,

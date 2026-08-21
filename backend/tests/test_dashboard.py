@@ -100,7 +100,7 @@ def _clear_auth() -> None:
 # Happy path
 # ---------------------------------------------------------------------------
 
-def test_dashboard_returns_published_entries(client: TestClient, spotify_mock: MagicMock) -> None:
+def test_dashboard_returns_published_entries(client: TestClient, spotify_mock: MagicMock, spotify_comparison_on) -> None:
     _seed_user_with_published_rating()
     _auth_as(_OWNER)
 
@@ -120,7 +120,7 @@ def test_dashboard_returns_published_entries(client: TestClient, spotify_mock: M
     _clear_auth()
 
 
-def test_dashboard_similarity_matches_formula(client: TestClient, spotify_mock: MagicMock) -> None:
+def test_dashboard_similarity_matches_formula(client: TestClient, spotify_mock: MagicMock, spotify_comparison_on) -> None:
     # User picks exactly Spotify's top 5 in same order → loss = 0 → similarity = mean/std
     _seed_user_with_published_rating(top_track_indices=[1, 2, 3, 4, 5])
     _auth_as(_OWNER)
@@ -213,3 +213,43 @@ def test_dashboard_unknown_user_returns_404(client: TestClient, spotify_mock: Ma
 def test_dashboard_requires_auth(client: TestClient) -> None:
     r = client.get("/users/owner/dashboard")
     assert r.status_code in (401, 403)
+
+
+# ---------------------------------------------------------------------------
+# Feature flag: the vs-Spotify comparison ships disabled
+# ---------------------------------------------------------------------------
+
+def test_comparison_suppressed_when_feature_disabled(
+    client: TestClient, spotify_mock: MagicMock
+) -> None:
+    """Disabled means hidden everywhere, even where the data still exists.
+
+    Some albums were populated while the credentials were an app that still
+    returned track popularity. Without suppressing at the API, the dashboard
+    would compare those albums and not others — which reads as a bug rather
+    than a switched-off feature.
+    """
+    _seed_user_with_published_rating(spotify_top5=[1, 2, 3, 4, 5])
+    _auth_as(_OWNER)
+
+    entry = client.get("/users/owner/dashboard").json()["entries"][0]
+    assert entry["spotify_top5_indices"] == []
+    assert entry["similarity_user_vs_spotify"] is None
+    # The user's own ratings are untouched — only the comparison is off.
+    assert entry["top_track_indices"] == [1, 3, 5, 7, 9]
+    assert entry["score"] == 8.5
+
+    _clear_auth()
+
+
+def test_features_endpoint_reports_the_flag(client: TestClient) -> None:
+    """Public, so the logged-out landing page can adapt its copy."""
+    r = client.get("/features")
+    assert r.status_code == 200
+    assert r.json() == {"spotify_comparison": False}
+
+
+def test_features_endpoint_follows_the_setting(
+    client: TestClient, spotify_comparison_on
+) -> None:
+    assert client.get("/features").json() == {"spotify_comparison": True}

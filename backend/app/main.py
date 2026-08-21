@@ -19,6 +19,7 @@ from app.routers import (
     artists,
     auth,
     comments,
+    features,
     friendships,
     home,
     invites,
@@ -60,6 +61,7 @@ if settings.storage_backend.lower() == "local":
     static_root.mkdir(parents=True, exist_ok=True)
     app.mount("/static", StaticFiles(directory=str(static_root)), name="static")
 
+app.include_router(features.router)
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(media.router)

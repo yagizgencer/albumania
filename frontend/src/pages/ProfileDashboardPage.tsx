@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { getDashboard, type DashboardEntry } from "../api/dashboard";
 import { chartFill, chartPalette } from "../lib/chartTheme";
+import { useFeatures } from "../context/FeaturesContext";
 import { usePersistentState } from "../lib/usePersistentState";
 import { formatDate, todayIso } from "../lib/date";
 import { Alert } from "../components/Alert";
@@ -44,7 +45,11 @@ export function ProfileDashboard({
   const [artistFilter, setArtistFilter] = usePersistentState(`${ns}:filter`, "");
   const [fromDate, setFromDate] = usePersistentState(`${ns}:from`, "");
   const [toDate, setToDate] = usePersistentState(`${ns}:to`, "");
-  const [mode, setMode] = usePersistentState<Mode>(`${ns}:mode`, "similarity");
+  const { spotifyComparison } = useFeatures();
+  const [storedMode, setMode] = usePersistentState<Mode>(`${ns}:mode`, "similarity");
+  // With the comparison off there is only one metric, so ignore any "similarity"
+  // left in localStorage from when it was enabled rather than plotting nulls.
+  const mode: Mode = spotifyComparison ? storedMode : "rating";
   const [view, setView] = usePersistentState<ChartView>(`${ns}:view`, "detailed");
 
   useEffect(() => {
@@ -104,6 +109,7 @@ export function ProfileDashboard({
         case "score":
           return (a.score - b.score) * dir;
         case "similarity": {
+          if (!spotifyComparison) return 0;
           const av = a.similarity_user_vs_spotify ?? -Infinity;
           const bv = b.similarity_user_vs_spotify ?? -Infinity;
           return (av - bv) * dir;
@@ -112,7 +118,7 @@ export function ProfileDashboard({
     };
     arr.sort(cmp);
     return arr;
-  }, [filtered, sort]);
+  }, [filtered, sort, spotifyComparison]);
 
   function cycleSort(column: SortColumn) {
     setSort((prev) => {
@@ -149,15 +155,19 @@ export function ProfileDashboard({
   return (
     <>
       <section className={styles.controls}>
-        <MetricSwitch
-          label="Metric"
-          options={[
-            { value: "similarity", label: "Similarity" },
-            { value: "rating", label: "Rating" },
-          ]}
-          value={mode}
-          onChange={setMode}
-        />
+        {/* Only one metric is available with the comparison off, so the switch
+            would be a control with nothing to switch between. */}
+        {spotifyComparison && (
+          <MetricSwitch
+            label="Metric"
+            options={[
+              { value: "similarity", label: "Similarity" },
+              { value: "rating", label: "Rating" },
+            ]}
+            value={mode}
+            onChange={setMode}
+          />
+        )}
 
         <MetricSwitch
           label="View"
@@ -231,14 +241,16 @@ export function ProfileDashboard({
                 <SortableHeader label="Released" column="release" sort={sort} onClick={cycleSort} align="center" />
                 <SortableHeader label="Rated" column="rated" sort={sort} onClick={cycleSort} align="center" />
                 <SortableHeader label="Score" column="score" sort={sort} onClick={cycleSort} align="center" />
-                <SortableHeader
-                  label={stack(trunc(username), "Spotify")}
-                  title={`${username} ↔ Spotify`}
-                  column="similarity"
-                  sort={sort}
-                  onClick={cycleSort}
-                  align="center"
-                />
+                {spotifyComparison && (
+                  <SortableHeader
+                    label={stack(trunc(username), "Spotify")}
+                    title={`${username} ↔ Spotify`}
+                    column="similarity"
+                    sort={sort}
+                    onClick={cycleSort}
+                    align="center"
+                  />
+                )}
               </tr>
             </thead>
             <tbody>
@@ -254,11 +266,13 @@ export function ProfileDashboard({
                   <td className={styles.numCell}>{formatDate(e.album.release_date)}</td>
                   <td className={styles.numCell}>{formatDate(e.completed_at)}</td>
                   <td className={styles.numCell}>{e.score.toFixed(1)}</td>
-                  <td className={styles.numCell}>
-                    {e.similarity_user_vs_spotify === null
-                      ? "—"
-                      : e.similarity_user_vs_spotify.toFixed(2)}
-                  </td>
+                  {spotifyComparison && (
+                    <td className={styles.numCell}>
+                      {e.similarity_user_vs_spotify === null
+                        ? "—"
+                        : e.similarity_user_vs_spotify.toFixed(2)}
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

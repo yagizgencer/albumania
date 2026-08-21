@@ -4,6 +4,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { VerifyBanner } from "./components/VerifyBanner";
 import { AuthProvider } from "./context/AuthContext";
+import { FeaturesProvider } from "./context/FeaturesContext";
 import { NotificationsProvider } from "./context/NotificationsContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { UnsavedChangesProvider } from "./lib/unsavedChanges";
@@ -28,17 +29,19 @@ import { VerifyEmailPage } from "./pages/VerifyEmailPage";
 // router context. A data router is required for useBlocker (see RatingEditorPage).
 function AppLayout() {
   return (
-    <AuthProvider>
-      <NotificationsProvider>
-        <UnsavedChangesProvider>
-          <NavBar />
-          <VerifyBanner />
-          <ErrorBoundary>
-            <Outlet />
-          </ErrorBoundary>
-        </UnsavedChangesProvider>
-      </NotificationsProvider>
-    </AuthProvider>
+    <FeaturesProvider>
+      <AuthProvider>
+        <NotificationsProvider>
+          <UnsavedChangesProvider>
+            <NavBar />
+            <VerifyBanner />
+            <ErrorBoundary>
+              <Outlet />
+            </ErrorBoundary>
+          </UnsavedChangesProvider>
+        </NotificationsProvider>
+      </AuthProvider>
+    </FeaturesProvider>
   );
 }
 

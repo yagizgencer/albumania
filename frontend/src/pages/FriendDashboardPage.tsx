@@ -8,6 +8,7 @@ import {
 } from "../api/friendDashboard";
 import { comparePath, profilePath } from "../lib/paths";
 import { chartPalette } from "../lib/chartTheme";
+import { useFeatures } from "../context/FeaturesContext";
 import { usePersistentState } from "../lib/usePersistentState";
 import { formatDate, todayIso } from "../lib/date";
 import { Alert } from "../components/Alert";
@@ -73,6 +74,7 @@ export function FriendDashboard({
   const [artistFilter, setArtistFilter] = usePersistentState(`${ns}:filter`, "");
   const [fromDate, setFromDate] = usePersistentState(`${ns}:from`, "");
   const [toDate, setToDate] = usePersistentState(`${ns}:to`, "");
+  const { spotifyComparison } = useFeatures();
   const [mode, setMode] = usePersistentState<Mode>(`${ns}:mode`, "similarity");
   const [view, setView] = usePersistentState<ChartView>(`${ns}:view`, "detailed");
 
@@ -135,14 +137,16 @@ export function FriendDashboard({
         case "pair-similarity":
           return (sim(a.similarity_users) - sim(b.similarity_users)) * dir;
         case "a-similarity":
+          if (!spotifyComparison) return 0;
           return (sim(a.similarity_a_vs_spotify) - sim(b.similarity_a_vs_spotify)) * dir;
         case "b-similarity":
+          if (!spotifyComparison) return 0;
           return (sim(a.similarity_b_vs_spotify) - sim(b.similarity_b_vs_spotify)) * dir;
       }
     };
     arr.sort(cmp);
     return arr;
-  }, [filtered, sort]);
+  }, [filtered, sort, spotifyComparison]);
 
   function cycleSort(column: SortColumn) {
     setSort((prev) => {
@@ -170,20 +174,26 @@ export function FriendDashboard({
               backgroundColor: PAIR_COLOR,
               tension: 0.25,
             },
-            {
-              label: `${aLabel} ↔ Spotify`,
-              data: series(sorted.map((e) => e.similarity_a_vs_spotify)),
-              borderColor: A_COLOR,
-              backgroundColor: A_COLOR,
-              tension: 0.25,
-            },
-            {
-              label: `${bLabel} ↔ Spotify`,
-              data: series(sorted.map((e) => e.similarity_b_vs_spotify)),
-              borderColor: B_COLOR,
-              backgroundColor: B_COLOR,
-              tension: 0.25,
-            },
+            // The friend-vs-friend series stands on its own; the vs-Spotify
+            // series would be flat nulls with the comparison off.
+            ...(spotifyComparison
+              ? [
+                  {
+                    label: `${aLabel} ↔ Spotify`,
+                    data: series(sorted.map((e) => e.similarity_a_vs_spotify)),
+                    borderColor: A_COLOR,
+                    backgroundColor: A_COLOR,
+                    tension: 0.25,
+                  },
+                  {
+                    label: `${bLabel} ↔ Spotify`,
+                    data: series(sorted.map((e) => e.similarity_b_vs_spotify)),
+                    borderColor: B_COLOR,
+                    backgroundColor: B_COLOR,
+                    tension: 0.25,
+                  },
+                ]
+              : []),
           ]
         : [
             {
@@ -210,7 +220,7 @@ export function FriendDashboard({
           ];
 
     return { labels, datasets };
-  }, [sorted, mode, data]);
+  }, [sorted, mode, data, spotifyComparison]);
 
   if (error) return <Alert>{error}</Alert>;
   if (!data) return <LoadingState />;
@@ -317,8 +327,12 @@ export function FriendDashboard({
                 <SortableHeader label={trunc(b)} title={b} column="b-score" sort={sort} onClick={cycleSort} align="right" />
                 <SortableHeader label="Mean" column="mean" sort={sort} onClick={cycleSort} align="right" />
                 <SortableHeader label={stack(trunc(a), trunc(b))} title={`${a} ↔ ${b}`} column="pair-similarity" sort={sort} onClick={cycleSort} align="right" />
-                <SortableHeader label={stack(trunc(a), "Spotify")} title={`${a} ↔ Spotify`} column="a-similarity" sort={sort} onClick={cycleSort} align="right" />
-                <SortableHeader label={stack(trunc(b), "Spotify")} title={`${b} ↔ Spotify`} column="b-similarity" sort={sort} onClick={cycleSort} align="right" />
+                {spotifyComparison && (
+                  <>
+                    <SortableHeader label={stack(trunc(a), "Spotify")} title={`${a} ↔ Spotify`} column="a-similarity" sort={sort} onClick={cycleSort} align="right" />
+                    <SortableHeader label={stack(trunc(b), "Spotify")} title={`${b} ↔ Spotify`} column="b-similarity" sort={sort} onClick={cycleSort} align="right" />
+                  </>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -337,8 +351,12 @@ export function FriendDashboard({
                   <td className={styles.numCell}>{e.user_b_score.toFixed(1)}</td>
                   <td className={styles.numCell}>{e.mean_score.toFixed(2)}</td>
                   <td className={styles.numCell}>{fmt(e.similarity_users)}</td>
-                  <td className={styles.numCell}>{fmt(e.similarity_a_vs_spotify)}</td>
-                  <td className={styles.numCell}>{fmt(e.similarity_b_vs_spotify)}</td>
+                  {spotifyComparison && (
+                    <>
+                      <td className={styles.numCell}>{fmt(e.similarity_a_vs_spotify)}</td>
+                      <td className={styles.numCell}>{fmt(e.similarity_b_vs_spotify)}</td>
+                    </>
+                  )}
                 </tr>
               ))}
             </tbody>

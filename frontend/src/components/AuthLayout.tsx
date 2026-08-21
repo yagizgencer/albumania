@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { useFeatures } from "../context/FeaturesContext";
 import styles from "./AuthLayout.module.css";
 
 /**
@@ -14,6 +15,9 @@ export function AuthLayout({
   title: string;
   children: ReactNode;
 }) {
+  // Don't promise a comparison the backend has switched off.
+  const { spotifyComparison } = useFeatures();
+
   return (
     <main className={styles.wrap}>
       <aside className={styles.hero}>
@@ -24,8 +28,9 @@ export function AuthLayout({
         <div>
           <h2 className={styles.heroTitle}>Discover, listen, compare.</h2>
           <p className={styles.heroTagline}>
-            Rate new albums, listen along with friends, and see how your taste
-            lines up with theirs and the current trend on Spotify.
+            {spotifyComparison
+              ? "Rate new albums, listen along with friends, and see how your taste lines up with theirs and the current trend on Spotify."
+              : "Rate new albums, listen along with friends, and see how your taste lines up with theirs."}
           </p>
         </div>
       </aside>

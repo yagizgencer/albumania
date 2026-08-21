@@ -6,6 +6,7 @@ from spotipy.exceptions import SpotifyException
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.core.deps import get_current_user
 from app.db.session import get_db
 from app.models.album import Album, AlbumTrack
@@ -206,10 +207,12 @@ def get_or_import_album(
     # album on the page. Import already pays Spotify latency and happens once per
     # album ever, so it's the right place. Best-effort: a failure here must not
     # block the import — scripts/backfill_spotify_top5.py can fill the gap.
-    try:
-        top5 = spotify.get_top5_popular_indices(spotify_id)
-    except SpotifyException:
-        top5 = None
+    top5 = None
+    if get_settings().spotify_comparison_enabled:
+        try:
+            top5 = spotify.get_top5_popular_indices(spotify_id)
+        except SpotifyException:
+            top5 = None
 
     album = Album(
         spotify_id=album_data.spotify_id,

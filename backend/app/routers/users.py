@@ -217,19 +217,29 @@ def get_user_dashboard(
         .order_by(Rating.completed_at.asc())
     ).all()
 
+    # Suppress the comparison wholesale when the feature is off, rather than
+    # letting whichever albums happen to still hold top-5 data show it. A few
+    # rows were populated while the credentials were an app that still returned
+    # track popularity, so without this the dashboard would compare some albums
+    # and not others, which reads as a bug rather than a disabled feature.
+    comparison_enabled = get_settings().spotify_comparison_enabled
+
     entries: list[DashboardEntry] = []
     for rating, album in rows:
-        # No Spotify backfill here. This used to call get_top5_popular_indices()
-        # per album, which is 1 + one-request-per-track — a 20-album dashboard
-        # meant ~260 sequential Spotify calls in a single request, holding a DB
-        # connection the whole time. Albums missing the data render without the
-        # Spotify comparison (similarity returns None for an empty top-5) and get
-        # filled in at import time or by scripts/backfill_spotify_top5.py.
-        similarity = _similarity_against_spotify(
-            user_top5=rating.top_track_indices or [],
-            spotify_top5=album.spotify_top5_indices or [],
-            k=album.total_songs,
-            db=db,
+        # No Spotify calls here by design. This used to call
+        # get_top5_popular_indices() per album — 1 + one-request-per-track — so a
+        # 20-album dashboard meant ~260 sequential Spotify calls in one request,
+        # holding a DB connection throughout.
+        spotify_top5 = (album.spotify_top5_indices or []) if comparison_enabled else []
+        similarity = (
+            _similarity_against_spotify(
+                user_top5=rating.top_track_indices or [],
+                spotify_top5=spotify_top5,
+                k=album.total_songs,
+                db=db,
+            )
+            if comparison_enabled
+            else None
         )
 
         entries.append(
@@ -237,7 +247,7 @@ def get_user_dashboard(
                 album=DashboardAlbum.model_validate(album),
                 score=rating.score,
                 top_track_indices=rating.top_track_indices or [],
-                spotify_top5_indices=album.spotify_top5_indices or [],
+                spotify_top5_indices=spotify_top5,
                 similarity_user_vs_spotify=similarity,
                 completed_at=rating.completed_at,
             )
@@ -294,6 +304,9 @@ def get_user_comparison(
     }
     mutual_album_ids = set(a_ratings) & set(b_ratings)
 
+    # See get_user_dashboard for why this is suppressed wholesale.
+    comparison_enabled = get_settings().spotify_comparison_enabled
+
     entries: list[FriendDashboardEntryOut] = []
     for album_id in mutual_album_ids:
         ra = a_ratings[album_id]
@@ -305,18 +318,26 @@ def get_user_comparison(
         # See get_user_dashboard: no inline Spotify backfill.
         a_top = ra.top_track_indices or []
         b_top = rb.top_track_indices or []
-        spotify_top = album.spotify_top5_indices or []
+        spotify_top = (album.spotify_top5_indices or []) if comparison_enabled else []
 
         entries.append(
             FriendDashboardEntryOut(
                 album=DashboardAlbum.model_validate(album),
                 mutual_date=max(ra.completed_at, rb.completed_at),
                 similarity_users=_pair_similarity(db, a_top, b_top, album.total_songs),
-                similarity_a_vs_spotify=_similarity_against_spotify(
-                    user_top5=a_top, spotify_top5=spotify_top, k=album.total_songs, db=db
+                similarity_a_vs_spotify=(
+                    _similarity_against_spotify(
+                        user_top5=a_top, spotify_top5=spotify_top, k=album.total_songs, db=db
+                    )
+                    if comparison_enabled
+                    else None
                 ),
-                similarity_b_vs_spotify=_similarity_against_spotify(
-                    user_top5=b_top, spotify_top5=spotify_top, k=album.total_songs, db=db
+                similarity_b_vs_spotify=(
+                    _similarity_against_spotify(
+                        user_top5=b_top, spotify_top5=spotify_top, k=album.total_songs, db=db
+                    )
+                    if comparison_enabled
+                    else None
                 ),
                 spotify_top5_indices=spotify_top,
                 user_a_top_track_indices=a_top,

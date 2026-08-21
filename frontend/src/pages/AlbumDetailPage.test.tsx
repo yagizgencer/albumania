@@ -3,6 +3,8 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AlbumDetailPage } from "./AlbumDetailPage";
+import { FeaturesProvider } from "../context/FeaturesContext";
+import * as featuresApi from "../api/features";
 import { getAlbum } from "../api/albums";
 import { getDashboard } from "../api/dashboard";
 
@@ -53,6 +55,41 @@ function renderAt(username: string) {
     </MemoryRouter>
   );
 }
+
+/** Same page, but inside a FeaturesProvider reporting the given flag. */
+function renderWithComparison(enabled: boolean) {
+  vi.spyOn(featuresApi, "getFeatures").mockResolvedValue({ spotifyComparison: enabled });
+  return render(
+    <FeaturesProvider>
+      <MemoryRouter initialEntries={["/users/me/albums/alb1"]}>
+        <Routes>
+          <Route path="/users/:username/albums/:spotifyId" element={<AlbumDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    </FeaturesProvider>
+  );
+}
+
+describe("AlbumDetailPage — vs-Spotify comparison flag", () => {
+  beforeEach(() => {
+    vi.mocked(getAlbum).mockResolvedValue(ALBUM as never);
+    vi.mocked(getDashboard).mockResolvedValue({ username: "me", entries: [ENTRY] } as never);
+  });
+
+  it("hides the Spotify top-5 and similarity when the feature is off", async () => {
+    renderWithComparison(false);
+    // The user's own rating still renders — only the comparison is gone.
+    await screen.findByText("Test Album");
+    expect(screen.queryByText(/Spotify's top 5/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Similarity Scores/i)).not.toBeInTheDocument();
+  });
+
+  it("shows them when the feature is on", async () => {
+    renderWithComparison(true);
+    expect(await screen.findByText(/Spotify's top 5/i)).toBeInTheDocument();
+    expect(screen.getByText(/Similarity Scores/i)).toBeInTheDocument();
+  });
+});
 
 describe("AlbumDetailPage — remove rating", () => {
   beforeEach(() => {
