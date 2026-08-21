@@ -11,6 +11,7 @@ from app.services.spotify import SpotifyClient, get_spotify_client
 from app.services.spotify import _breaker as spotify_breaker
 from app.services.spotify import _cache as spotify_cache
 from app.services.spotify import _spacer as spotify_spacer
+import app.services.spotify as spotify_module
 from app.services.storage import InMemoryStorage, get_storage
 
 
@@ -29,6 +30,7 @@ def _clear_process_caches():
     # Real spacing would cost a wall-clock second per simulated call.
     spotify_spacer.interval = 0
     spotify_spacer.reset()
+    spotify_module._popularity_unavailable = False
     yield
     reset_baseline_cache()
     spotify_cache.clear()

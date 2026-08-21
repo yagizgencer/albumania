@@ -219,6 +219,12 @@ class _CallSpacer:
 
 _spacer = _CallSpacer()
 
+# Set once we discover this Spotify app cannot return track popularity, so we
+# stop paying two calls per album to rediscover it. Deliberately process-local
+# rather than persisted: it is a property of the credentials, so a restart
+# (which is when credentials can change) re-probes.
+_popularity_unavailable = False
+
 
 def _retry_after_seconds(exc: SpotifyException) -> float:
     headers = getattr(exc, "headers", None) or {}
@@ -487,14 +493,27 @@ class SpotifyClient:
         return tracks
 
     def get_top5_popular_indices(self, spotify_id: str) -> list[int]:
-        """Return the 5 most-popular track numbers (1-based) for the album, sorted
-        by popularity desc. One request per track, not batched — see
-        get_artists()'s docstring for why (Spotify's Feb 2026 Development Mode
-        changes removed the batch "Get Several Tracks" endpoint for newly
-        created apps; the single-item endpoint remains supported)."""
+        """The 5 most-popular track numbers (1-based), or [] if unavailable.
+
+        Returns [] on a Development Mode app. Spotify's restricted track object
+        no longer carries `popularity` at all — the field is simply absent from
+        /v1/tracks/{id} — so there is nothing to rank by. This used to read
+        t["popularity"] directly, and the resulting KeyError surfaced as a 502
+        that broke every cold album import.
+
+        One request per track, not batched: the Feb 2026 changes removed the
+        batch "Get Several Tracks" endpoint for newly created apps. That makes
+        this the most expensive call path in the app, which is why callers
+        should not invoke it speculatively — see the albums router.
+        """
+        global _popularity_unavailable
+        if _popularity_unavailable:
+            return []
+
         album = self._call(self._sp.album, spotify_id)
-        track_ids = [t["id"] for t in album["tracks"]["items"]]
-        track_numbers = {t["id"]: t["track_number"] for t in album["tracks"]["items"]}
+        items = album["tracks"]["items"]
+        track_ids = [t["id"] for t in items if t.get("id")]
+        track_numbers = {t["id"]: t["track_number"] for t in items if t.get("id")}
 
         popularity_map: dict[str, int] = {}
         for track_id in track_ids:
@@ -502,9 +521,24 @@ class SpotifyClient:
                 t = self._call(self._sp.track, track_id)
             except SpotifyException:
                 continue
-            if t:
-                popularity_map[t["id"]] = t["popularity"]
+            if not t:
+                continue
+            popularity = t.get("popularity")
+            if popularity is None:
+                # Restricted payload: no popularity anywhere, so ranking is
+                # meaningless. Bail out rather than spend a call per remaining
+                # track to learn the same thing.
+                _popularity_unavailable = True
+                logger.info(
+                    "Spotify track payload has no popularity; top-5 unavailable "
+                    "for these credentials (Development Mode restriction). "
+                    "Skipping all further top-5 lookups this process."
+                )
+                return []
+            popularity_map[t["id"]] = popularity
 
+        if not popularity_map:
+            return []
         sorted_tracks = sorted(track_ids, key=lambda tid: popularity_map.get(tid, 0), reverse=True)
         return [track_numbers[tid] for tid in sorted_tracks[:5]]
 
