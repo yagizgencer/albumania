@@ -109,18 +109,26 @@ class _RateLimitBreaker:
                 self._consecutive_429s = 0
 
     def record_rate_limit(self, seconds: float) -> None:
-        """Open the breaker only after repeated 429s.
+        """Open the breaker, immediately for a real penalty or after repeats.
 
-        Tripping on a single 429 was too blunt: Spotify throttles shared cloud
-        IPs intermittently, so one unlucky call would take search and every
-        other Spotify-backed feature offline for the whole cooldown. Requiring
-        consecutive failures distinguishes "we are genuinely throttled" from
-        "one call was unlucky", and any success resets the count.
+        Two different things arrive as a 429. A short Retry-After is ordinary
+        throttling — one unlucky call shouldn't take search and every other
+        Spotify-backed feature offline, so those need to repeat before we stop.
+
+        A long Retry-After is not ambiguous: Spotify is telling us we are in a
+        penalty window, and its guidance is that any traffic during one earns a
+        fresh, longer lockout. Observed values were 58192s and later 1747s. Stop
+        on the first of those — waiting on strike three means spending exactly
+        the calls that deepen the hole, and an alternating fail/succeed pattern
+        would reset the streak and never trip at all.
         """
         until = datetime.now(timezone.utc) + timedelta(seconds=seconds)
         with self._lock:
             self._consecutive_429s += 1
-            tripped = self._consecutive_429s >= _TRIP_AFTER_CONSECUTIVE_429S
+            tripped = (
+                seconds >= _TRIP_IMMEDIATELY_ABOVE
+                or self._consecutive_429s >= _TRIP_AFTER_CONSECUTIVE_429S
+            )
             if tripped and (self._open_until is None or until > self._open_until):
                 self._open_until = until
             else:
@@ -159,9 +167,15 @@ _COOLDOWN_MAX = 24 * 60 * 60.0
 # serialising every user behind a one-per-second queue.
 _MAX_THROTTLE_WAIT = 4.0
 
-# Spotify throttles shared cloud egress IPs intermittently, so a lone 429 is not
-# evidence that we are over quota. Only stop calling after repeated failures.
+# A lone 429 with a short Retry-After is ordinary throttling, not evidence of a
+# penalty, so tolerate a couple before going quiet.
 _TRIP_AFTER_CONSECUTIVE_429S = 3
+
+# ...but an explicit Retry-After above this means Spotify has put us in a penalty
+# window, and calling during one earns a fresh, longer lockout. Stop at once.
+# Deliberately above _COOLDOWN_DEFAULT, so a 429 carrying no header at all — where
+# we're guessing — still needs repeats rather than tripping on one ambiguous call.
+_TRIP_IMMEDIATELY_ABOVE = 120.0
 
 
 class _CallSpacer:
@@ -195,6 +209,12 @@ class _CallSpacer:
             self._next_allowed = max(now, self._next_allowed) + self.interval
         if wait_for > 0:
             time.sleep(wait_for)
+
+    def reset(self) -> None:
+        """Drop any reserved slot. For tests: a reservation made by one case
+        would otherwise reject the next case's call before it reaches Spotify."""
+        with self._lock:
+            self._next_allowed = 0.0
 
 
 _spacer = _CallSpacer()

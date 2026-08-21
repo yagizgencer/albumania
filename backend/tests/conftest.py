@@ -28,6 +28,7 @@ def _clear_process_caches():
     spotify_breaker.reset()
     # Real spacing would cost a wall-clock second per simulated call.
     spotify_spacer.interval = 0
+    spotify_spacer.reset()
     yield
     reset_baseline_cache()
     spotify_cache.clear()

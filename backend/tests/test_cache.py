@@ -253,4 +253,60 @@ def test_spacer_throttles_locally_without_blaming_spotify(client) -> None:
         assert not _breaker.is_open()
     finally:
         _spacer.interval = 0
+        _spacer.reset()
         _breaker.reset()
+
+
+def test_long_retry_after_trips_immediately(client) -> None:
+    """A penalty-sized Retry-After must stop us on the first 429.
+
+    Waiting for a third strike spends exactly the calls that deepen the hole,
+    and an alternating fail/succeed pattern would reset the streak and never
+    trip at all. Observed penalties were 58192s and 1747s.
+    """
+    from spotipy.exceptions import SpotifyException
+
+    from app.services.spotify import SpotifyClient, _breaker
+
+    _breaker.reset()
+    c = SpotifyClient.__new__(SpotifyClient)
+    calls = []
+
+    def penalised():
+        calls.append(1)
+        raise SpotifyException(429, -1, "penalty", headers={"Retry-After": "1747"})
+
+    try:
+        c._call(penalised)
+    except SpotifyException:
+        pass
+    assert _breaker.is_open(), "a penalty-sized Retry-After must trip on the first 429"
+
+    # And nothing further reaches Spotify.
+    for _ in range(3):
+        try:
+            c._call(penalised)
+        except SpotifyException:
+            pass
+    assert len(calls) == 1
+    _breaker.reset()
+
+
+def test_short_retry_after_still_needs_repeats(client) -> None:
+    """Ordinary throttling shouldn't take the whole feature offline."""
+    from spotipy.exceptions import SpotifyException
+
+    from app.services.spotify import SpotifyClient, _breaker
+
+    _breaker.reset()
+    c = SpotifyClient.__new__(SpotifyClient)
+
+    def throttled():
+        raise SpotifyException(429, -1, "slow down", headers={"Retry-After": "2"})
+
+    try:
+        c._call(throttled)
+    except SpotifyException:
+        pass
+    assert not _breaker.is_open()
+    _breaker.reset()
