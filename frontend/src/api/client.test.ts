@@ -1,3 +1,4 @@
+import { AxiosError } from "axios";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -63,14 +64,29 @@ describe("silent refresh", () => {
     expect(post).toHaveBeenCalledTimes(2);
   });
 
-  it("notifies the auth handler when the refresh fails", async () => {
+  it("reports an expired session when the refresh 401s", async () => {
     // Otherwise the app keeps rendering as logged-in against a dead session and
     // the notification poller retries a doomed refresh forever.
-    vi.spyOn(apiClient, "post").mockRejectedValue(new Error("401"));
+    const err = new AxiosError("Unauthorized");
+    err.response = { status: 401 } as never;
+    vi.spyOn(apiClient, "post").mockRejectedValue(err);
     const onFailure = vi.fn();
     setOnAuthFailure(onFailure);
 
     await expect(refreshAccessToken()).rejects.toThrow();
-    expect(onFailure).toHaveBeenCalledTimes(1);
+    expect(onFailure).toHaveBeenCalledWith(true);
+  });
+
+  it("does not report an expired session on a network failure", async () => {
+    // A timeout or offline blip says nothing about whether the refresh cookie is
+    // still valid. Treating it as a logout used to be unrecoverable: AuthContext
+    // dropped its session hint and never attempted a refresh again.
+    const err = new AxiosError("timeout of 30000ms exceeded");
+    vi.spyOn(apiClient, "post").mockRejectedValue(err);
+    const onFailure = vi.fn();
+    setOnAuthFailure(onFailure);
+
+    await expect(refreshAccessToken()).rejects.toThrow();
+    expect(onFailure).toHaveBeenCalledWith(false);
   });
 });

@@ -46,10 +46,22 @@ _REFRESH_COOKIE = "refresh_token"
 
 
 def _cookie_opts() -> dict:
-    secure = get_settings().cookie_secure
-    # SameSite=None is required for cross-site cookies (Vercel → Render).
-    # SameSite=None mandates Secure=True, so lax is only used in local dev.
-    return {"httponly": True, "samesite": "none" if secure else "lax", "secure": secure}
+    settings = get_settings()
+    # SameSite=Lax, not None. The API is served from api.albumania.net and the SPA
+    # from albumania.net — same site, so Lax is still sent on the cross-origin XHR
+    # to /auth/refresh. This used to be SameSite=None (the API was on onrender.com,
+    # a different site), which made the cookie third-party: Safari blocks those by
+    # default and refused to store it at all, so Safari users were logged out on
+    # every page refresh while Chrome users saw nothing wrong.
+    #
+    # max_age matches the JWT's own lifetime. Without it this is a session cookie
+    # that dies when the browser quits, no matter how long the token inside is good for.
+    return {
+        "httponly": True,
+        "samesite": "lax",
+        "secure": settings.cookie_secure,
+        "max_age": settings.jwt_refresh_ttl_days * 24 * 60 * 60,
+    }
 
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)

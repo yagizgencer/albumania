@@ -49,9 +49,15 @@ apiClient.interceptors.request.use((config) => {
 // Without this the app keeps rendering as logged-in against a dead session:
 // ProtectedRoute still lets pages mount, every request 401s, and the notification
 // poller retries a doomed refresh every minute forever.
-let onAuthFailure: (() => void) | null = null;
+//
+// `sessionExpired` distinguishes "the refresh cookie is gone or invalid" (a real
+// 401) from "the request never got an answer" (timeout, offline, CORS). Only the
+// former means the session is actually over; see AuthContext's session hint.
+let onAuthFailure: ((sessionExpired: boolean) => void) | null = null;
 
-export function setOnAuthFailure(handler: (() => void) | null): void {
+export function setOnAuthFailure(
+  handler: ((sessionExpired: boolean) => void) | null
+): void {
   onAuthFailure = handler;
 }
 
@@ -72,7 +78,9 @@ export function refreshAccessToken(): Promise<string> {
       })
       .catch((err) => {
         setAccessToken(null);
-        onAuthFailure?.();
+        onAuthFailure?.(
+          axios.isAxiosError(err) && err.response?.status === 401
+        );
         throw err;
       })
       .finally(() => {
@@ -87,6 +95,10 @@ export function refreshAccessToken(): Promise<string> {
 apiClient.interceptors.response.use(
   (res) => res,
   async (error) => {
+    // An error thrown during request setup has no `config`. Reading `.url` off it
+    // would throw a TypeError from inside the interceptor and mask the real error.
+    if (!error.config) return Promise.reject(error);
+
     const original = error.config;
     const isAuthEndpoint = original.url?.startsWith("/auth/");
     if (error.response?.status === 401 && !original._retry && !isAuthEndpoint) {

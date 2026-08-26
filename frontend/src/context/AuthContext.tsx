@@ -100,11 +100,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await loadProfile(state.username);
   }, [loadProfile, state.username]);
 
-  // A failed silent refresh anywhere in the app means the session is gone —
-  // clear it here so ProtectedRoute stops rendering pages that can only 401.
+  // A failed silent refresh anywhere in the app means we can't serve authed pages —
+  // clear the state here so ProtectedRoute stops rendering pages that can only 401.
+  //
+  // Only drop the session hint on a real 401 though. Clearing it on any failure
+  // (a timeout, an offline blip, a cold-start stall) is unrecoverable: the mount
+  // effect below then skips the refresh entirely on every future page load, so one
+  // bad network moment permanently logs out a user whose cookie is still valid.
   useEffect(() => {
-    setOnAuthFailure(() => {
-      setSessionHint(false);
+    setOnAuthFailure((sessionExpired) => {
+      if (sessionExpired) setSessionHint(false);
       setState({ username: null, profile: null, isLoading: false });
     });
     return () => setOnAuthFailure(null);
@@ -122,7 +127,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     refreshAccessToken()
       .then((token) => login(token))
       .catch(() => {
-        setSessionHint(false);
+        // The session hint is handled by onAuthFailure above, which knows whether
+        // this was a real 401. Registering that effect first guarantees it ran.
         setState({ username: null, profile: null, isLoading: false });
       });
   }, [login]);

@@ -32,10 +32,14 @@ services:
         value: "20"
       - key: JWT_SECRET
         generateValue: true
-      # Cross-site cookie flow (Vercel frontend → Render API) needs SameSite=None
-      # + Secure, which cookie_secure enables. Without this the refresh cookie is
-      # SameSite=Lax and never sent on /auth/refresh, logging users out after the
-      # access token expires (~15 min).
+      # Marks the refresh cookie Secure (HTTPS only). It also doubles as the
+      # "this is prod" signal that config.py's _guard_prod_secrets checks.
+      #
+      # This service must be reached at https://api.albumania.net (Render custom
+      # domain), NOT its *.onrender.com URL. The SPA is on albumania.net, so the
+      # subdomain keeps the refresh cookie same-site and therefore first-party.
+      # On onrender.com it was third-party, and Safari — which blocks those by
+      # default — refused to store it, logging Safari users out on every refresh.
       - key: COOKIE_SECURE
         value: "true"
       - key: SPOTIFY_CLIENT_ID

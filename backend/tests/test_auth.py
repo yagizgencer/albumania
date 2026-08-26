@@ -90,6 +90,36 @@ def test_login_with_username(client: TestClient) -> None:
     assert _username_from_token(r.json()["access_token"]) == "alice"
 
 
+def test_login_sets_persistent_same_site_refresh_cookie(client: TestClient) -> None:
+    # Regression: the cookie used to be SameSite=None (third-party, blocked by
+    # Safari) and had no Max-Age (a session cookie that died when the browser
+    # quit, despite holding a 30-day token).
+    _register(client, "alice")
+    r = client.post("/auth/login", json={"identifier": "alice", "password": "secret123"})
+    assert r.status_code == 200
+
+    set_cookie = r.headers["set-cookie"]
+    assert "refresh_token=" in set_cookie
+    assert "SameSite=lax" in set_cookie
+    assert "Max-Age=2592000" in set_cookie  # jwt_refresh_ttl_days (30) in seconds
+    assert "HttpOnly" in set_cookie
+
+
+def test_refresh_with_login_cookie_returns_new_access_token(client: TestClient) -> None:
+    _register(client, "alice")
+    client.post("/auth/login", json={"identifier": "alice", "password": "secret123"})
+
+    # TestClient keeps the cookie jar, so this replays the cookie login just set.
+    r = client.post("/auth/refresh")
+    assert r.status_code == 200
+    assert _username_from_token(r.json()["access_token"]) == "alice"
+
+
+def test_refresh_without_cookie_returns_401(client: TestClient) -> None:
+    r = client.post("/auth/refresh")
+    assert r.status_code == 401
+
+
 def test_logout_expires_refresh_cookie(client: TestClient) -> None:
     _register(client, "alice")
     r = client.post("/auth/logout")
