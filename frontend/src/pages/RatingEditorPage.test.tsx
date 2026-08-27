@@ -8,7 +8,7 @@ import {
 } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { TouchSensor, useSensor } from "@dnd-kit/core";
+import { MouseSensor, PointerSensor, TouchSensor, useSensor } from "@dnd-kit/core";
 
 import { RatingEditorPage } from "./RatingEditorPage";
 import { UnsavedChangesProvider } from "../lib/unsavedChanges";
@@ -192,12 +192,26 @@ describe("RatingEditorPage", () => {
   // and its 6px activation distance is the same movement that starts a page
   // scroll, so the scroll always won. TouchSensor with a delay constraint is
   // what makes long-press-to-drag work.
-  it("registers a touch sensor so the Top 5 can be reordered on a phone", async () => {
+  // A registered sensor is not necessarily an active one. dnd-kit flattens every
+  // sensor's activator into one bundle and the first to fire wins, and Chrome
+  // dispatches `pointerdown` before `touchstart` — so a PointerSensor registered
+  // alongside a TouchSensor silently swallows every touch and the touch sensor
+  // never runs. Asserting "a TouchSensor exists" passed happily while dragging
+  // was completely broken on phones, so assert the whole registered set.
+  it("routes mouse and touch to disjoint sensors", async () => {
     renderEditor();
     await screen.findByRole("button", { name: /publish/i });
 
+    const registered = vi.mocked(useSensor).mock.calls.map(([sensor]) => sensor);
+
+    expect(registered).toContain(MouseSensor);
+    expect(registered).toContain(TouchSensor);
+    // The bug: this would claim every touch before the TouchSensor is reached.
+    expect(registered).not.toContain(PointerSensor);
+
     const touch = vi.mocked(useSensor).mock.calls.find(([sensor]) => sensor === TouchSensor);
-    expect(touch).toBeDefined();
-    expect(touch![1]).toMatchObject({ activationConstraint: { delay: expect.any(Number) } });
+    expect(touch![1]).toMatchObject({
+      activationConstraint: { delay: expect.any(Number), tolerance: expect.any(Number) },
+    });
   });
 });

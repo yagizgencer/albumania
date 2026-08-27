@@ -480,14 +480,26 @@
 .slotName {
   flex: 1;
   min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: 0.9rem;
+  cursor: grab;
+  touch-action: manipulation;
+  /* A long press on selectable text raises Android's selection UI, which fires
+     touchcancel and kills the drag. dnd-kit only clears selection once a drag
+     has started, so a stationary press — exactly the long-press gesture — is
+     never covered by it. */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.slotNameText {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.9rem;
-  cursor: grab;
-  /* Pairs with the TouchSensor's delay constraint: suppresses the double-tap
-     zoom delay without blocking the scroll a quick swipe needs. */
-  touch-action: manipulation;
 }
 .slotName:active {
   cursor: grabbing;
@@ -663,9 +675,13 @@ button.tracksToggle:hover:not(:disabled) {
   border-radius: var(--radius-sm);
   cursor: grab;
   transition: background 0.12s ease;
-  /* Pairs with the TouchSensor's delay constraint: suppresses the double-tap
-     zoom delay without blocking the scroll a quick swipe needs. */
+  /* Stays `manipulation`, not `none`: the track list is the tallest thing on the
+     page and must remain scrollable by touch. The grip below is what carries
+     `touch-action: none`. */
   touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 /* Lift the hovered row so its button tooltip renders above the rows below it
    (otherwise a later, positioned sibling can cover the tooltip). */
@@ -865,5 +881,40 @@ button.tracksToggle:hover:not(:disabled) {
     width: 1.8rem;
     height: 1.8rem;
     font-size: 0.95rem;
+  }
+}
+
+/* ---- Drag handle --------------------------------------------------------
+   Touch-only. `touch-action: none` means the browser never claims this gesture
+   for a scroll, so a press here starts a drag immediately and reliably —
+   whereas `manipulation` on the row still grants pan-x/pan-y, and the browser
+   wins that race every time. Hidden for mouse users, who keep whole-row
+   dragging via the mouse sensor. */
+.grip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 26px;
+  height: 34px;
+  margin-left: -4px;
+  border-radius: var(--radius-sm);
+  color: var(--text-subtle);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.grip:active {
+  cursor: grabbing;
+  background: var(--hover-tint);
+  color: var(--text);
+}
+
+@media (pointer: fine) {
+  .grip {
+    display: none;
   }
 }

@@ -429,6 +429,27 @@ export function LogoutIcon({ size = 24, className }: IconProps) {
 }
 
 /** Horizontal "…" — three dots, for a more-actions menu trigger. */
+/** Drag handle — the conventional two-column grip. Matches MoreIcon's dot idiom. */
+export function GripIcon({ size = 24, className }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+      aria-hidden
+    >
+      <circle cx="9" cy="6" r="1.6" />
+      <circle cx="15" cy="6" r="1.6" />
+      <circle cx="9" cy="12" r="1.6" />
+      <circle cx="15" cy="12" r="1.6" />
+      <circle cx="9" cy="18" r="1.6" />
+      <circle cx="15" cy="18" r="1.6" />
+    </svg>
+  );
+}
+
 export function MoreIcon({ size = 24, className }: IconProps) {
   return (
     <svg

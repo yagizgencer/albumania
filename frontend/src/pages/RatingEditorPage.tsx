@@ -4,8 +4,8 @@ import {
   DragOverlay,
   DragStartEvent,
   KeyboardSensor,
+  MouseSensor,
   type Modifier,
-  PointerSensor,
   TouchSensor,
   closestCenter,
   useDraggable,
@@ -41,6 +41,7 @@ import {
   CloseIcon,
   DiscIcon,
   ExternalLinkIcon,
+  GripIcon,
   HourglassIcon,
   NoteIcon,
   PaperPlaneIcon,
@@ -98,15 +99,21 @@ function SlotName({ track }: { track: AlbumTrack }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `top-${track.index}`,
   });
+  // `onTouchStart` goes to the grip alone; the mouse/keyboard activators stay on
+  // the text so desktop dragging is unchanged. See TrackRow for the reasoning.
+  const { onTouchStart, ...pointerListeners } = listeners ?? {};
   return (
     <span
       ref={setNodeRef}
       className={styles.slotName}
       style={{ opacity: isDragging ? 0.4 : 1 }}
       {...attributes}
-      {...listeners}
+      {...pointerListeners}
     >
-      {track.name}
+      <span className={styles.grip} onTouchStart={onTouchStart} aria-hidden>
+        <GripIcon size={16} />
+      </span>
+      <span className={styles.slotNameText}>{track.name}</span>
     </span>
   );
 }
@@ -181,6 +188,12 @@ function TrackRow({
     id: `rest-${track.index}`,
     disabled: inTop5,
   });
+  // Split the activators. The row keeps the mouse and keyboard ones, so dragging
+  // by the whole row still works with a pointer. `onTouchStart` goes only to the
+  // grip: the row must stay `touch-action: manipulation` so the list can be
+  // scrolled, and a touch drag competing with that scroll is the race the
+  // browser always wins. The grip is `touch-action: none`, so it never competes.
+  const { onTouchStart, ...pointerListeners } = listeners ?? {};
 
   return (
     <li>
@@ -194,8 +207,18 @@ function TrackRow({
         onClick={onToggleNote}
         aria-expanded={noteOpen}
         {...(inTop5 ? {} : attributes)}
-        {...(inTop5 ? {} : listeners)}
+        {...(inTop5 ? {} : pointerListeners)}
       >
+        {!inTop5 && (
+          <span
+            className={styles.grip}
+            onTouchStart={onTouchStart}
+            onClick={(e) => e.stopPropagation()}
+            aria-hidden
+          >
+            <GripIcon size={16} />
+          </span>
+        )}
         <span className={styles.num}>{track.index}</span>
         <span className={styles.tnm}>{track.name}</span>
         {hasNote && (
@@ -210,8 +233,13 @@ function TrackRow({
           <button
             type="button"
             className={styles.addBtn}
-            // Don't let the button start a drag or toggle the note.
+            // Don't let the button start a drag or toggle the note. Both are
+            // needed: the mouse sensor listens on pointer/mouse events, the
+            // touch sensor on touchstart — stopping only one leaves the other
+            // free to start a drag from a press-and-hold on the button.
             onPointerDown={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
             onClick={(e) => { e.stopPropagation(); onAdd(); }}
             disabled={topFull}
             aria-label="Add to Top 5"
@@ -289,15 +317,20 @@ export function RatingEditorPage() {
   // dirty flag has cleared, so our own redirect isn't blocked by the guard.
   const [pendingNav, setPendingNav] = useState<string | null>(null);
 
+  // MouseSensor, NOT PointerSensor. dnd-kit flattens every sensor's activator
+  // into one listener bundle and the first to fire wins — and Chrome dispatches
+  // `pointerdown` before `touchstart`, so a registered PointerSensor claims
+  // every touch and the TouchSensor below never runs. PointerSensor is dnd-kit's
+  // *alternative* to Mouse+Touch, not a companion to them, and its activation
+  // constraint cannot filter by pointerType.
   const sensors = useSensors(
     // A small activation distance lets a plain click on a pool row "add to next
     // slot" without accidentally starting a drag.
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    // Touch needs a delay, not a distance: on a phone the 6px of movement that
-    // would activate the pointer sensor is the same movement that starts a page
-    // scroll, and the scroll always wins — so dragging was simply impossible.
-    // Holding briefly picks the track up; a quick swipe still scrolls.
-    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+    // Touch needs a delay, not a distance: the movement that would satisfy a
+    // distance constraint is the same movement that starts a page scroll, and
+    // the browser wins that race. Tolerance is generous — a thumb is not steady.
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 12 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
@@ -722,6 +755,15 @@ export function RatingEditorPage() {
             collisionDetection={closestCenter}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
+            /* The window is the only scroll container here (.trackList sets no
+               overflow), so this scrolls the page when a dragged track nears an
+               edge — without it a Top-5 slot that is off screen simply cannot be
+               reached on a phone. The top threshold is the larger of the two so
+               the trigger zone clears the sticky navbar. */
+            autoScroll={{
+              threshold: { x: 0, y: 0.25 },
+              acceleration: 12,
+            }}
           >
             <div className={styles.sectionHead}>
               <h2>Your Top 5</h2>
