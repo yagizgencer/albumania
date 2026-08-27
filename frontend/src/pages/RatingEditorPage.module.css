@@ -891,12 +891,13 @@ button.tracksToggle:hover:not(:disabled) {
    wins that race every time. Hidden for mouse users, who keep whole-row
    dragging via the mouse sensor. */
 .grip {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 26px;
-  height: 34px;
+  width: 36px;
+  height: 40px;
   margin-left: -4px;
   border-radius: var(--radius-sm);
   color: var(--text-subtle);
@@ -905,6 +906,19 @@ button.tracksToggle:hover:not(:disabled) {
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
+}
+
+/* Push the touchable region out to the 44px guideline without making the row
+   any taller — the grip is the tallest thing in a track row, so growing it
+   further would cost vertical space on every one of them. */
+.grip::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: max(100%, 44px);
+  height: max(100%, 44px);
 }
 
 .grip:active {

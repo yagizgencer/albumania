@@ -111,7 +111,7 @@ function SlotName({ track }: { track: AlbumTrack }) {
       {...pointerListeners}
     >
       <span className={styles.grip} onTouchStart={onTouchStart} aria-hidden>
-        <GripIcon size={16} />
+        <GripIcon size={20} />
       </span>
       <span className={styles.slotNameText}>{track.name}</span>
     </span>
@@ -216,7 +216,7 @@ function TrackRow({
             onClick={(e) => e.stopPropagation()}
             aria-hidden
           >
-            <GripIcon size={16} />
+            <GripIcon size={20} />
           </span>
         )}
         <span className={styles.num}>{track.index}</span>
