@@ -383,14 +383,8 @@
   line-height: 0;
 }
 .qcover {
-  width: 100%;
+  composes: cover from "../styles/blocks.module.css";
   aspect-ratio: 1;
-  border-radius: var(--radius);
-  border: var(--border-w-thin) solid var(--border);
-  box-shadow: var(--shadow-soft);
-  object-fit: cover;
-  display: block;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 .qcoverLink:hover .qcover {
   transform: translate(-1px, -1px);

@@ -88,19 +88,9 @@
 }
 
 .art {
-  width: 100%;
-  border-radius: var(--radius);
-  border: var(--border-w-thin) solid var(--border);
-  box-shadow: var(--shadow-soft);
-  display: block;
-  align-self: start;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  composes: cover from "../styles/blocks.module.css";
 }
 
-.art:hover {
-  transform: translate(-1px, -1px);
-  box-shadow: var(--shadow-pop);
-}
 
 /* Headline: title row (title + Spotify pop-out on the left, icon actions on the
    right), then the artist, then the metadata chips — stacked. */
@@ -126,10 +116,11 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  /* Must be allowed to wrap: three chips plus a title do not fit a phone's
-     header column, and this row used to be flex-shrink: 0 with no wrap, which
-     pushed the whole card off the page. */
-  flex-wrap: wrap;
+  /* Holds its size. Phase 61 let this wrap to stop it overflowing, but wrapping
+     drops a flex item's automatic minimum to its widest child (40px), so it
+     became the most compressible thing on the title row and got crushed to one
+     or two chips per line. On phones it now owns a full-width row instead. */
+  flex-shrink: 0;
   justify-content: flex-end;
 }
 
@@ -1102,8 +1093,65 @@ button.tracksToggle:active:not(:disabled) {
     margin: var(--space-4) auto;
   }
 
+  /* The artist page's header is the model: a small capped image beside the
+     title, and nothing else competing for that row. Phase 60 instead pinned a
+     132px cover track here, which left a 194px meta column that had to hold the
+     title, three action buttons, two chips (~260px) and the compare bar
+     (~275px) — two of those cannot fit at any size.
+
+     `.meta`, `.headline` and `.titleRow` are layout-only wrappers (no
+     background, border or role), so `display: contents` promotes their children
+     into this grid and each block gets its own full-width row — no TSX change. */
   .headerTop {
-    grid-template-columns: 132px 1fr;
+    /* The track carries the cover's width, not the image: the shared `.cover`
+       block sets `width: 100%` and, being composed, lands later in the bundle
+       than any per-page width at equal specificity — so it would win. Sizing
+       the track means that 100% simply resolves to this. */
+    grid-template-columns: min(116px, 32vw) minmax(0, 1fr);
+    grid-template-areas:
+      "art     title"
+      "art     artist"
+      "actions actions"
+      "chips   chips"
+      "stats   stats";
+    align-items: start;
+    gap: var(--space-2) var(--space-3);
+  }
+
+  .meta,
+  .headline,
+  .titleRow {
+    display: contents;
+  }
+
+  .art {
+    grid-area: art;
+  }
+
+  .meta h1 {
+    grid-area: title;
+    align-self: end;
+  }
+
+  .meta h2 {
+    grid-area: artist;
+    align-self: start;
+  }
+
+  .iconBar {
+    grid-area: actions;
+    justify-content: flex-start;
+    margin-top: var(--space-1);
+  }
+
+  .metaChips {
+    grid-area: chips;
+  }
+
+  .stats {
+    grid-area: stats;
+    flex-direction: column;
+    align-items: stretch;
     gap: var(--space-3);
   }
 
@@ -1114,7 +1162,14 @@ button.tracksToggle:active:not(:disabled) {
 }
 
 @media (max-width: 560px) {
-  /* A 15rem floor forces horizontal page scroll on a 360px screen. */
+  /* A 15rem floor forces horizontal page scroll on a 360px screen. `.friendRatings`
+     carries its own min-width:0 so the bar no longer fits only because
+     `.searchInput` happens to zero out the <input>'s intrinsic minimum. */
+  .friendRatings {
+    min-width: 0;
+    width: 100%;
+  }
+
   .searchBar {
     min-width: 0;
     width: 100%;

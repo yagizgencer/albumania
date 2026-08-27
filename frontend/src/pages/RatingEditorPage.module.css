@@ -72,13 +72,8 @@
 
 /* ---- Left card: cover + title + meta ---- */
 .cover {
-  width: 100%;
+  composes: cover from "../styles/blocks.module.css";
   aspect-ratio: 1;
-  border-radius: var(--radius);
-  border: var(--border-w-thin) solid var(--border);
-  box-shadow: var(--shadow-soft);
-  object-fit: cover;
-  display: block;
 }
 
 .coverEmpty {
@@ -855,11 +850,13 @@ button.tracksToggle:hover:not(:disabled) {
     padding: var(--space-3);
   }
 
-  /* Phase 60 set `min-width: 0` here, which let all five slots collapse onto one
-     row at ~62px each and shattered the placeholder text. `.podium` already
-     wraps — give the slots a real floor so they wrap 2-up instead. */
+  /* One slot per row. A 130px floor wrapped them 2+2+1, and `flex: 1` then
+     stretched the lone fifth to full width — the asymmetry read as broken. With
+     `.podium` already wrapping, a 100% floor guarantees one per line, and the
+     track name gets ~250px instead of ~42px. (Setting `flex-direction: column`
+     instead would make `.slot`'s `flex: 1` resolve against the height axis.) */
   .slot {
-    min-width: 130px;
+    min-width: 100%;
     min-height: 48px;
     gap: var(--space-2);
   }

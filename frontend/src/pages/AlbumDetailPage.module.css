@@ -82,19 +82,9 @@
 }
 
 .art {
-  width: 100%;
-  border-radius: var(--radius);
-  border: var(--border-w-thin) solid var(--border);
-  box-shadow: var(--shadow-soft);
-  display: block;
-  align-self: start;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  composes: cover from "../styles/blocks.module.css";
 }
 
-.art:hover {
-  transform: translate(-1px, -1px);
-  box-shadow: var(--shadow-pop);
-}
 
 /* Headline: title row (title + Spotify pop-out), artist, then metadata chips. */
 .headline {
@@ -619,8 +609,11 @@
     margin: var(--space-4) auto;
   }
 
+  /* Left at two columns unlike AlbumInfoPage: this header carries one action
+     button and one chip, so the narrow column genuinely fits. Cover matched to
+     the album page's for consistency. */
   .headerTop {
-    grid-template-columns: 132px 1fr;
+    grid-template-columns: min(116px, 32vw) 1fr;
     gap: var(--space-3);
   }
 

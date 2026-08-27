@@ -104,3 +104,40 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* ---- Album cover -------------------------------------------------------
+   The decoration four pages were each hand-rolling. Sizing stays local: every
+   consumer caps its cover a different way (a fixed grid track, an auto-fill
+   grid, a container query). The `max-width` here is the backstop for the case
+   that has no cap at all — the rating editor's cover rendered 338x338 on a
+   390px phone, 87% of the viewport, because its 360px column collapses to 1fr
+   at 880px and nothing re-bounds it. Where a container is already smaller, the
+   cap is a no-op. Not applied above the tablet breakpoint, where the real
+   columns do the work. */
+.cover {
+  width: 100%;
+  border-radius: var(--radius);
+  border: var(--border-w-thin) solid var(--border);
+  box-shadow: var(--shadow-soft);
+  object-fit: cover;
+  display: block;
+  align-self: start;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cover:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: var(--shadow-pop);
+}
+
+@media (max-width: 880px) {
+  .cover {
+    max-width: min(200px, 46vw);
+  }
+}
+
+@media (max-width: 560px) {
+  .cover {
+    max-width: min(150px, 42vw);
+  }
+}

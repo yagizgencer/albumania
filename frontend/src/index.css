@@ -254,10 +254,15 @@
     --nav-height: 56px;
     --page-pad: 12px;
 
-    /* Only the big steps shrink; --space-1..4 are already phone-sized. */
-    --space-5: 16px;
-    --space-6: 20px;
-    --space-8: 28px;
+    /* Spacing only — body text is already at its legibility floor and must not
+       shrink further (see rule 3 above). --space-1..2 stay put; the larger
+       steps carry almost all of the vertical chrome, so tightening them is what
+       actually fits more of a page on screen. */
+    --space-3: 10px;
+    --space-4: 13px;
+    --space-5: 14px;
+    --space-6: 17px;
+    --space-8: 24px;
 
     --text-xl: 1.15rem;
     --text-lg: 1rem;
