@@ -389,14 +389,15 @@ def _add_notif(recipient: str, read: bool, when: datetime) -> int:
     return n.id
 
 
-def test_prune_keeps_last_ten_read_and_all_unread(client: TestClient) -> None:
+def test_prune_keeps_newest_read_and_all_unread(client: TestClient) -> None:
     _seed_user("bob")
     base = datetime(2025, 1, 1, tzinfo=timezone.utc)
     read_ids = [_add_notif("bob", read=True, when=base + timedelta(minutes=i)) for i in range(15)]
     _ = [_add_notif("bob", read=False, when=base + timedelta(minutes=100 + i)) for i in range(3)]
 
     db = _db()
-    deleted = prune_read_notifications(db, "bob")
+    # Explicit `keep` so the mechanism is tested without inserting 200+ rows.
+    deleted = prune_read_notifications(db, "bob", keep=10)
     db.commit()
     assert deleted == 5  # 15 read → drop the 5 oldest
 
@@ -410,21 +411,51 @@ def test_prune_keeps_last_ten_read_and_all_unread(client: TestClient) -> None:
     assert sorted(n.id for n in read_rows) == read_ids[5:]
 
     # Idempotent: a second prune with nothing stale deletes nothing.
+    assert prune_read_notifications(db, "bob", keep=10) == 0
+
+
+def test_default_retention_keeps_ordinary_history(client: TestClient) -> None:
+    """READ_RETENTION is a runaway-growth guard, not a history trimmer — a
+    realistic pile of read notifications must survive it untouched."""
+    _seed_user("bob")
+    base = datetime(2025, 1, 1, tzinfo=timezone.utc)
+    for i in range(50):
+        _add_notif("bob", read=True, when=base + timedelta(minutes=i))
+
+    db = _db()
     assert prune_read_notifications(db, "bob") == 0
 
 
-def test_mark_seen_prunes_old_read(client: TestClient) -> None:
+def test_mark_seen_never_deletes_what_it_marks_read(client: TestClient) -> None:
+    """Regression: mark_seen used to prune AFTER marking, so opening the bell
+    with more unread than the list shows destroyed the oldest ones before the
+    user could ever read them. Pruning now runs first, over rows that were
+    already read, so nothing is lost in the same request that marks it."""
     bob = _seed_user("bob")
     base = datetime(2025, 1, 1, tzinfo=timezone.utc)
-    for i in range(15):
+    # More than the bell's limit=30, and more than the old retention of 10.
+    for i in range(35):
         _add_notif("bob", read=False, when=base + timedelta(minutes=i))
 
     _auth_as(bob)
-    # Opening the bell marks all 15 read; retention then trims to the newest 10.
     client.post("/notifications/mark-seen", json={"scope": "bell"})
     rows = client.get("/notifications", params={"limit": 100}).json()
-    assert len(rows) == 10
+    assert len(rows) == 35  # every row survives
+    assert all(r["read"] for r in rows)
     _clear_auth()
+
+
+def test_list_breaks_created_at_ties_by_id(client: TestClient) -> None:
+    """Rows written in one transaction share `created_at` (it is transaction
+    start time on Postgres), so the list needs an id tiebreak to be stable."""
+    bob = _seed_user("bob")
+    same = datetime(2025, 1, 1, tzinfo=timezone.utc)
+    ids = [_add_notif("bob", read=False, when=same) for _ in range(5)]
+
+    _auth_as(bob)
+    rows = client.get("/notifications", params={"limit": 100}).json()
+    _clear_auth()
+    assert [r["id"] for r in rows] == sorted(ids, reverse=True)
 
 
 def test_notification_requires_auth(client: TestClient) -> None:

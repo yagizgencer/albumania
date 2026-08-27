@@ -6,11 +6,18 @@ import { NotificationBell } from "./NotificationBell";
 import { listNotifications } from "../api/notifications";
 
 vi.mock("../api/notifications", () => ({ listNotifications: vi.fn() }));
+
+// Stable across renders so the ordering assertion below can compare call times.
+const { markSeen, refresh } = vi.hoisted(() => ({
+  markSeen: vi.fn(),
+  refresh: vi.fn(),
+}));
 vi.mock("../context/NotificationsContext", () => ({
   useNotifications: () => ({
     summary: { bell: 1, listen_invites: 0, friend_requests: 0 },
-    markSeen: vi.fn(),
-    refresh: vi.fn(),
+    version: 0,
+    markSeen,
+    refresh,
   }),
 }));
 
@@ -47,5 +54,23 @@ describe("NotificationBell", () => {
     expect(link).toHaveAttribute("href", "/albums/alb1");
     // Album context line names the album; no actor username is revealed.
     expect(screen.getByText(/Test Album · The Artist/)).toBeInTheDocument();
+  });
+
+  it("highlights unread items and fetches before marking them seen", async () => {
+    render(
+      <MemoryRouter>
+        <NotificationBell />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /notifications/i }));
+    const label = await screen.findByText("Someone liked your comment");
+
+    // Regression: mark-seen used to run first, so the list always came back
+    // fully read and this highlight could never render.
+    expect(label.closest("a")?.className).toContain("bellItemUnread");
+    expect(vi.mocked(listNotifications).mock.invocationCallOrder[0]).toBeLessThan(
+      markSeen.mock.invocationCallOrder[0]
+    );
   });
 });

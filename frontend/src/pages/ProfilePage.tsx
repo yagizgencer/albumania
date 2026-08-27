@@ -1,6 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useNotifications } from "../context/NotificationsContext";
 import {
   acceptFriendship,
   declineFriendship,
@@ -62,6 +63,7 @@ type FriendState =
 export function ProfilePage() {
   const { username } = useParams<{ username: string }>();
   const { username: me, refreshProfile } = useAuth();
+  const { version } = useNotifications();
   // Prompt before leaving with unsaved bio edits.
   const unsavedGuard = useUnsavedNavigationGuard();
 
@@ -114,6 +116,14 @@ export function ProfilePage() {
     void reloadFriendships();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [username]);
+
+  // A friend request arriving while you're on someone's profile should flip the
+  // button to Accept/Decline without a reload. Deliberately its own effect —
+  // folding `version` into the one above would also reset profile/editing state.
+  useEffect(() => {
+    if (version > 0) void reloadFriendships();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [version]);
 
   const friendState: FriendState | null = useMemo(() => {
     if (!profile || !me || friendships === null) return null;

@@ -66,7 +66,9 @@ def list_notifications(
         db.scalars(
             select(Notification)
             .where(Notification.recipient_username == user.username)
-            .order_by(Notification.created_at.desc())
+            # Tie-break on id: `created_at` is transaction start time on
+            # Postgres, so rows written in one transaction share a timestamp.
+            .order_by(Notification.created_at.desc(), Notification.id.desc())
             .limit(limit)
         )
     )

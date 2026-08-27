@@ -24,6 +24,14 @@ vi.mock("../api/friendships", () => ({
 vi.mock("../context/AuthContext", () => ({
   useAuth: () => ({ username: "me", refreshProfile: vi.fn() }),
 }));
+vi.mock("../context/NotificationsContext", () => ({
+  useNotifications: () => ({
+    summary: { bell: 0, listen_invites: 0, friend_requests: 0 },
+    version: 0,
+    markSeen: vi.fn(),
+    refresh: vi.fn(),
+  }),
+}));
 
 // Stub the two dashboards so we can assert *which* one renders (and, for the
 // comparison, which source it got) without pulling in chart/table machinery.

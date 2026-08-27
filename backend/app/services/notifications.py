@@ -20,7 +20,14 @@ from app.models.notification import Notification, NotificationType
 
 # How many already-read notifications we retain per user. Unread rows are always
 # kept; older read rows are pruned so the table doesn't grow without bound.
-READ_RETENTION = 10
+#
+# 200, not 10: an all-in notification row costs roughly 320 bytes (~100 B of heap
+# plus ~215 B spread across this table's nine indexes), so 200 rows is ~64 KB per
+# user. This is a guard against one pathological account growing without bound,
+# not a history trimmer — at 10 it was silently destroying notifications the user
+# still wanted. The conventional alternative, an age-based retention job, would
+# need a background worker, which CLAUDE.md rules out.
+READ_RETENTION = 200
 
 
 def create_notification(
@@ -106,6 +113,18 @@ def mark_seen(db: Session, username: str, scope: Scope) -> int:
     - listen_invites / friend_requests: only the specific type, so visiting
       one tab doesn't silently clear the others.
     """
+    if scope not in ("bell", "listen_invites", "friend_requests"):
+        raise ValueError(f"Unknown notification scope: {scope!r}")
+
+    # Prune BEFORE marking, not after. Marking rows read is the only way rows
+    # enter the "read" set, so this is still the natural moment to trim it — but
+    # pruning afterwards meant a row could be deleted by the very request that
+    # first made it prunable. Opening the bell with 35 unread showed the newest
+    # 30, marked all 35 read, then deleted the 5 oldest, which the user never
+    # saw. Pruning first means we only ever consider rows that were already read
+    # before this call — rows that have survived at least one prior bell open.
+    prune_read_notifications(db, username)
+
     stmt = (
         update(Notification)
         .where(
@@ -118,12 +137,7 @@ def mark_seen(db: Session, username: str, scope: Scope) -> int:
         stmt = stmt.where(Notification.type == NotificationType.listen_invite)
     elif scope == "friend_requests":
         stmt = stmt.where(Notification.type == NotificationType.friend_request)
-    elif scope != "bell":
-        raise ValueError(f"Unknown notification scope: {scope!r}")
     result = db.execute(stmt)
-    # Marking rows read is the only way rows enter the "read" set, so this is the
-    # natural moment to trim it back down.
-    prune_read_notifications(db, username)
     return result.rowcount or 0
 
 
@@ -140,7 +154,11 @@ def prune_read_notifications(
                 Notification.recipient_username == username,
                 Notification.read.is_(True),
             )
-            .order_by(Notification.created_at.desc())
+            # `created_at` is server_default now(), which on Postgres is the
+            # transaction start time — rows inserted in one transaction (several
+            # `friend_published` at once, say) tie. Break ties by id so the
+            # prune drops the genuinely oldest rows rather than an arbitrary set.
+            .order_by(Notification.created_at.desc(), Notification.id.desc())
         )
     )
     stale = read_ids[keep:]

@@ -50,14 +50,18 @@ export function NotificationBell() {
       return;
     }
     setOpen(true);
-    // Mark-seen the moment the panel opens. Refresh badges (they should now be 0).
-    if (summary.bell > 0) {
-      await markSeen("bell");
-    }
+    // Fetch BEFORE marking seen. mark-seen flips every unread row to read and
+    // commits, so doing it first meant the list always came back fully read and
+    // the unread highlight below could never render — you couldn't tell what was
+    // new. Now the items keep their real `read` flags for this open, and the
+    // next open shows them as read.
     try {
       setItems(await listNotifications());
     } catch {
       setItems([]);
+    }
+    if (summary.bell > 0) {
+      await markSeen("bell");
     }
     void refresh();
   }
@@ -85,13 +89,15 @@ export function NotificationBell() {
       {open && (
         <div className={styles.bellPanel} role="dialog" aria-label="Notifications">
           <div className={styles.bellHeader}>Notifications</div>
-          {items === null ? (
-            <div className={styles.bellEmpty}>Loading…</div>
-          ) : items.length === 0 ? (
-            <div className={styles.bellEmpty}>You're all caught up.</div>
-          ) : (
-            items.map((n) => <BellItem key={n.id} item={n} onNavigate={() => setOpen(false)} />)
-          )}
+          <div className={styles.bellList}>
+            {items === null ? (
+              <div className={styles.bellEmpty}>Loading…</div>
+            ) : items.length === 0 ? (
+              <div className={styles.bellEmpty}>You're all caught up.</div>
+            ) : (
+              items.map((n) => <BellItem key={n.id} item={n} onNavigate={() => setOpen(false)} />)
+            )}
+          </div>
         </div>
       )}
     </div>

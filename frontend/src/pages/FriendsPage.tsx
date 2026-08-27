@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useNotifications } from "../context/NotificationsContext";
 import {
   Friendship,
   FriendshipList,
@@ -30,6 +31,12 @@ import styles from "./FriendsPage.module.css";
 
 export function FriendsPage() {
   const { username } = useAuth();
+  const {
+    version,
+    summary,
+    markSeen,
+    refresh: refreshBadges,
+  } = useNotifications();
 
   const [data, setData] = useState<FriendshipList | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -51,8 +58,22 @@ export function FriendsPage() {
     }
   }
 
+  // Keyed on `version`, not just mount: the notification poll bumps it when a
+  // new request arrives, so the incoming list updates under you instead of
+  // waiting for a page reload. Fires once on mount (version starts at 0).
   useEffect(() => {
     refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [version]);
+
+  // Arriving here means the user is looking at their requests, so drain the nav
+  // badge. Clicking the nav item already does this (NavBar), but following the
+  // bell's "sent you a friend request" link does not, and the badge would stay
+  // lit over an empty list.
+  useEffect(() => {
+    if (summary.friend_requests > 0) void markSeen("friend_requests");
+    // Mount only — re-running on `summary` would fight the optimistic zeroing.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Debounced live search — fires as the user types, cancels on each keystroke.
@@ -112,19 +133,24 @@ export function FriendsPage() {
     }
   }
 
+  // Each of these resolves a notification server-side, so resync the nav badge
+  // too — otherwise it stays lit until the next poll.
   async function onAccept(id: number) {
     await acceptFriendship(id);
     await refresh();
+    await refreshBadges();
   }
 
   async function onDecline(id: number) {
     await declineFriendship(id);
     await refresh();
+    await refreshBadges();
   }
 
   async function onRemove(id: number) {
     await deleteFriendship(id);
     await refresh();
+    await refreshBadges();
   }
 
   // Friendship state for a searched user, derived from the already-loaded lists

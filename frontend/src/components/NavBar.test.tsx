@@ -16,6 +16,7 @@ vi.mock("../context/AuthContext", () => ({
 vi.mock("../context/NotificationsContext", () => ({
   useNotifications: () => ({
     summary: { bell: 0, listen_invites: 0, friend_requests: 0 },
+    version: 0,
     markSeen: vi.fn(),
     refresh: vi.fn(),
   }),

@@ -42,3 +42,6 @@ backend/backups/
 coverage/
 .coverage
 htmlcov/
+
+# Claude Code personal permission overrides (machine-local)
+.claude/settings.local.json
