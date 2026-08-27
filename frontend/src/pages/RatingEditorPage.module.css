@@ -300,18 +300,9 @@
 }
 
 .iconBtn {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  composes: iconButton from "../styles/blocks.module.css";
   width: 44px;
   height: 44px;
-  border-radius: var(--radius-pill);
-  border: var(--border-w-thin) solid var(--border);
-  box-shadow: var(--shadow-soft);
-  cursor: pointer;
-  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease,
-    color 0.12s ease;
 }
 
 .iconBtn svg {
@@ -499,11 +490,20 @@
   white-space: nowrap;
   font-size: 0.9rem;
   cursor: grab;
+  /* Pairs with the TouchSensor's delay constraint: suppresses the double-tap
+     zoom delay without blocking the scroll a quick swipe needs. */
+  touch-action: manipulation;
 }
 .slotName:active {
   cursor: grabbing;
 }
 .slotPh {
+  /* Same truncation `.slotName` gets — without it this wrapped one character per
+     line and burst out of the slot when the podium got narrow. */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--text-subtle);
   font-style: italic;
   font-size: var(--text-sm);
@@ -668,6 +668,9 @@ button.tracksToggle:hover:not(:disabled) {
   border-radius: var(--radius-sm);
   cursor: grab;
   transition: background 0.12s ease;
+  /* Pairs with the TouchSensor's delay constraint: suppresses the double-tap
+     zoom delay without blocking the scroll a quick swipe needs. */
+  touch-action: manipulation;
 }
 /* Lift the hovered row so its button tooltip renders above the rows below it
    (otherwise a later, positioned sibling can cover the tooltip). */
@@ -746,20 +749,12 @@ button.tracksToggle:hover:not(:disabled) {
 
 /* "Add to Top 5" button (replaces the old pencil). */
 .addBtn {
-  position: relative;
+  composes: iconButton from "../styles/blocks.module.css";
   width: 28px;
   height: 28px;
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  border-radius: var(--radius-pill);
-  border: var(--border-w-thin) solid var(--border-soft);
-  background: var(--surface);
+  border-color: var(--border-soft);
   color: var(--text-muted);
   box-shadow: none;
-  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
 }
 .addBtn svg {
   width: 16px;
@@ -785,7 +780,6 @@ button.tracksToggle:hover:not(:disabled) {
 .noteBox {
   display: block;
   width: 100%;
-  box-sizing: border-box;
   margin: 2px 0 var(--space-2);
   padding: 0.4rem 0.6rem;
   font: inherit;
@@ -814,7 +808,6 @@ button.tracksToggle:hover:not(:disabled) {
   pointer-events: none;
 }
 .overlayCard {
-  box-sizing: border-box;
   max-width: 240px;
   display: inline-flex;
   align-items: center;
@@ -862,9 +855,18 @@ button.tracksToggle:hover:not(:disabled) {
     padding: var(--space-3);
   }
 
-  /* A 172px floor is over half a 336px content box, so two never share a row
-     cleanly; let the podium slots shrink to whatever fits. */
+  /* Phase 60 set `min-width: 0` here, which let all five slots collapse onto one
+     row at ~62px each and shattered the placeholder text. `.podium` already
+     wraps — give the slots a real floor so they wrap 2-up instead. */
   .slot {
-    min-width: 0;
+    min-width: 130px;
+    min-height: 48px;
+    gap: var(--space-2);
+  }
+
+  .medal {
+    width: 1.8rem;
+    height: 1.8rem;
+    font-size: 0.95rem;
   }
 }

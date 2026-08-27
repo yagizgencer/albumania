@@ -8,7 +8,6 @@
   border-radius: var(--radius);
   box-shadow: var(--shadow-card);
   padding: var(--space-4);
-  box-sizing: border-box;
 }
 
 .padSm {

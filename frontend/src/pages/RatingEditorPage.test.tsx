@@ -8,6 +8,8 @@ import {
 } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { TouchSensor, useSensor } from "@dnd-kit/core";
+
 import { RatingEditorPage } from "./RatingEditorPage";
 import { UnsavedChangesProvider } from "../lib/unsavedChanges";
 import { getAlbum } from "../api/albums";
@@ -18,6 +20,12 @@ import {
   publishRating,
   republishRating,
 } from "../api/ratings";
+
+// Spy on sensor registration while keeping dnd-kit's real behaviour.
+vi.mock("@dnd-kit/core", async (importActual) => {
+  const actual = await importActual<typeof import("@dnd-kit/core")>();
+  return { ...actual, useSensor: vi.fn(actual.useSensor) };
+});
 
 vi.mock("../api/albums", () => ({ getAlbum: vi.fn() }));
 vi.mock("../api/ratings", () => ({
@@ -178,5 +186,18 @@ describe("RatingEditorPage", () => {
     await waitFor(() =>
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
     );
+  });
+
+  // Drag-and-drop was impossible on a phone: only PointerSensor was registered,
+  // and its 6px activation distance is the same movement that starts a page
+  // scroll, so the scroll always won. TouchSensor with a delay constraint is
+  // what makes long-press-to-drag work.
+  it("registers a touch sensor so the Top 5 can be reordered on a phone", async () => {
+    renderEditor();
+    await screen.findByRole("button", { name: /publish/i });
+
+    const touch = vi.mocked(useSensor).mock.calls.find(([sensor]) => sensor === TouchSensor);
+    expect(touch).toBeDefined();
+    expect(touch![1]).toMatchObject({ activationConstraint: { delay: expect.any(Number) } });
   });
 });

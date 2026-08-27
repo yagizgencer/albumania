@@ -60,7 +60,7 @@
 .displayName {
   margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(1.9rem, 3vw, 2.5rem);
+  font-size: clamp(1.35rem, 6vw, 2.5rem);
   line-height: 1.04;
 }
 .username {
@@ -140,20 +140,9 @@
 
 /* Icon action button (Edit) — the Album-page .iconBtn look. */
 .iconBtn {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  composes: iconButton from "../styles/blocks.module.css";
   width: 42px;
   height: 42px;
-  flex-shrink: 0;
-  border-radius: var(--radius-pill);
-  border: var(--border-w-thin) solid var(--border);
-  box-shadow: var(--shadow-soft);
-  cursor: pointer;
-  background: var(--surface);
-  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease,
-    color 0.12s ease;
 }
 .iconBtn svg {
   width: 20px;
@@ -186,12 +175,13 @@
 }
 
 @media (max-width: 640px) {
+  /* Avatar | info | actions stays a single row — the actions column just gets
+     narrow. Previously the third track was dropped and `.headerActions` was
+     pushed to `grid-column: 1 / -1`, which stranded a lone 42px pencil on its
+     own row under the avatar and read as a layout bug. */
   .card {
-    grid-template-columns: auto 1fr;
-  }
-  .headerActions {
-    grid-column: 1 / -1;
-    justify-content: flex-start;
+    grid-template-columns: auto 1fr auto;
+    gap: var(--space-3);
   }
 }
 
@@ -510,5 +500,14 @@
   .searchBar {
     min-width: 0;
     width: 100%;
+  }
+
+  /* 104px is a third of the phone's content width, leaving the name almost no
+     room. Avatar sets width/height as an inline style, which no class can
+     outrank — hence the override. */
+  .avatarButton > span {
+    width: 68px !important;
+    height: 68px !important;
+    font-size: 31px !important;
   }
 }

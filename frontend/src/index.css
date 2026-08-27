@@ -298,10 +298,27 @@
 body {
   margin: 0;
   min-height: 100vh;
+  /* Backstop, not a fix: the real overflow causes are dealt with at source (see
+     the box-sizing reset above). `clip` rather than `hidden` so this does not
+     silently create a scroll container and break `position: sticky` in the nav
+     and page rails. A future regression then degrades instead of letting the
+     whole document scroll sideways. */
+  overflow-x: clip;
   color: var(--text);
   background-color: var(--paper);
   background-image: radial-gradient(var(--paper-dot) 1px, transparent 1px);
   background-size: 22px 22px;
+}
+
+/* Border-box everywhere. Without this a `width: 40px` button with the global
+   button padding actually renders 76px wide, and any `width: 100%` element with
+   padding or a border overflows its parent — which is what pushed the album
+   header off the page. Several modules used to declare this one-off to work
+   around its absence; those have been removed in favour of this. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 /* Thin, unobtrusive scrollbars everywhere (Firefox + WebKit). Individual scroll

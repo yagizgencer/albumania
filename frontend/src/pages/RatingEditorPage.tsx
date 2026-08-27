@@ -6,6 +6,7 @@ import {
   KeyboardSensor,
   type Modifier,
   PointerSensor,
+  TouchSensor,
   closestCenter,
   useDraggable,
   useDroppable,
@@ -292,6 +293,11 @@ export function RatingEditorPage() {
     // A small activation distance lets a plain click on a pool row "add to next
     // slot" without accidentally starting a drag.
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    // Touch needs a delay, not a distance: on a phone the 6px of movement that
+    // would activate the pointer sensor is the same movement that starts a page
+    // scroll, and the scroll always wins — so dragging was simply impossible.
+    // Holding briefly picks the track up; a quick swipe still scrolls.
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 

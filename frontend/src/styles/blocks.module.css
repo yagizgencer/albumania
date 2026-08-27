@@ -1,0 +1,106 @@
+/* =============================================================================
+   SHARED BLOCKS
+
+   The app used to hand-roll these: 10 copies of the page wrapper, 18 copies of
+   the card, and 6 icon buttons that each forgot to reset the global button
+   padding. Every mobile fix then had to be repeated per page.
+
+   Consume them with CSS Modules `composes` — no TSX changes needed:
+
+       .card {
+         composes: card from "../styles/blocks.module.css";
+         // only what is genuinely specific to this page below
+       }
+
+   `composes` must be the FIRST declaration in a rule.
+   See index.css for the responsive conventions these implement.
+   ========================================================================== */
+
+/* ---- Page wrapper -------------------------------------------------------
+   One content column with responsive gutters. Pages that need a different
+   max-width override it after composing. */
+.page {
+  max-width: var(--page-max-wide);
+  margin: 2rem auto;
+  padding: 0 var(--page-pad);
+  width: 100%;
+  color: var(--text);
+}
+
+@media (max-width: 560px) {
+  .page {
+    max-width: none;
+    margin: var(--space-4) auto;
+  }
+}
+
+/* ---- Card ---------------------------------------------------------------
+   The "sticker" surface. Being a size container, everything inside can size
+   itself from the CARD's width rather than the viewport, so the same block
+   works in a grid, a rail or a modal. `--card-px` is one scaled pixel: 1px at
+   the card's desktop width, proportionally smaller when the card is narrower.
+   Text and tap targets must still take floors — see index.css rule 3. */
+.card {
+  container-type: inline-size;
+  background: var(--surface);
+  color: var(--text);
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-4);
+  --card-px: 1px;
+}
+
+@media (max-width: 560px) {
+  .card {
+    padding: var(--space-3);
+  }
+}
+
+/* ---- Icon button --------------------------------------------------------
+   A fixed square that holds its size. The `padding: 0` is load-bearing: the
+   global `button` rule sets `padding: 8px 16px`, which turned every 40px icon
+   button in the app into a 76px one and pushed the album header off screen.
+   Compose this and set width/height; never restate padding. */
+.iconButton {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+  border-radius: var(--radius-pill);
+  border: var(--border-w-thin) solid var(--border);
+  box-shadow: var(--shadow-soft);
+  background: var(--surface);
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease,
+    color 0.12s ease;
+}
+
+/* Keep the touch target at the 44px guideline even when the button is drawn
+   smaller — the hit area grows invisibly rather than the button. */
+.iconButton::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+}
+
+.iconButton:hover:not(:disabled) {
+  transform: translate(-1px, -1px);
+  box-shadow: var(--shadow-pop);
+}
+
+.iconButton:active:not(:disabled) {
+  transform: translate(1px, 1px);
+  box-shadow: none;
+}
+
+.iconButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

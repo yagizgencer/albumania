@@ -122,18 +122,9 @@
 }
 
 .iconBtn {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  composes: iconButton from "../styles/blocks.module.css";
   width: 40px;
   height: 40px;
-  border-radius: var(--radius-pill);
-  border: var(--border-w-thin) solid var(--border);
-  box-shadow: var(--shadow-soft);
-  cursor: pointer;
-  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease,
-    color 0.12s ease;
 }
 
 .iconBtn:hover:not(:disabled) {
@@ -225,9 +216,14 @@
 /* Album title in the hand-drawn display font (matches the Album Info title). */
 .meta h1 {
   margin: 0;
+  /* A flex child defaults to min-width:auto, i.e. it refuses to shrink below its
+     longest word — so a long album title pushed the whole card off the page.
+     Let it shrink, and let a word break if it still cannot fit. */
+  min-width: 0;
+  overflow-wrap: anywhere;
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: clamp(2.1rem, 3.6vw, 2.9rem);
+  font-size: clamp(1.45rem, 6.4vw, 2.9rem);
   line-height: 1.06;
 }
 

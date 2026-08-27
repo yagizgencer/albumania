@@ -20,7 +20,6 @@
   margin: 0;
   padding: 0;
   min-height: calc(100dvh - var(--nav-height));
-  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -158,7 +157,7 @@
   margin: 0;
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: clamp(1.45rem, 2.6vw, 1.85rem);
+  font-size: clamp(1.15rem, 5.1vw, 1.85rem);
   line-height: 1.1;
   color: var(--text);
 }

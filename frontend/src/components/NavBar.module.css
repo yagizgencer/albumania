@@ -109,7 +109,6 @@ button.searchBtn {
   justify-content: center;
   width: 46px;
   height: 46px;
-  box-sizing: border-box;
   /* The global `button` rule sets padding: 8px 16px, which on a border-box 46px
      square leaves a 14px content box (8px at the phone size). A <span> child
      resists that via min-width:auto, but a bare <svg> child has overflow:hidden
