@@ -57,18 +57,14 @@ export function SearchIcon({ size = 24, className }: IconProps) {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      // Optical correction, not a mistake: this glyph is a single thin ring
-      // around a lot of empty space, so at the same bounding box and stroke as
-      // its multi-stroke neighbours (house, headphones, bell) it reads lighter
-      // and a size smaller. It needs both more weight and more area — the lens
-      // below spans ~2.4-19.2 of the 24 grid — to sit level with them.
-      strokeWidth={sketchStroke(size) + 0.35}
+      strokeWidth={sketchStroke(size)}
       strokeLinecap="round"
       className={className}
       aria-hidden
     >
-      <circle cx="10.8" cy="10.8" r="8.4" />
-      <line x1="21.2" y1="21.2" x2="16.8" y2="16.8" />
+      {/* Spans 3–21 of the grid, matching HomeIcon's 3.5–20.5 and the rest. */}
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
     </svg>
   );
 }

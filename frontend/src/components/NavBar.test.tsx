@@ -93,6 +93,22 @@ describe("NavBar", () => {
     );
   });
 
+  // The search glyph must be wrapped the same way every other nav icon is. As a
+  // bare <svg> child of a <button class="item"> it inherited the global button
+  // padding and — unlike a <span>, whose min-width:auto holds it open — collapsed
+  // into the leftover content box, rendering at a fraction of its size.
+  it("wraps every nav icon the same way", () => {
+    const { container } = renderNav();
+
+    const icons = container.querySelectorAll("nav svg");
+    expect(icons.length).toBeGreaterThan(3);
+
+    icons.forEach((svg) => {
+      // Never a direct child of the <button>/<a> itself.
+      expect(svg.parentElement?.tagName.toLowerCase()).toBe("span");
+    });
+  });
+
   it("closes the expanded phone search on Escape", async () => {
     renderNav();
 
