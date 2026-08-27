@@ -495,3 +495,20 @@
   background: var(--surface);
   color: var(--text);
 }
+
+/* ---------------------------------------------------------------------------
+   Phone tier (≤560px) — see index.css for the convention.
+   --------------------------------------------------------------------------- */
+@media (max-width: 560px) {
+  .page {
+    max-width: none;
+    padding: 0 var(--page-pad);
+    margin: var(--space-4) auto;
+  }
+
+  /* A 13rem floor forces horizontal page scroll on a 360px screen. */
+  .searchBar {
+    min-width: 0;
+    width: 100%;
+  }
+}

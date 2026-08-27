@@ -205,6 +205,59 @@
 }
 
 /* =============================================================================
+   PHONE TIER (≤560px)
+
+   Breakpoint convention: each page keeps its own tablet breakpoint (the width at
+   which that page's fixed rail stops fitting — 640/720/860/900…). On top of
+   those, `max-width: 560px` is the ONE shared phone tier used app-wide.
+
+   Every component reads the tokens below, so tightening them here scales the
+   whole app down at once. Nothing above 560px is affected.
+   ========================================================================== */
+@media (max-width: 560px) {
+  :root {
+    --nav-height: 56px;
+    --page-pad: 12px;
+
+    /* Only the big steps shrink; --space-1..4 are already phone-sized. */
+    --space-5: 16px;
+    --space-6: 20px;
+    --space-8: 28px;
+
+    --text-xl: 1.15rem;
+    --text-lg: 1rem;
+
+    --border-w: 2px;
+    --radius-lg: 10px;
+
+    /* Shorter sticker offsets — a 5px hard shadow eats real estate at this size. */
+    --shadow-soft: 2px 2px 0 var(--border);
+    --shadow-pop: 3px 3px 0 var(--border);
+    --shadow-card: 3px 3px 0 var(--border);
+  }
+
+  /* Dark declares these same tokens at file scope with equal specificity, and it
+     sits ABOVE this block — so without repeating them here the phone `:root`
+     would win and strip dark's warm bevel. Same bevel, shorter offsets. */
+  [data-theme="dark"] {
+    --border-w: 2px;
+    --border-w-thin: 1px;
+    --shadow-soft:
+      inset 1.5px 1.5px 0 rgba(255, 235, 210, 0.28),
+      2px 2px 0 #000;
+    --shadow-pop:
+      inset 2px 2px 0 rgba(255, 235, 210, 0.3),
+      3px 3px 0 #000,
+      0 4px 12px rgba(0, 0, 0, 0.45);
+    --shadow-card:
+      inset 2px 2px 0 rgba(255, 230, 200, 0.2),
+      inset -1px -1px 0 rgba(0, 0, 0, 0.35),
+      3px 3px 0 #000,
+      0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+}
+
+/* =============================================================================
    GLOBAL ELEMENTS
    ========================================================================== */
 body {
@@ -255,6 +308,12 @@ main {
   max-width: var(--page-max);
   margin: 2rem auto;
   padding: 0 var(--page-pad);
+}
+
+@media (max-width: 560px) {
+  main {
+    margin: var(--space-4) auto;
+  }
 }
 
 form {

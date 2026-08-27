@@ -1,15 +1,17 @@
-import { useEffect, useRef, useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationsContext";
 import { Avatar } from "./Avatar";
 import { NotificationBell } from "./NotificationBell";
 import { TopSearch } from "./TopSearch";
 import {
+  CloseIcon,
   HeadphonesIcon,
   HomeIcon,
   LogoutIcon,
   PeopleIcon,
+  SearchIcon,
   SettingsIcon,
   UserIcon,
 } from "./Icons";
@@ -19,6 +21,16 @@ import styles from "./NavBar.module.css";
 export function NavBar() {
   const { username, logout, profile } = useAuth();
   const { summary, markSeen } = useNotifications();
+  const { pathname } = useLocation();
+  // Phones have no room for an inline search field (see NavBar.module.css), so
+  // there the input collapses to a magnifier that expands over the whole row.
+  const [searchOpen, setSearchOpen] = useState(false);
+  // Stable identity: TopSearch keys its Escape listener off this.
+  const closeSearch = useCallback(() => setSearchOpen(false), []);
+
+  // Leaving the page closes the expanded search — otherwise it stays open over
+  // the nav after a result is picked.
+  useEffect(() => setSearchOpen(false), [pathname]);
 
   if (!username) return null;
 
@@ -39,7 +51,23 @@ export function NavBar() {
           <HomeIcon size={33} />
         </NavItem>
 
-        <TopSearch />
+        {/* While the phone overlay is open the inline field is hidden by CSS
+            anyway — unmounting it keeps exactly one search input in the DOM. */}
+        {!searchOpen && (
+          <div className={styles.searchInline}>
+            <TopSearch />
+          </div>
+        )}
+
+        <button
+          type="button"
+          className={`${styles.item} ${styles.searchBtn}`}
+          aria-label="Search"
+          aria-expanded={searchOpen}
+          onClick={() => setSearchOpen(true)}
+        >
+          <SearchIcon size={30} />
+        </button>
 
         <NavItem
           to="/listen-later"
@@ -52,6 +80,20 @@ export function NavBar() {
           <HeadphonesIcon size={33} />
         </NavItem>
       </div>
+
+      {searchOpen && (
+        <div className={styles.searchOverlay}>
+          <TopSearch autoFocus onClose={closeSearch} />
+          <button
+            type="button"
+            className={`${styles.item} ${styles.searchClose}`}
+            aria-label="Close search"
+            onClick={closeSearch}
+          >
+            <CloseIcon size={26} />
+          </button>
+        </div>
+      )}
 
       <div className={styles.right}>
         <NotificationBell />

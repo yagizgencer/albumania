@@ -371,3 +371,38 @@
   text-align: center;
   color: var(--text-subtle);
 }
+
+/* ---------------------------------------------------------------------------
+   Narrow screens. This file previously had no media query at all. The ratings
+   table is `table-layout: fixed` with 6-7 columns and nowrap numeric cells, and
+   `.tableWrap` only scrolled vertically — so on a phone it blew out sideways and
+   took the whole page with it. Give it a horizontal scroller of its own and a
+   floor width, so the table scrolls inside its card and the page does not.
+   --------------------------------------------------------------------------- */
+@media (max-width: 720px) {
+  .tableWrap {
+    overflow-x: auto;
+  }
+
+  .table {
+    min-width: 640px;
+  }
+}
+
+/* Phone tier (≤560px) — see index.css for the convention. */
+@media (max-width: 560px) {
+  .page {
+    padding: var(--page-pad);
+  }
+
+  .controls {
+    gap: var(--space-3);
+    padding: var(--space-3);
+  }
+
+  /* Once the controls row wraps, pushing the right-hand group away with an auto
+     margin just strands it — let it sit in the flow. */
+  .controlsRight {
+    margin-left: 0;
+  }
+}

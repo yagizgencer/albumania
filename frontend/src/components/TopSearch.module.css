@@ -2,6 +2,10 @@
   position: relative;
   width: 100%;
   max-width: 480px;
+  /* Without this the wrap refuses to shrink past the <input>'s intrinsic
+     min-content width (~190px from the UA's default size=20), so a tight navbar
+     overflows sideways instead of squeezing the field. */
+  min-width: 0;
   /* The navbar stretches its children full height; center the input so it lines
      up vertically with the Home / Listen Later icon buttons. */
   display: flex;
@@ -11,7 +15,8 @@
 .input {
   width: 100%;
   padding: 0.5rem 0.9rem;
-  font-size: 0.95rem;
+  /* 16px exactly: anything smaller makes iOS Safari zoom the page on focus. */
+  font-size: 1rem;
   /* Soft resting contour; hover/focus darken it subtly (no glow). */
   border: 2px solid var(--border-soft);
   border-radius: 999px;
@@ -43,6 +48,17 @@
   box-shadow: var(--shadow-modal);
   overflow: hidden;
   z-index: 30;
+}
+
+/* On phones the panel spans the expanded search row rather than a fixed 440px
+   measured from its left edge, which would otherwise run off the right side. */
+@media (max-width: 560px) {
+  .panel {
+    left: 0;
+    right: 0;
+    width: auto;
+    max-width: none;
+  }
 }
 
 .chips {

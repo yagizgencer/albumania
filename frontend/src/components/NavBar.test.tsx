@@ -67,6 +67,45 @@ describe("NavBar", () => {
     expect(logout).toHaveBeenCalled();
   });
 
+  // Phones have no room for an inline search field, so it collapses to a
+  // magnifier that expands over the whole nav row. jsdom applies no media
+  // queries, so drive the collapsed UI off the toggle itself.
+  it("expands and collapses the phone search row", async () => {
+    renderNav();
+
+    const toggle = screen.getByRole("button", { name: /^search$/i });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("button", { name: /close search/i })).not.toBeInTheDocument();
+
+    fireEvent.click(toggle);
+    expect(screen.getByRole("button", { name: /^search$/i })).toHaveAttribute(
+      "aria-expanded",
+      "true"
+    );
+
+    // Exactly one search input stays mounted — the inline one unmounts.
+    expect(screen.getAllByLabelText(/search albums and artists/i)).toHaveLength(1);
+
+    fireEvent.click(screen.getByRole("button", { name: /close search/i }));
+    expect(screen.getByRole("button", { name: /^search$/i })).toHaveAttribute(
+      "aria-expanded",
+      "false"
+    );
+  });
+
+  it("closes the expanded phone search on Escape", async () => {
+    renderNav();
+
+    fireEvent.click(screen.getByRole("button", { name: /^search$/i }));
+    expect(screen.getByRole("button", { name: /close search/i })).toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    await waitFor(() => {
+      expect(screen.queryByRole("button", { name: /close search/i })).not.toBeInTheDocument();
+    });
+  });
+
   it("filters results by type when chips are clicked", async () => {
     renderNav();
 

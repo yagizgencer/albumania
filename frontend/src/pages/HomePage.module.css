@@ -47,15 +47,19 @@
 }
 
 .landingLogo {
-  width: 210px;
-  height: 210px;
+  /* Was a hard 210px — over half the width of a 390px phone. */
+  width: clamp(110px, 34vw, 210px);
+  height: auto;
+  aspect-ratio: 1;
   display: block;
   margin: 0 auto var(--space-3);
 }
 
 .landingHero {
   font-family: var(--font-display);
-  font-size: clamp(3rem, 6vw, 4.5rem);
+  /* The old `clamp(3rem, 6vw, 4.5rem)` never left its 3rem floor below ~800px,
+     so on phones it was effectively a fixed 48px. 11vw actually scales. */
+  font-size: clamp(2.25rem, 11vw, 4.5rem);
   font-weight: 400;
   margin: 0 0 var(--space-3);
   color: var(--on-primary);
@@ -72,7 +76,8 @@
 
 .landingBullets {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  /* `min(240px, 100%)` so a viewport narrower than the track can't overflow. */
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
   gap: var(--space-4);
   margin: var(--space-8) 0 0;
   padding: 0;
@@ -167,6 +172,18 @@
   margin-top: var(--space-1);
 }
 
+/* Phone-only tab bar that turns the two trending boxes into one tabbed box.
+   Hidden on desktop, where both boxes stack in the sticky rail as before. */
+.trendingTabs {
+  display: none;
+}
+
+/* Above the phone tier the pane wrappers are transparent, so the sticky rail
+   lays out exactly as it did before the tabs existed. */
+.pane {
+  display: contents;
+}
+
 /* Two-column body: trending sidebar (left, sticky) + activity feed (right). */
 .content {
   display: grid;
@@ -195,5 +212,55 @@
   }
   .sideCol {
     position: static;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Phone tier (≤560px) — see index.css for the convention.
+   --------------------------------------------------------------------------- */
+@media (max-width: 560px) {
+  /* Desktop pins `.page` to the navbar's left edge with a 0.35rem gutter; on a
+     phone that leaves cards ~6px from the screen edge. Use the standard pad. */
+  .page {
+    max-width: none;
+    padding: 0 var(--page-pad);
+    margin: var(--space-4) auto;
+  }
+
+  /* One tabbed trending box instead of two stacked ones. */
+  .trendingTabs {
+    display: flex;
+    justify-content: center;
+  }
+
+  .pane {
+    display: block;
+  }
+
+  .paneOff {
+    display: none;
+  }
+
+  .landing {
+    /* A centered flex item taller than its container overflows symmetrically,
+       and the overflow above the top edge cannot be scrolled to — which clipped
+       the logo off the top of a phone screen. */
+    align-items: flex-start;
+  }
+
+  .landingBullets {
+    margin-top: var(--space-5);
+  }
+
+  .landingBullet {
+    padding: var(--space-4);
+  }
+
+  .landingBullet h3 {
+    font-size: var(--text-lg);
+  }
+
+  .landingBullet p {
+    font-size: var(--text-sm);
   }
 }

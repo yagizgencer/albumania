@@ -88,7 +88,8 @@
    now sits directly on the page, so the sticky backdrop is --paper. */
 .groupHeader {
   position: sticky;
-  top: 0;
+  /* Clear the sticky navbar — at `top: 0` the date pills slid underneath it. */
+  top: calc(var(--nav-height) + var(--space-1));
   z-index: 3;
   align-self: flex-start;
   margin: 0 0 var(--space-2);
@@ -302,4 +303,36 @@
 .empty a {
   color: var(--btn-primary-bg);
   font-weight: 600;
+}
+
+/* ---------------------------------------------------------------------------
+   Phone tier (≤560px) — see index.css for the convention.
+   --------------------------------------------------------------------------- */
+@media (max-width: 560px) {
+  .filterBar {
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+    padding-bottom: var(--space-3);
+  }
+
+  /* The "SHOW" label costs a whole wrapped row on a phone; the chips are
+     self-explanatory, so drop it (the group still has its aria-label). */
+  .filterLabel {
+    display: none;
+  }
+
+  /* 4px of vertical padding gave a ~26px tap target — too small for a thumb. */
+  .chip {
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .row {
+    column-gap: var(--space-3);
+    padding: var(--space-2);
+  }
+
+  .row + .row::before {
+    left: calc(40px + var(--space-3));
+    right: var(--space-2);
+  }
 }

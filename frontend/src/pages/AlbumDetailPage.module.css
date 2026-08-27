@@ -610,3 +610,26 @@
   color: var(--accent);
   border-bottom-color: var(--accent);
 }
+
+/* ---------------------------------------------------------------------------
+   Phone tier (≤560px) — see index.css for the convention. The 720px rule above
+   stacks the header, which turns the cover into a ~290px square that pushes all
+   the metadata below the fold; on a phone keep it beside the title instead.
+   --------------------------------------------------------------------------- */
+@media (max-width: 560px) {
+  .page {
+    max-width: none;
+    padding: 0 var(--page-pad);
+    margin: var(--space-4) auto;
+  }
+
+  .headerTop {
+    grid-template-columns: 132px 1fr;
+    gap: var(--space-3);
+  }
+
+  /* 24/32px of padding is ~70px of a 336px content box. */
+  .card {
+    padding: var(--space-3);
+  }
+}

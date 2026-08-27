@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { getTrendingAlbums, getTrendingArtists } from "../api/home";
 import { useAuth } from "../context/AuthContext";
 import { useFeatures } from "../context/FeaturesContext";
 import { ActivityFeed } from "../components/ActivityFeed";
 import { ButtonLink } from "../components/Button";
+import { Tabs, type TabOption } from "../components/Tabs";
 import { TrendingAlbumRow, TrendingArtistRow, TrendingBox } from "../components/TrendingBox";
 import SketchUnderline from "../components/SketchUnderline";
 import { LoadingState } from "../components/Spinner";
@@ -69,7 +71,20 @@ function PublicLanding() {
 // Logged-in home — welcome + activity timeline + trending
 // ---------------------------------------------------------------------------
 
+const TRENDING_TABS: TabOption<TrendingTab>[] = [
+  { value: "albums", label: "Albums" },
+  { value: "artists", label: "Artists" },
+];
+
+type TrendingTab = "albums" | "artists";
+
 function LoggedInHome({ displayName }: { displayName: string }) {
+  // Desktop stacks both trending boxes in the sticky rail. On phones that is
+  // ~700px of list above the activity feed, so there they become one tabbed box
+  // and the timeline starts on the first screen. The tab bar and the `paneOff`
+  // hiding are both phone-only (see HomePage.module.css) — desktop is unchanged.
+  const [trendingTab, setTrendingTab] = useState<TrendingTab>("albums");
+
   return (
     <main className={styles.page}>
       <header className={styles.welcome}>
@@ -83,18 +98,38 @@ function LoggedInHome({ displayName }: { displayName: string }) {
 
       <div className={styles.content}>
         <aside className={styles.sideCol}>
-          <TrendingBox
-            title="Trending Albums"
-            fetchItems={getTrendingAlbums}
-            keyOf={(a) => a.spotify_id}
-            renderRow={(a) => <TrendingAlbumRow album={a} />}
-          />
-          <TrendingBox
-            title="Trending Artists"
-            fetchItems={getTrendingArtists}
-            keyOf={(a) => a.artist_spotify_id}
-            renderRow={(a) => <TrendingArtistRow artist={a} />}
-          />
+          {/* Wrapper carries the show/hide so it doesn't fight Tabs' own
+              `display` rule at equal specificity (bundle order would decide). */}
+          <div className={styles.trendingTabs}>
+            <Tabs
+              options={TRENDING_TABS}
+              value={trendingTab}
+              onChange={setTrendingTab}
+              variant="subtle"
+              ariaLabel="Trending"
+            />
+          </div>
+
+          <div
+            className={`${styles.pane} ${trendingTab === "albums" ? "" : styles.paneOff}`}
+          >
+            <TrendingBox
+              title="Trending Albums"
+              fetchItems={getTrendingAlbums}
+              keyOf={(a) => a.spotify_id}
+              renderRow={(a) => <TrendingAlbumRow album={a} />}
+            />
+          </div>
+          <div
+            className={`${styles.pane} ${trendingTab === "artists" ? "" : styles.paneOff}`}
+          >
+            <TrendingBox
+              title="Trending Artists"
+              fetchItems={getTrendingArtists}
+              keyOf={(a) => a.artist_spotify_id}
+              renderRow={(a) => <TrendingArtistRow artist={a} />}
+            />
+          </div>
         </aside>
 
         <section className={styles.feedCol}>

@@ -435,3 +435,20 @@
   color: var(--text-subtle);
   margin-bottom: var(--space-2);
 }
+
+/* ---------------------------------------------------------------------------
+   Phone tier (≤560px) — see index.css for the convention.
+   --------------------------------------------------------------------------- */
+@media (max-width: 560px) {
+  .page {
+    max-width: none;
+    padding: 0 var(--page-pad);
+    margin: var(--space-4) auto;
+  }
+
+  /* Two cards per row rather than one full-width one. */
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
+  }
+}

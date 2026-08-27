@@ -847,3 +847,24 @@ button.tracksToggle:hover:not(:disabled) {
 [data-theme="dark"] .slotFilled {
   border-color: color-mix(in srgb, var(--border-soft) 82%, var(--text-subtle));
 }
+
+/* ---------------------------------------------------------------------------
+   Phone tier (≤560px) — see index.css for the convention.
+   --------------------------------------------------------------------------- */
+@media (max-width: 560px) {
+  .page {
+    max-width: none;
+    padding: 0 var(--page-pad);
+    margin: var(--space-4) auto;
+  }
+
+  .card {
+    padding: var(--space-3);
+  }
+
+  /* A 172px floor is over half a 336px content box, so two never share a row
+     cleanly; let the podium slots shrink to whatever fits. */
+  .slot {
+    min-width: 0;
+  }
+}

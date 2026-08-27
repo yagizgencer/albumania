@@ -42,6 +42,95 @@
   }
 }
 
+/* Search: inline field on desktop, magnifier + full-row overlay on phones.
+   The nav's fixed content (logo + five 46px icon buttons + avatar + padding)
+   already totals ~380px, so at phone widths there is simply no room for a
+   usable text field in the row — it collapses to an icon instead. */
+.searchInline {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  justify-content: center;
+}
+
+/* Tag + class (0,1,1) so this beats `.item { display: flex }` below regardless
+   of source order — the same specificity trick the hover rules use. */
+button.searchBtn {
+  display: none;
+}
+
+/* Covers the whole nav row (which is `position: sticky`, so it is already the
+   containing block) — the input then gets the full screen width. */
+.searchOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 10px;
+  background: var(--surface);
+}
+
+/* The TopSearch wrapper caps itself at 480px for the desktop row; in the overlay
+   it should take every pixel that isn't the close button. */
+.searchOverlay > :first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: none;
+}
+
+.searchClose {
+  flex-shrink: 0;
+}
+
+/* Belt and braces: only the phone tier can open this, but a resize past the
+   breakpoint while it is open must not leave it covering the desktop nav. */
+@media (min-width: 561px) {
+  .searchOverlay {
+    display: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Phone tier (≤560px) — see index.css for the convention.
+   --------------------------------------------------------------------------- */
+@media (max-width: 560px) {
+  .nav {
+    gap: var(--space-2);
+    padding: 0 10px;
+  }
+
+  .brandLogo {
+    width: 40px;
+    height: 40px;
+  }
+
+  /* The icon components are called with size={33}; CSS wins over the SVG's own
+     width/height attributes, so nothing has to be threaded through the TSX. */
+  .item {
+    width: 40px;
+    height: 40px;
+  }
+
+  .item svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  .right {
+    gap: var(--space-2);
+  }
+
+  .searchInline {
+    display: none;
+  }
+
+  button.searchBtn {
+    display: flex;
+  }
+}
+
 .center {
   display: flex;
   flex: 1;

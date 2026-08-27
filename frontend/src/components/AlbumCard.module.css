@@ -160,3 +160,38 @@
   font-weight: 700;
   color: var(--text);
 }
+
+/* ---------------------------------------------------------------------------
+   Phone tier (≤560px) — see index.css for the convention. The card grids go
+   two-up on phones, so each cell is ~160px: trim the chrome to match.
+   --------------------------------------------------------------------------- */
+@media (max-width: 560px) {
+  .card {
+    padding: var(--space-2);
+    gap: 0.3rem;
+  }
+
+  .title {
+    font-size: var(--text-md);
+  }
+
+  /* Two nowrap chips don't fit side by side in a 160px cell. */
+  .meta {
+    flex-wrap: wrap;
+  }
+
+  .metaChip {
+    font-size: var(--text-xs);
+    padding: 0.1rem 0.4rem;
+  }
+
+  .badge {
+    width: 28px;
+    height: 28px;
+  }
+
+  .footer {
+    font-size: 1rem;
+    padding-top: 0.35rem;
+  }
+}

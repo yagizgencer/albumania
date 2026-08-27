@@ -45,14 +45,16 @@
 }
 
 .heroLogo {
-  width: 210px;
-  height: 210px;
+  width: clamp(110px, 34vw, 210px);
+  height: auto;
+  aspect-ratio: 1;
   display: block;
 }
 
 .heroWordmark {
   font-family: var(--font-display);
-  font-size: clamp(3rem, 6vw, 4.5rem);
+  /* Matches the landing hero — 6vw never left the 3rem floor on phones. */
+  font-size: clamp(2.25rem, 11vw, 4.5rem);
   font-weight: 400;
   line-height: 1;
   color: var(--on-primary);
@@ -90,7 +92,29 @@
 
 .card h1 {
   margin: 0 0 var(--space-5);
-  font-size: 2rem;
+  font-size: clamp(1.5rem, 6vw, 2rem);
+}
+
+/* Stand-in branding shown only while the hero panel is hidden (see below). */
+.compactBrand {
+  display: none;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+  text-decoration: none;
+  color: var(--text);
+}
+
+.compactLogo {
+  width: 52px;
+  height: 52px;
+  display: block;
+}
+
+.compactWordmark {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  line-height: 1;
 }
 
 /* Below the hero breakpoint: single centered card, hide the hero. */
@@ -104,5 +128,8 @@
   .formSide {
     padding: var(--space-8) var(--page-pad);
     align-items: flex-start;
+  }
+  .compactBrand {
+    display: inline-flex;
   }
 }

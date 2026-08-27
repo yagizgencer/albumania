@@ -262,3 +262,20 @@
     position: static;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Phone tier (≤560px) — see index.css for the convention.
+   --------------------------------------------------------------------------- */
+@media (max-width: 560px) {
+  .page {
+    max-width: none;
+    padding: 0 var(--page-pad);
+    margin: var(--space-4) auto;
+  }
+
+  /* Three theme cards in ~330px leaves ~100px each — stack them instead. */
+  .themeGrid {
+    grid-template-columns: 1fr;
+    max-width: none;
+  }
+}

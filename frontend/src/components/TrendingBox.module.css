@@ -190,3 +190,32 @@
   font-size: 0.88rem;
   margin: 0.25rem 0;
 }
+
+/* ---------------------------------------------------------------------------
+   Phone tier (≤560px) — see index.css for the convention. On phones HomePage
+   merges the two boxes into one tabbed box, so the heading is redundant (kept
+   in the DOM for screen readers) and the list shows four tighter rows.
+   --------------------------------------------------------------------------- */
+@media (max-width: 560px) {
+  .section {
+    --row-h: 50px;
+    padding: var(--space-3);
+  }
+
+  .list {
+    height: calc(var(--row-h) * 4);
+  }
+
+  .title {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .header {
+    justify-content: flex-end;
+  }
+}

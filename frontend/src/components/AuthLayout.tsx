@@ -37,6 +37,13 @@ export function AuthLayout({
 
       <div className={styles.formSide}>
         <div className={styles.card}>
+          {/* Below the hero breakpoint the gradient panel is hidden, which left
+              the auth pages with no branding at all — this compact row stands in
+              for it and is hidden again once the hero is back. */}
+          <Link to="/" className={styles.compactBrand} aria-label="Albumania home">
+            <img src="/albumania_icon.png" alt="" className={styles.compactLogo} />
+            <span className={styles.compactWordmark}>Albumania</span>
+          </Link>
           <h1>{title}</h1>
           {children}
         </div>

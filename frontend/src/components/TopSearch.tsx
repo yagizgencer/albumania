@@ -65,7 +65,15 @@ const MIN_SEARCH_CHARS = 3;
 // for anyone who types in bursts.
 const SEARCH_DEBOUNCE_MS = 600;
 
-export function TopSearch() {
+interface TopSearchProps {
+  /** Focus the input on mount — used when the phone navbar expands the search. */
+  autoFocus?: boolean;
+  /** Called when the user is done searching (Escape, or a result was picked).
+      The phone navbar uses this to collapse the expanded search row. */
+  onClose?: () => void;
+}
+
+export function TopSearch({ autoFocus = false, onClose }: TopSearchProps = {}) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [hits, setHits] = useState<SearchHit[]>([]);
@@ -74,7 +82,12 @@ export function TopSearch() {
   const [open, setOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (autoFocus) inputRef.current?.focus();
+  }, [autoFocus]);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -115,16 +128,21 @@ export function TopSearch() {
     };
   }, [query, filter]);
 
-  // Close the dropdown on outside click / Escape.
+  // Close the dropdown on outside click / Escape. Also listen while the dropdown
+  // is shut when we have an `onClose` — Escape must still collapse the phone
+  // navbar's expanded search row even with no results showing.
   useEffect(() => {
-    if (!open) return;
+    if (!open && !onClose) return;
     function onDoc(e: MouseEvent) {
       if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
         setOpen(false);
       }
     }
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") {
+        setOpen(false);
+        onClose?.();
+      }
     }
     document.addEventListener("mousedown", onDoc);
     document.addEventListener("keydown", onKey);
@@ -132,12 +150,13 @@ export function TopSearch() {
       document.removeEventListener("mousedown", onDoc);
       document.removeEventListener("keydown", onKey);
     };
-  }, [open]);
+  }, [open, onClose]);
 
   function goTo(path: string) {
     setOpen(false);
     setQuery("");
     setHits([]);
+    onClose?.();
     navigate(path);
   }
 
@@ -146,6 +165,7 @@ export function TopSearch() {
   return (
     <div className={styles.wrap} ref={wrapRef}>
       <input
+        ref={inputRef}
         className={styles.input}
         type="search"
         placeholder="Search albums and artists…"
