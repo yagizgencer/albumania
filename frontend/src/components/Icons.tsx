@@ -62,9 +62,9 @@ export function SearchIcon({ size = 24, className }: IconProps) {
       className={className}
       aria-hidden
     >
-      {/* Spans 3–21 of the grid, matching HomeIcon's 3.5–20.5 and the rest. */}
-      <circle cx="11" cy="11" r="8" />
-      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+      {/* Spans 4–21 of the grid, matching HomeIcon's 3.5–20.5 and the rest. */}
+      <circle cx="11" cy="11" r="7" />
+      <line x1="16.5" y1="16.5" x2="21" y2="21" />
     </svg>
   );
 }
