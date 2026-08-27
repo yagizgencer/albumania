@@ -209,9 +209,13 @@ describe("RatingEditorPage", () => {
     // The bug: this would claim every touch before the TouchSensor is reached.
     expect(registered).not.toContain(PointerSensor);
 
+    // Delay, not distance: a distance constraint on touch is satisfied by the
+    // same movement that starts a scroll. Kept short — the grip is
+    // `touch-action: none`, so there is no scroll race for a long delay to
+    // guard against, and waiting feels like the handle is not responding.
     const touch = vi.mocked(useSensor).mock.calls.find(([sensor]) => sensor === TouchSensor);
-    expect(touch![1]).toMatchObject({
-      activationConstraint: { delay: expect.any(Number), tolerance: expect.any(Number) },
-    });
+    const constraint = (touch![1] as { activationConstraint: { delay: number } })
+      .activationConstraint;
+    expect(constraint.delay).toBeLessThanOrEqual(120);
   });
 });

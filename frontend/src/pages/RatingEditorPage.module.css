@@ -896,9 +896,9 @@ button.tracksToggle:hover:not(:disabled) {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 36px;
-  height: 40px;
-  margin-left: -4px;
+  width: 44px;
+  height: 42px;
+  margin-left: -6px;
   border-radius: var(--radius-sm);
   color: var(--text-subtle);
   cursor: grab;

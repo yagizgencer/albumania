@@ -111,7 +111,7 @@ function SlotName({ track }: { track: AlbumTrack }) {
       {...pointerListeners}
     >
       <span className={styles.grip} onTouchStart={onTouchStart} aria-hidden>
-        <GripIcon size={20} />
+        <GripIcon size={22} />
       </span>
       <span className={styles.slotNameText}>{track.name}</span>
     </span>
@@ -216,7 +216,7 @@ function TrackRow({
             onClick={(e) => e.stopPropagation()}
             aria-hidden
           >
-            <GripIcon size={20} />
+            <GripIcon size={22} />
           </span>
         )}
         <span className={styles.num}>{track.index}</span>
@@ -327,10 +327,14 @@ export function RatingEditorPage() {
     // A small activation distance lets a plain click on a pool row "add to next
     // slot" without accidentally starting a drag.
     useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
-    // Touch needs a delay, not a distance: the movement that would satisfy a
-    // distance constraint is the same movement that starts a page scroll, and
-    // the browser wins that race. Tolerance is generous — a thumb is not steady.
-    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 12 } }),
+    // Short delay, and deliberately no tolerance. Touch drags can only start on
+    // the grip, which is `touch-action: none` — the browser will never take that
+    // gesture for a scroll, so there is no race left for a long delay to guard
+    // against. 100ms reads as instant while still ignoring an accidental brush.
+    // Omitting `tolerance` means moving during those 100ms does not cancel:
+    // grabbing and immediately flicking is the natural instinct, and cancelling
+    // it made the handle feel broken.
+    useSensor(TouchSensor, { activationConstraint: { delay: 100 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
