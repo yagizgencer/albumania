@@ -57,17 +57,18 @@ export function SearchIcon({ size = 24, className }: IconProps) {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth={sketchStroke(size)}
+      // Optical correction, not a mistake: this glyph is a single thin ring
+      // around a lot of empty space, so at the same bounding box and stroke as
+      // its multi-stroke neighbours (house, headphones, bell) it reads lighter
+      // and a size smaller. It needs both more weight and more area — the lens
+      // below spans ~2.4-19.2 of the 24 grid — to sit level with them.
+      strokeWidth={sketchStroke(size) + 0.35}
       strokeLinecap="round"
       className={className}
       aria-hidden
     >
-      {/* The lens has to be big for the glyph to read at the same optical size
-          as its neighbours in the navbar — a small circle with a long handle
-          looks a size smaller next to the house/headphones/bell, whose shapes
-          fill their box. This matches their 3–21 extent within the 24 grid. */}
-      <circle cx="11" cy="11" r="8" />
-      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+      <circle cx="10.8" cy="10.8" r="8.4" />
+      <line x1="21.2" y1="21.2" x2="16.8" y2="16.8" />
     </svg>
   );
 }
