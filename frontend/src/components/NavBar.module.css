@@ -73,15 +73,11 @@ button.searchBtn {
 }
 
 /* The TopSearch wrapper caps itself at 480px for the desktop row; in the overlay
-   it should take every pixel that isn't the close button. */
+   it should span the full width (its close button sits inside the field). */
 .searchOverlay > :first-child {
   flex: 1 1 auto;
   min-width: 0;
   max-width: none;
-}
-
-.searchClose {
-  flex-shrink: 0;
 }
 
 /* Belt and braces: only the phone tier can open this, but a resize past the

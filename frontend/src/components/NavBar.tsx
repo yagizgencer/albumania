@@ -6,7 +6,6 @@ import { Avatar } from "./Avatar";
 import { NotificationBell } from "./NotificationBell";
 import { TopSearch } from "./TopSearch";
 import {
-  CloseIcon,
   HeadphonesIcon,
   HomeIcon,
   LogoutIcon,
@@ -84,14 +83,6 @@ export function NavBar() {
       {searchOpen && (
         <div className={styles.searchOverlay}>
           <TopSearch autoFocus onClose={closeSearch} />
-          <button
-            type="button"
-            className={`${styles.item} ${styles.searchClose}`}
-            aria-label="Close search"
-            onClick={closeSearch}
-          >
-            <CloseIcon size={26} />
-          </button>
         </div>
       )}
 

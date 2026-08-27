@@ -37,6 +37,56 @@
   box-shadow: none;
 }
 
+/* Reserve the close button's column so typed text scrolls short of it instead
+   of running underneath. */
+.inputWithClose {
+  padding-right: 38px;
+}
+
+/* `type="search"` grows its own clear glyph in WebKit/Blink, which would sit
+   right on top of ours. */
+.inputWithClose::-webkit-search-cancel-button {
+  display: none;
+}
+
+/* Quiet glyph button inside the field. Every declaration here is undoing the
+   global `button` rule (coral fill, border, offset shadow, padding). */
+.closeBtn {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+/* Matches the global `button:hover:not(:disabled)` specificity so the nudge and
+   brightness filter don't fight the vertical centering. */
+.closeBtn:hover,
+button.closeBtn:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--hover-tint);
+  transform: translateY(-50%);
+  box-shadow: none;
+  filter: none;
+}
+
+.closeBtn:active,
+button.closeBtn:active:not(:disabled) {
+  transform: translateY(-50%);
+  box-shadow: none;
+}
+
 .panel {
   position: absolute;
   top: calc(100% + 6px);

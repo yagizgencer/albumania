@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { searchAlbums, type AlbumSearchResult } from "../api/albums";
 import { searchArtists, type ArtistSearchResult } from "../api/artists";
+import { CloseIcon } from "./Icons";
 import styles from "./TopSearch.module.css";
 
 type Filter = "all" | "albums" | "artists";
@@ -166,7 +167,7 @@ export function TopSearch({ autoFocus = false, onClose }: TopSearchProps = {}) {
     <div className={styles.wrap} ref={wrapRef}>
       <input
         ref={inputRef}
-        className={styles.input}
+        className={`${styles.input} ${onClose ? styles.inputWithClose : ""}`}
         type="search"
         placeholder="Search albums and artists…"
         value={query}
@@ -174,6 +175,22 @@ export function TopSearch({ autoFocus = false, onClose }: TopSearchProps = {}) {
         onFocus={() => setOpen(true)}
         aria-label="Search albums and artists"
       />
+
+      {/* Sits inside the field rather than beside it — the input reserves room
+          for it via .inputWithClose so typed text can never run underneath. */}
+      {onClose && (
+        <button
+          type="button"
+          className={styles.closeBtn}
+          aria-label="Close search"
+          onClick={() => {
+            setOpen(false);
+            onClose();
+          }}
+        >
+          <CloseIcon size={18} />
+        </button>
+      )}
 
       {showDropdown && (
         <div className={styles.panel}>
