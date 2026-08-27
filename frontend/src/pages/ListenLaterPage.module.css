@@ -6,6 +6,10 @@
   margin: 2rem auto;
   padding: 0 0.35rem;
   color: var(--text);
+
+  /* Fallback for anything using --card-px outside a queue card (the invite
+     rail's icon buttons). Cards themselves derive it from their own width. */
+  --card-px: 1px;
 }
 
 .pageTitle {
@@ -251,8 +255,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: calc(40 * var(--card-px, 1px));
+  height: calc(40 * var(--card-px, 1px));
   flex-shrink: 0;
   border-radius: var(--radius-pill);
   border: var(--border-w-thin) solid var(--border);
@@ -263,17 +267,17 @@
     color 0.12s ease;
 }
 .iconBtn svg {
-  width: 22px;
-  height: 22px;
+  width: calc(22 * var(--card-px, 1px));
+  height: calc(22 * var(--card-px, 1px));
   flex-shrink: 0;
 }
 .iconBtnSm {
-  width: 30px;
-  height: 30px;
+  width: calc(30 * var(--card-px, 1px));
+  height: calc(30 * var(--card-px, 1px));
 }
 .iconBtnSm svg {
-  width: 16px;
-  height: 16px;
+  width: calc(16 * var(--card-px, 1px));
+  height: calc(16 * var(--card-px, 1px));
 }
 .iconBtn:hover:not(:disabled) {
   transform: translate(-1px, -1px);
@@ -365,15 +369,19 @@
   gap: var(--space-4);
 }
 .qcard {
+  /* A size container: everything inside sizes itself from the CARD's width, not
+     the viewport, so the same card works in a two-up grid, the rail, or a modal
+     without knowing which. See index.css for the convention. */
+  container-type: inline-size;
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: calc(12 * var(--card-px, 1px));
   background: var(--surface);
   border: var(--border-w) solid var(--border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
-  padding: var(--space-4);
+  padding: calc(16 * var(--card-px, 1px));
 }
 [data-theme="dark"] .qcard {
   box-shadow:
@@ -411,12 +419,12 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: calc(8 * var(--card-px, 1px));
   min-width: 0;
 }
 .entryTitle {
   font-family: var(--font-display);
-  font-size: 1.25rem;
+  font-size: calc(20 * var(--card-px, 1px));
   line-height: 1.05;
   color: var(--text);
   text-decoration: none;
@@ -436,7 +444,7 @@
   align-self: flex-start;
   max-width: 100%;
   font-weight: 700;
-  font-size: 1rem;
+  font-size: calc(16 * var(--card-px, 1px));
   color: var(--text-muted);
   text-decoration: none;
   overflow: hidden;
@@ -451,18 +459,18 @@
 .metaChips {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: calc(8 * var(--card-px, 1px));
 }
 .metaChip {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.15rem 0.6rem;
+  gap: calc(5.6 * var(--card-px, 1px));
+  padding: calc(2.4 * var(--card-px, 1px)) calc(9.6 * var(--card-px, 1px));
   border-radius: var(--radius-pill);
   background: var(--surface-muted);
   border: var(--border-w-thin) solid var(--border-soft);
   color: var(--text);
-  font-size: 0.8rem;
+  font-size: calc(12.8 * var(--card-px, 1px));
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -516,13 +524,13 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-3);
+  gap: calc(12 * var(--card-px, 1px));
   margin-top: auto;
 }
 .qActions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: calc(10 * var(--card-px, 1px));
 }
 
 /* Inline remove confirm (replaces the actions row). */
@@ -580,8 +588,8 @@
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 3px 9px 3px 7px;
+  gap: calc(7 * var(--card-px, 1px));
+  padding: calc(3 * var(--card-px, 1px)) calc(9 * var(--card-px, 1px)) calc(3 * var(--card-px, 1px)) calc(7 * var(--card-px, 1px));
   border-radius: var(--radius-pill);
   background: var(--surface-muted);
   border: var(--border-w-thin) solid var(--border-soft);
@@ -608,8 +616,8 @@
   color: var(--select-hover);
 }
 .lwIcon svg {
-  width: 18px;
-  height: 18px;
+  width: calc(18 * var(--card-px, 1px));
+  height: calc(18 * var(--card-px, 1px));
 }
 .lwAvatars {
   display: inline-flex;
@@ -617,11 +625,73 @@
 }
 /* Later avatars overlap the earlier ones (right partly occludes left). */
 .lwAvatars > * {
-  margin-left: -9px;
+  margin-left: calc(-9 * var(--card-px, 1px));
 }
 .lwAvatars > *:first-child {
   margin-left: 0;
 }
+/* Avatar sets width/height as an inline style, which no class can outrank — this
+   keeps the stack on the same scale as the rest of the card (exactly 32px at
+   desktop scale, proportionally smaller in a narrow card). */
+.qcard .lwAvatarLink > span {
+  width: calc(32 * var(--card-px, 1px)) !important;
+  height: calc(32 * var(--card-px, 1px)) !important;
+  font-size: calc(14.4 * var(--card-px, 1px)) !important;
+}
+
+/* One scaled pixel, measured against the card's 230px desktop minimum: 1cqi is
+   1% of the card's width, so 100/230 = 0.435cqi makes --card-px exactly 1px at
+   desktop scale and shrink proportionally below it. Chrome (padding, gaps, the
+   chip) scales freely; text and tap targets get floors below. */
+.qcard > * {
+  --card-px: clamp(0.62px, 0.435cqi, 1px);
+}
+
+/* ---- Floors: the things that must not scale away --------------------------
+   Type below ~12px is unreadable and a tap target below ~44px is hard to hit,
+   and neither shrinks just because the screen did. Scale down to these values,
+   then stop. */
+.qcard .entryTitle {
+  font-size: max(15px, calc(20 * var(--card-px, 1px)));
+}
+.qcard .entryArtist {
+  font-size: max(13px, calc(16 * var(--card-px, 1px)));
+}
+.qcard .metaChip {
+  font-size: max(11px, calc(12.8 * var(--card-px, 1px)));
+}
+.qcard .iconBtn {
+  width: max(32px, calc(40 * var(--card-px, 1px)));
+  height: max(32px, calc(40 * var(--card-px, 1px)));
+}
+.qcard .iconBtn svg {
+  width: max(18px, calc(22 * var(--card-px, 1px)));
+  height: max(18px, calc(22 * var(--card-px, 1px)));
+}
+
+/* Keep the touch target at the 44px guideline even when the button is drawn
+   smaller — the hit area grows invisibly rather than the button. */
+.qcard .iconBtn::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+}
+
+/* Reflow before crushing: under ~200px of card there is no way to fit the
+   actions and the listening-with chip on one row at legible sizes, so stack
+   them. This is a property of the card's width, not the screen's. */
+@container (max-width: 200px) {
+  .qFooter {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: calc(8 * var(--card-px, 1px));
+  }
+}
+
 .lwAvatarLink {
   position: relative;
   display: inline-flex;
@@ -644,14 +714,14 @@
 .lwMore {
   display: grid;
   place-items: center;
-  min-width: 26px;
-  height: 26px;
-  padding: 0 5px;
-  margin-left: -9px;
+  min-width: calc(26 * var(--card-px, 1px));
+  height: calc(26 * var(--card-px, 1px));
+  padding: 0 calc(5 * var(--card-px, 1px));
+  margin-left: calc(-9 * var(--card-px, 1px));
   border-radius: var(--radius-pill);
   background: var(--surface-muted);
   border: var(--border-w-thin) solid var(--border);
-  font-size: 0.68rem;
+  font-size: calc(10.9 * var(--card-px, 1px));
   font-weight: 800;
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
@@ -746,14 +816,20 @@
     margin: var(--space-4) auto;
   }
 
-  /* Two cards per row rather than one full-width one. */
-  .cardGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-3);
-  }
-
   /* A 230px floor forces horizontal page scroll on a 360px screen. */
   .comboList {
     min-width: 0;
+  }
+
+  /* The card grid is auto-adaptive rather than a hardcoded column count: cells
+     never go below 150px, so a 320px phone gets one full-width card while a
+     360px+ phone gets two. No breakpoint needs to know which. */
+  .cardGrid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: var(--space-3);
+  }
+
+  .qcard {
+    padding: var(--space-3);
   }
 }

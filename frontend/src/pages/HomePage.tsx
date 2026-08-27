@@ -85,6 +85,22 @@ function LoggedInHome({ displayName }: { displayName: string }) {
   // hiding are both phone-only (see HomePage.module.css) — desktop is unchanged.
   const [trendingTab, setTrendingTab] = useState<TrendingTab>("albums");
 
+  // Lives in the visible box's own header, left of the period toggle. Only one
+  // box is on screen at a time on phones, so both get the same control; the
+  // wrapper hides it on desktop (and keeps it from fighting Tabs' own
+  // `display` rule at equal specificity, where bundle order would decide).
+  const trendingTabs = (
+    <div className={styles.trendingTabs}>
+      <Tabs
+        options={TRENDING_TABS}
+        value={trendingTab}
+        onChange={setTrendingTab}
+        variant="subtle"
+        ariaLabel="Trending"
+      />
+    </div>
+  );
+
   return (
     <main className={styles.page}>
       <header className={styles.welcome}>
@@ -98,23 +114,13 @@ function LoggedInHome({ displayName }: { displayName: string }) {
 
       <div className={styles.content}>
         <aside className={styles.sideCol}>
-          {/* Wrapper carries the show/hide so it doesn't fight Tabs' own
-              `display` rule at equal specificity (bundle order would decide). */}
-          <div className={styles.trendingTabs}>
-            <Tabs
-              options={TRENDING_TABS}
-              value={trendingTab}
-              onChange={setTrendingTab}
-              variant="subtle"
-              ariaLabel="Trending"
-            />
-          </div>
-
           <div
             className={`${styles.pane} ${trendingTab === "albums" ? "" : styles.paneOff}`}
           >
             <TrendingBox
               title="Trending Albums"
+              compactTitle="What's Trending"
+              headerExtra={trendingTab === "albums" ? trendingTabs : undefined}
               fetchItems={getTrendingAlbums}
               keyOf={(a) => a.spotify_id}
               renderRow={(a) => <TrendingAlbumRow album={a} />}
@@ -125,6 +131,8 @@ function LoggedInHome({ displayName }: { displayName: string }) {
           >
             <TrendingBox
               title="Trending Artists"
+              compactTitle="What's Trending"
+              headerExtra={trendingTab === "artists" ? trendingTabs : undefined}
               fetchItems={getTrendingArtists}
               keyOf={(a) => a.artist_spotify_id}
               renderRow={(a) => <TrendingArtistRow artist={a} />}

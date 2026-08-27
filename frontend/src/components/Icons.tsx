@@ -57,13 +57,13 @@ export function SearchIcon({ size = 24, className }: IconProps) {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2"
+      strokeWidth={sketchStroke(size)}
       strokeLinecap="round"
       className={className}
       aria-hidden
     >
-      <circle cx="11" cy="11" r="7" />
-      <line x1="16.5" y1="16.5" x2="21" y2="21" />
+      <circle cx="10.6" cy="10.6" r="7.4" />
+      <line x1="16" y1="16" x2="21" y2="21" />
     </svg>
   );
 }

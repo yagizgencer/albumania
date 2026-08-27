@@ -142,3 +142,15 @@
   background: var(--select);
   color: var(--on-select);
 }
+
+/* ---------------------------------------------------------------------------
+   Phone tier (≤560px) — see index.css for the convention. The subtle variant is
+   used for tight in-header toggles (trending period, Albums/Artists), and two of
+   them now share one row on a phone, so trim the cells to fit.
+   --------------------------------------------------------------------------- */
+@media (max-width: 560px) {
+  .tabSubtle {
+    padding: 4px 7px;
+    font-size: 0.7rem;
+  }
+}

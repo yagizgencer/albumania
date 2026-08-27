@@ -98,9 +98,10 @@
     height: 76px;
   }
 
-  /* Two cards per row rather than one full-width one. */
+  /* Auto-adaptive rather than a hardcoded column count: cells never go below
+     140px, so the smallest phones get one card and the rest get two. */
   .grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: var(--space-3);
   }
 }

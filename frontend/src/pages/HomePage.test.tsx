@@ -36,6 +36,8 @@ describe("HomePage", () => {
   // feed starts on the first screen. Both boxes stay mounted at every width —
   // only the tab bar and the `paneOff` class are phone-only (CSS) — so this test
   // covers the tab state rather than what jsdom can't evaluate (media queries).
+  // The tab bar lives in the visible box's own header, so exactly one copy of it
+  // exists at a time even though both boxes are mounted.
   it("offers Albums/Artists trending tabs and moves the selection", async () => {
     renderHome();
 
@@ -56,10 +58,12 @@ describe("HomePage", () => {
       "true"
     );
 
-    // Both lists stay in the DOM — desktop shows them stacked in the rail.
+    // Both lists stay in the DOM — desktop shows them stacked in the rail. Each
+    // heading carries the desktop caption and the phone one ("What's Trending");
+    // CSS shows exactly one, but jsdom applies none, hence the loose match.
     expect(
-      await screen.findByRole("heading", { name: "Trending Albums" })
+      await screen.findByRole("heading", { name: /Trending Albums/ })
     ).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Trending Artists" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Trending Artists/ })).toBeInTheDocument();
   });
 });

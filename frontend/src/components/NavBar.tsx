@@ -66,7 +66,7 @@ export function NavBar() {
           aria-expanded={searchOpen}
           onClick={() => setSearchOpen(true)}
         >
-          <SearchIcon size={30} />
+          <SearchIcon size={33} />
         </button>
 
         <NavItem

@@ -92,44 +92,7 @@ button.searchBtn {
   }
 }
 
-/* ---------------------------------------------------------------------------
-   Phone tier (≤560px) — see index.css for the convention.
-   --------------------------------------------------------------------------- */
-@media (max-width: 560px) {
-  .nav {
-    gap: var(--space-2);
-    padding: 0 10px;
-  }
 
-  .brandLogo {
-    width: 40px;
-    height: 40px;
-  }
-
-  /* The icon components are called with size={33}; CSS wins over the SVG's own
-     width/height attributes, so nothing has to be threaded through the TSX. */
-  .item {
-    width: 40px;
-    height: 40px;
-  }
-
-  .item svg {
-    width: 26px;
-    height: 26px;
-  }
-
-  .right {
-    gap: var(--space-2);
-  }
-
-  .searchInline {
-    display: none;
-  }
-
-  button.searchBtn {
-    display: flex;
-  }
-}
 
 .center {
   display: flex;
@@ -490,4 +453,59 @@ button.menuItemDanger:hover:not(:disabled) {
   background: var(--primary);
   color: var(--on-primary);
   border: var(--border-w-thin) solid var(--border);
+}
+
+/* ---------------------------------------------------------------------------
+   Phone tier (≤560px) — see index.css for the convention.
+   --------------------------------------------------------------------------- */
+@media (max-width: 560px) {
+  .nav {
+    gap: var(--space-2);
+    padding: 0 10px;
+  }
+
+  .brandLogo {
+    width: 40px;
+    height: 40px;
+  }
+
+  /* The icon components are called with size={33}; CSS wins over the SVG's own
+     width/height attributes, so nothing has to be threaded through the TSX. */
+  .item {
+    width: 40px;
+    height: 40px;
+  }
+
+  .item svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  .right {
+    gap: var(--space-2);
+  }
+
+  .searchInline {
+    display: none;
+  }
+
+  button.searchBtn {
+    display: flex;
+  }
+
+  /* The bell sits mid-row, so a `right: 0` panel 90vw wide hangs off the LEFT
+     edge of the screen. Pin it to the viewport instead — `position: sticky` on
+     .nav does not create a containing block for fixed descendants. */
+  .bellPanel {
+    position: fixed;
+    top: calc(var(--nav-height) + 6px);
+    left: var(--space-2);
+    right: var(--space-2);
+    width: auto;
+  }
+
+  /* Same trap, smaller: keep the profile menu inside the screen too. */
+  .menu {
+    max-width: calc(100vw - 2 * var(--space-2));
+  }
 }

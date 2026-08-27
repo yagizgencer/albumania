@@ -30,6 +30,17 @@
   color: var(--text);
 }
 
+/* The compact heading replaces the per-box one at phone widths (see below). */
+.titleCompact {
+  display: none;
+}
+
+.headerControls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
 /* Exactly 5 rows visible (5 × --row-h); any further rows scroll within. Thin,
    unobtrusive scrollbar. */
 .list {
@@ -192,9 +203,9 @@
 }
 
 /* ---------------------------------------------------------------------------
-   Phone tier (≤560px) — see index.css for the convention. On phones HomePage
-   merges the two boxes into one tabbed box, so the heading is redundant (kept
-   in the DOM for screen readers) and the list shows four tighter rows.
+   Phone tier (≤560px) — see index.css for the convention. HomePage merges the
+   two boxes into one tabbed box here, so the box takes the shared `compactTitle`
+   caption on its own row and both toggles sit together beneath it.
    --------------------------------------------------------------------------- */
 @media (max-width: 560px) {
   .section {
@@ -206,16 +217,29 @@
     height: calc(var(--row-h) * 4);
   }
 
-  .title {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
+  .header {
+    flex-wrap: wrap;
+    row-gap: var(--space-2);
+    margin-bottom: var(--space-2);
   }
 
-  .header {
-    justify-content: flex-end;
+  /* Caption takes the full first row; the toggles share the second. */
+  .title {
+    flex: 1 0 100%;
+  }
+
+  .titleFull {
+    display: none;
+  }
+
+  .titleCompact {
+    display: inline;
+  }
+
+  .headerControls {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    row-gap: var(--space-2);
+    justify-content: space-between;
   }
 }

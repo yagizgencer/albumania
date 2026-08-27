@@ -205,11 +205,46 @@
 }
 
 /* =============================================================================
-   PHONE TIER (≤560px)
+   RESPONSIVE CONVENTIONS
 
-   Breakpoint convention: each page keeps its own tablet breakpoint (the width at
-   which that page's fixed rail stops fitting — 640/720/860/900…). On top of
-   those, `max-width: 560px` is the ONE shared phone tier used app-wide.
+   1. REFLOW FIRST. The primary lever is arrangement, not size: column counts,
+      stacking, wrapping. Prefer `repeat(auto-fill, minmax(Npx, 1fr))` over a
+      hardcoded column count so a grid finds its own column count instead of
+      needing a breakpoint to be told.
+
+   2. BLOCKS SCALE FROM THEIR OWN WIDTH, not the viewport. A reusable block
+      (card, panel) declares `container-type: inline-size` and its children take
+      a `--card-px` — "one scaled pixel" — from `cqi`:
+
+        .card > * { --card-px: clamp(0.7px, 0.556cqi, 1px); }
+        .badge    { width: calc(34 * var(--card-px, 1px)); }
+
+      1cqi is 1% of the block's width, so the coefficient is 100 / (the block's
+      desktop minimum width): --card-px is exactly 1px at desktop scale and
+      shrinks proportionally below it. Every internal ratio is then preserved
+      wherever the block is placed — a grid, a rail, a modal — with nothing
+      coupled to the page's geometry.
+
+   3. TEXT AND TAP TARGETS GET FLOORS. Eyes and fingers do not get smaller when
+      the screen does. Scale down to a floor, then stop:
+
+        font-size: max(14px, calc(17.6 * var(--card-px, 1px)));
+
+      Floors used here: ~11px for incidental labels, ~14px for anything you read,
+      and a 44px touch target (extend the hit area with a pseudo-element rather
+      than growing the button). When a floor would make content overflow, that is
+      the signal to REFLOW (rule 1) — stack the row, drop to one column — not to
+      scale further.
+
+   4. PHONE TIER. Each page keeps its own tablet breakpoint (the width at which
+      that page's fixed rail stops fitting — 640/720/860/900…). On top of those,
+      `max-width: 560px` is the ONE shared viewport breakpoint used app-wide, for
+      the things a block genuinely cannot derive from its own width: the global
+      tokens below, page gutters, and a block's own outer padding.
+   ========================================================================== */
+
+/* =============================================================================
+   PHONE TIER (≤560px)
 
    Every component reads the tokens below, so tightening them here scales the
    whole app down at once. Nothing above 560px is affected.
@@ -446,7 +481,16 @@ a:hover {
   transition: opacity 0.12s ease;
   z-index: 200;
 }
-[data-tip]:hover::before,
+/* Only on devices with a real hovering pointer. A touch screen fires :hover on
+   tap and keeps it until you tap elsewhere, so on a phone every tapped nav icon
+   left its tooltip stuck on screen — there is no hover to explain there. */
+@media (hover: hover) and (pointer: fine) {
+  [data-tip]:hover::before {
+    opacity: 1;
+  }
+}
+
+/* Keyboard focus still shows it on every device. */
 [data-tip]:focus-visible::before {
   opacity: 1;
 }

@@ -17,6 +17,12 @@ interface TrendingBoxProps<T> {
   /** When set, the box fills its parent's height and scrolls its list within,
       instead of using its own fixed max-height. Used in the sticky home rail. */
   fill?: boolean;
+  /** Heading shown instead of `title` at phone widths, where the two boxes merge
+      into one tabbed box and each box's own name no longer describes it. */
+  compactTitle?: string;
+  /** Extra control rendered left of the period toggle — the home page puts its
+      phone-only Albums/Artists tabs here. */
+  headerExtra?: ReactNode;
 }
 
 export function TrendingBox<T>({
@@ -26,6 +32,8 @@ export function TrendingBox<T>({
   renderRow,
   defaultPeriod = "all",
   fill = false,
+  compactTitle,
+  headerExtra,
 }: TrendingBoxProps<T>) {
   const [period, setPeriod] = useState<TrendingPeriod>(defaultPeriod);
   const [items, setItems] = useState<T[] | null>(null);
@@ -46,8 +54,14 @@ export function TrendingBox<T>({
   return (
     <section className={`${styles.section} ${fill ? styles.fill : ""}`}>
       <div className={styles.header}>
-        <h2 className={styles.title}>{title}</h2>
-        <PeriodToggle value={period} onChange={setPeriod} />
+        <h2 className={styles.title}>
+          <span className={styles.titleFull}>{title}</span>
+          {compactTitle && <span className={styles.titleCompact}>{compactTitle}</span>}
+        </h2>
+        <div className={styles.headerControls}>
+          {headerExtra}
+          <PeriodToggle value={period} onChange={setPeriod} />
+        </div>
       </div>
 
       {error ? (
