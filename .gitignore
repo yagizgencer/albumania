@@ -45,3 +45,8 @@ htmlcov/
 
 # Claude Code personal permission overrides (machine-local)
 .claude/settings.local.json
+
+# Original static demo (album_ranking). It carries its own .git, so `git add`
+# stages it as a gitlink with no submodule config — a clone would get an empty
+# directory. Kept local; see CLAUDE.md ("port functions, don't import").
+reference/
